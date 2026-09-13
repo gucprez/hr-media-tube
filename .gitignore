@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# generated content (audio/video are heavy binaries, don't commit them)
+faceless_studio/output/
+*.mp4
+*.mp3
