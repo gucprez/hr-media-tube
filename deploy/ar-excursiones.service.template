@@ -1,0 +1,21 @@
+[Unit]
+Description=AR Excursiones (FastAPI/Uvicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=__APP_USER__
+WorkingDirectory=__APP_DIR__
+Environment="PATH=__APP_DIR__/.venv/bin"
+Environment="DB_PATH=__APP_DIR__/data/app.db"
+# Optional: uncomment and set your own values to override the defaults baked
+# into the code (main.py / admin.py). Recommended once the site is live.
+# Environment="ADMIN_USERNAME=Yismellir"
+# Environment="ADMIN_PASSWORD=Flautica08*"
+# Environment="SECRET_KEY=change-me-to-a-long-random-string"
+ExecStart=__APP_DIR__/.venv/bin/uvicorn main:app --host 127.0.0.1 --port __APP_PORT__
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
