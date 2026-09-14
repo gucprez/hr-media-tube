@@ -65,6 +65,43 @@ DESTINATIONS = [
     },
 ]
 
+CRUISE_EXCURSIONS = [
+    {
+        "name": "27 Charcos de Damajagua",
+        "description": "Salta, resbala y nada en las cascadas naturales de Damajagua, a solo 20 minutos de Amber Cove.",
+        "image": "damajagua.jpg",
+    },
+    {
+        "name": "Teleférico y Pico Isabel de Torres",
+        "description": "Sube en teleférico hasta la cima del Pico Isabel de Torres y disfruta la mejor vista panorámica de Puerto Plata.",
+        "image": "teleferico.jpg",
+    },
+    {
+        "name": "Fortaleza San Felipe y Malecón",
+        "description": "Recorre la fortaleza colonial del siglo XVI y el histórico Malecón, a pocos minutos del puerto.",
+        "image": "fortaleza.jpg",
+    },
+]
+
+CRUISE_FAQS = [
+    {
+        "q": "¿Recogen en el muelle de Amber Cove o Taíno Bay?",
+        "a": "Sí, coordinamos el punto de encuentro directamente en la terminal de cruceros de Puerto Plata (Amber Cove o Taíno Bay) para que no pierdas tiempo bajando del barco.",
+    },
+    {
+        "q": "¿La excursión regresa a tiempo para abordar el barco?",
+        "a": "Sí. Todos nuestros tours para pasajeros de crucero están diseñados con horarios de regreso garantizados antes del zarpe.",
+    },
+    {
+        "q": "¿Qué debo llevar a la excursión?",
+        "a": "Traje de baño, toalla, protector solar biodegradable, calzado cómodo y efectivo en dólares para gastos personales.",
+    },
+    {
+        "q": "¿Puedo reservar el mismo día que llega mi crucero?",
+        "a": "Te recomendamos reservar con anticipación por WhatsApp, pero si hay disponibilidad coordinamos tours el mismo día de tu llegada.",
+    },
+]
+
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
@@ -77,6 +114,8 @@ def home(request: Request):
             "instagram_url": INSTAGRAM_URL,
             "facebook_url": FACEBOOK_URL,
             "destinations": DESTINATIONS,
+            "cruise_excursions": CRUISE_EXCURSIONS,
+            "cruise_faqs": CRUISE_FAQS,
         },
     )
 

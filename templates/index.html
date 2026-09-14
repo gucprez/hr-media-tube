@@ -3,12 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ agency_name }} | Excursiones, Tours y Boletos Aéreos</title>
-<meta name="description" content="{{ agency_name }}: excursiones y tours en Medellín, Bogotá, Perú, México, USA y República Dominicana. También vendemos boletos de avión.">
+<title>{{ agency_name }} | Excursiones en Puerto Plata para Cruceros, Tours y Boletos Aéreos</title>
+<meta name="description" content="Excursiones para pasajeros de crucero en Puerto Plata (Amber Cove y Taíno Bay): 27 Charcos de Damajagua, Teleférico, Fortaleza San Felipe y playas. También tours en Medellín, Bogotá, Perú, México, USA y venta de boletos de avión.">
+<meta name="keywords" content="excursiones Puerto Plata, tours cruceros Puerto Plata, Amber Cove excursiones, Taíno Bay tours, 27 charcos de Damajagua, teleférico Puerto Plata, excursiones Medellín, tours Bogotá, paquetes Perú, tours México, venta de boletos de avión, agencia de viajes República Dominicana">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ agency_name }} | Excursiones en Puerto Plata para Cruceros y Tours Internacionales">
+<meta property="og:description" content="Excursiones para pasajeros de crucero en Puerto Plata, tours en Medellín, Bogotá, Perú, México, USA y venta de boletos de avión.">
+<meta property="og:image" content="/static/img/hero.jpg">
+<meta property="og:locale" content="es_DO">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Baloo+2:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/style.css">
 <link rel="icon" type="image/png" href="/static/img/logo.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TravelAgency",
+  "name": "{{ agency_name }}",
+  "image": "/static/img/logo.png",
+  "telephone": "+{{ whatsapp_number }}",
+  "priceRange": "$$",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Puerto Plata",
+    "addressCountry": "DO"
+  },
+  "areaServed": ["Puerto Plata", "República Dominicana", "Medellín", "Bogotá", "Perú", "México", "Estados Unidos"],
+  "sameAs": ["{{ instagram_url }}", "{{ facebook_url }}"]
+}
+</script>
 </head>
 <body>
 
@@ -21,6 +47,7 @@
     <nav class="nav-links" id="navLinks">
       <a href="#inicio">Inicio</a>
       <a href="#destinos">Destinos</a>
+      <a href="#cruceros">Cruceros</a>
       <a href="#vuelos">Boletos aéreos</a>
       <a href="#nosotros">Nosotros</a>
       <a href="#contacto">Contacto</a>
@@ -104,6 +131,48 @@
           </a>
         </div>
       </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- CRUCEROS -->
+<section class="cruise" id="cruceros">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">¿Llegas en crucero a Puerto Plata?</p>
+      <h2>Excursiones para cruceros en Puerto Plata (Amber Cove y Taíno Bay)</h2>
+      <p class="section-sub">
+        Si tu crucero atraca en Puerto Plata, República Dominicana, {{ agency_name }} te recoge en el muelle
+        de <strong>Amber Cove</strong> o <strong>Taíno Bay</strong> y te lleva a vivir la mejor excursión de un día:
+        cascadas, playas, montaña e historia, con regreso garantizado antes del zarpe del barco.
+      </p>
+    </div>
+    <div class="destinations-grid">
+      {% for c in cruise_excursions %}
+      <article class="dest-card">
+        <div class="dest-img" style="background-image:url('/static/img/{{ c.image }}');">
+          <span class="dest-badge">Tour de un día</span>
+        </div>
+        <div class="dest-body">
+          <h3>{{ c.name }}</h3>
+          <p class="dest-desc">{{ c.description }}</p>
+          <a class="dest-link" target="_blank" rel="noopener"
+             href="https://wa.me/{{ whatsapp_number }}?text=Hola%2C%20llego%20en%20crucero%20a%20Puerto%20Plata%20y%20quiero%20informaci%C3%B3n%20sobre%20{{ c.name | urlencode }}">
+            Reservar para mi crucero →
+          </a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    <div class="faq">
+      <h3 class="faq-title">Preguntas frecuentes de pasajeros de crucero</h3>
+      {% for f in cruise_faqs %}
+      <details class="faq-item">
+        <summary>{{ f.q }}</summary>
+        <p>{{ f.a }}</p>
+      </details>
       {% endfor %}
     </div>
   </div>
