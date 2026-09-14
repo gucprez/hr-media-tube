@@ -1,0 +1,53 @@
+SECTIONS = {
+    "destinos": {
+        "title": "Destinos",
+        "singular": "destino",
+        "icon": "🗺️",
+        "title_field": "name",
+        "fields": [
+            {"name": "name", "label": "Nombre del destino", "type": "text", "required": True},
+            {"name": "country", "label": "País / etiqueta", "type": "text", "required": True},
+            {"name": "tagline", "label": "Frase corta", "type": "text", "required": False},
+            {"name": "description", "label": "Descripción", "type": "textarea", "required": True},
+            {"name": "image", "label": "Imagen", "type": "image", "required": False},
+        ],
+    },
+    "cruceros": {
+        "title": "Excursiones para cruceros",
+        "singular": "excursión",
+        "icon": "🚢",
+        "title_field": "name",
+        "fields": [
+            {"name": "name", "label": "Nombre de la excursión", "type": "text", "required": True},
+            {"name": "description", "label": "Descripción", "type": "textarea", "required": True},
+            {"name": "image", "label": "Imagen", "type": "image", "required": False},
+        ],
+    },
+    "ofertas": {
+        "title": "Ofertas de temporada",
+        "singular": "oferta",
+        "icon": "🏷️",
+        "title_field": "title",
+        "fields": [
+            {"name": "title", "label": "Título de la oferta", "type": "text", "required": True},
+            {"name": "discount_label", "label": "Etiqueta (ej: 20% OFF)", "type": "text", "required": False},
+            {"name": "description", "label": "Descripción", "type": "textarea", "required": True},
+            {"name": "valid_until", "label": "Válido hasta (opcional)", "type": "date", "required": False},
+            {"name": "image", "label": "Imagen", "type": "image", "required": False},
+        ],
+    },
+    "noticias": {
+        "title": "Noticias",
+        "singular": "noticia",
+        "icon": "📰",
+        "title_field": "title",
+        "fields": [
+            {"name": "title", "label": "Título", "type": "text", "required": True},
+            {"name": "category", "label": "Categoría (ej: Vuelos, Vacaciones)", "type": "text", "required": False},
+            {"name": "published_at", "label": "Fecha", "type": "date", "required": False},
+            {"name": "excerpt", "label": "Resumen corto", "type": "textarea", "required": True},
+            {"name": "content", "label": "Contenido completo", "type": "textarea", "required": True},
+            {"name": "image", "label": "Imagen", "type": "image", "required": False},
+        ],
+    },
+}

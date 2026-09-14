@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ noticia.title }} | {{ agency_name }}</title>
+<meta name="description" content="{{ noticia.excerpt }}">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Baloo+2:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+<link rel="icon" type="image/png" href="/static/img/logo.png">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="container navbar-inner">
+    <a href="/" class="brand">
+      <img src="/static/img/logo.png" alt="{{ agency_name }}" class="brand-logo">
+    </a>
+    <nav class="nav-links">
+      <a href="/#inicio">Inicio</a>
+      <a href="/#destinos">Destinos</a>
+      <a href="/#noticias">Noticias</a>
+      <a href="/#contacto">Contacto</a>
+    </nav>
+    <a class="btn btn-whatsapp nav-cta" target="_blank" rel="noopener"
+       href="https://wa.me/{{ whatsapp_number }}?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20sus%20excursiones">
+      WhatsApp
+    </a>
+  </div>
+</header>
+
+<article class="news-article">
+  <div class="container">
+    <a href="/#noticias" class="dest-link">← Volver a noticias</a>
+    {% if noticia.category %}<span class="news-category">{{ noticia.category }}</span>{% endif %}
+    <h1>{{ noticia.title }}</h1>
+    {% if noticia.published_at %}<p class="news-date">{{ noticia.published_at }}</p>{% endif %}
+    {% if noticia.image %}
+    <div class="news-article-img" style="background-image:url('/static/{{ noticia.image }}');"></div>
+    {% endif %}
+    <div class="news-article-content">
+      {% for paragraph in noticia.content.split('\n') %}
+        {% if paragraph.strip() %}<p>{{ paragraph }}</p>{% endif %}
+      {% endfor %}
+    </div>
+    <a class="btn btn-whatsapp" target="_blank" rel="noopener"
+       href="https://wa.me/{{ whatsapp_number }}?text=Hola%2C%20le%C3%AD%20su%20noticia%20sobre%20{{ noticia.title | urlencode }}%20y%20quiero%20m%C3%A1s%20informaci%C3%B3n">
+      Escribir por WhatsApp
+    </a>
+  </div>
+</article>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="brand footer-brand">
+      <img src="/static/img/logo.png" alt="{{ agency_name }}" class="brand-logo footer-logo">
+    </div>
+    <p>© <span id="year"></span> {{ agency_name }}. Todos los derechos reservados.</p>
+  </div>
+</footer>
+
+<script src="/static/js/script.js"></script>
+</body>
+</html>

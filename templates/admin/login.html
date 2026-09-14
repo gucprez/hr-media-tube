@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar sesión | Admin</title>
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+<link rel="stylesheet" href="/static/css/admin.css">
+<link rel="icon" type="image/png" href="/static/img/logo.png">
+</head>
+<body class="admin-body admin-login-body">
+  <div class="admin-login-card">
+    <img src="/static/img/logo.png" alt="Logo" class="admin-login-logo">
+    <h1>Panel de control</h1>
+    <p class="admin-login-sub">Inicia sesión para administrar el sitio</p>
+    {% if error %}<p class="admin-error">{{ error }}</p>{% endif %}
+    <form method="post" action="/admin/login">
+      <input type="hidden" name="next" value="{{ next }}">
+      <label>Usuario</label>
+      <input type="text" name="username" required autofocus>
+      <label>Contraseña</label>
+      <input type="password" name="password" required>
+      <button type="submit" class="btn btn-primary full">Entrar</button>
+    </form>
+    <a href="/" class="admin-link-muted">← Volver al sitio web</a>
+  </div>
+</body>
+</html>

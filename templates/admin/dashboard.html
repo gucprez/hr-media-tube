@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% block title %}Panel{% endblock %}
+{% block content %}
+<div class="admin-header">
+  <h1>Panel de control</h1>
+  <p>Administra el contenido de tu sitio web sin tocar código.</p>
+</div>
+<div class="admin-cards">
+  {% for key, sec in sections.items() %}
+  <a href="/admin/{{ key }}" class="admin-card">
+    <span class="admin-card-icon">{{ sec.icon }}</span>
+    <span class="admin-card-title">{{ sec.title }}</span>
+    <span class="admin-card-count">{{ counts[key] }} elemento{{ 's' if counts[key] != 1 else '' }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ section.title }}{% endblock %}
+{% block content %}
+<div class="admin-header admin-header-row">
+  <div>
+    <h1>{{ section.icon }} {{ section.title }}</h1>
+    <p>Agrega, edita, ordena o desactiva elementos de esta sección.</p>
+  </div>
+  <a href="/admin/{{ section_key }}/nuevo" class="btn btn-primary">+ Agregar {{ section.singular }}</a>
+</div>
+
+{% if items %}
+<div class="admin-list">
+  {% for item in items %}
+  <div class="admin-row {{ '' if item.active else 'admin-row-inactive' }}">
+    <div class="admin-row-order">
+      <form method="post" action="/admin/{{ section_key }}/{{ item.id }}/mover/up">
+        <button type="submit" class="admin-icon-btn" title="Subir" {{ 'disabled' if loop.first else '' }}>↑</button>
+      </form>
+      <form method="post" action="/admin/{{ section_key }}/{{ item.id }}/mover/down">
+        <button type="submit" class="admin-icon-btn" title="Bajar" {{ 'disabled' if loop.last else '' }}>↓</button>
+      </form>
+    </div>
+    {% if item.image %}
+    <div class="admin-row-thumb" style="background-image:url('/static/{{ item.image }}');"></div>
+    {% else %}
+    <div class="admin-row-thumb admin-row-thumb-empty">🖼️</div>
+    {% endif %}
+    <div class="admin-row-info">
+      <strong>{{ item[section.title_field] }}</strong>
+      {% if not item.active %}<span class="admin-badge-inactive">Oculto</span>{% endif %}
+    </div>
+    <div class="admin-row-actions">
+      <form method="post" action="/admin/{{ section_key }}/{{ item.id }}/toggle">
+        <button type="submit" class="admin-btn-sm">{{ 'Ocultar' if item.active else 'Mostrar' }}</button>
+      </form>
+      <a href="/admin/{{ section_key }}/{{ item.id }}/editar" class="admin-btn-sm">Editar</a>
+      <form method="post" action="/admin/{{ section_key }}/{{ item.id }}/eliminar"
+            onsubmit="return confirm('¿Eliminar este elemento? Esta acción no se puede deshacer.');">
+        <button type="submit" class="admin-btn-sm admin-btn-danger">Eliminar</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="admin-empty">
+  <p>Todavía no hay elementos en esta sección.</p>
+  <a href="/admin/{{ section_key }}/nuevo" class="btn btn-primary">+ Agregar {{ section.singular }}</a>
+</div>
+{% endif %}
+{% endblock %}

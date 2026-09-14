@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ 'Nuevo' if is_new else 'Editar' }} {{ section.singular }}{% endblock %}
+{% block content %}
+<div class="admin-header">
+  <a href="/admin/{{ section_key }}" class="admin-link-muted">← Volver a {{ section.title }}</a>
+  <h1>{{ 'Agregar' if is_new else 'Editar' }} {{ section.singular }}</h1>
+</div>
+
+<form method="post"
+      action="{{ '/admin/' + section_key + '/nuevo' if is_new else '/admin/' + section_key + '/' + item.id|string + '/editar' }}"
+      enctype="multipart/form-data" class="admin-form">
+  {% for field in section.fields %}
+  <div class="admin-field">
+    <label>{{ field.label }}{% if field.required %} *{% endif %}</label>
+    {% if field.type == 'textarea' %}
+    <textarea name="{{ field.name }}" rows="4" {{ 'required' if field.required else '' }}>{{ item.get(field.name, '') }}</textarea>
+    {% elif field.type == 'date' %}
+    <input type="text" name="{{ field.name }}" placeholder="ej: 30 de septiembre"
+           value="{{ item.get(field.name, '') }}" {{ 'required' if field.required else '' }}>
+    {% elif field.type == 'image' %}
+    {% if item.get(field.name) %}
+    <div class="admin-current-image" style="background-image:url('/static/{{ item.get(field.name) }}');"></div>
+    {% endif %}
+    <input type="file" name="{{ field.name }}" accept="image/*">
+    <p class="admin-field-hint">{{ 'Sube una imagen' if not item.get(field.name) else 'Sube una imagen solo si quieres reemplazar la actual' }}</p>
+    {% else %}
+    <input type="text" name="{{ field.name }}" value="{{ item.get(field.name, '') }}" {{ 'required' if field.required else '' }}>
+    {% endif %}
+  </div>
+  {% endfor %}
+  <div class="admin-form-actions">
+    <button type="submit" class="btn btn-primary">{{ 'Guardar' if is_new else 'Guardar cambios' }}</button>
+    <a href="/admin/{{ section_key }}" class="admin-btn-sm">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

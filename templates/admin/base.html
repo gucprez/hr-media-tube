@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Panel{% endblock %} | Admin {{ section.title if section else "" }}</title>
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+<link rel="stylesheet" href="/static/css/admin.css">
+<link rel="icon" type="image/png" href="/static/img/logo.png">
+</head>
+<body class="admin-body">
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <a href="/admin" class="admin-brand">
+      <img src="/static/img/logo.png" alt="Logo">
+    </a>
+    <nav class="admin-nav">
+      <a href="/admin" class="{{ 'active' if active_page == 'dashboard' else '' }}">📊 Panel</a>
+      {% for key, sec in all_sections.items() %}
+      <a href="/admin/{{ key }}" class="{{ 'active' if active_page == key else '' }}">{{ sec.icon }} {{ sec.title }}</a>
+      {% endfor %}
+    </nav>
+    <div class="admin-sidebar-footer">
+      <a href="/" target="_blank" class="admin-link-muted">🌐 Ver sitio web</a>
+      <a href="/admin/logout" class="admin-link-muted">🚪 Cerrar sesión</a>
+    </div>
+  </aside>
+  <main class="admin-main">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+</body>
+</html>
