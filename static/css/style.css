@@ -271,6 +271,7 @@ img{max-width:100%; display:block;}
   display:flex;
   flex-direction:column;
 }
+.offer-card[hidden]{display:none;}
 .offer-img{height:180px; background-size:cover; background-position:center;}
 .offer-body{padding:26px; display:flex; flex-direction:column; gap:8px; flex:1;}
 .offer-badge{
@@ -289,9 +290,34 @@ img{max-width:100%; display:block;}
 
 /* AIRBNB */
 .airbnb{padding:90px 0; background:linear-gradient(180deg, var(--sand) 0%, #e9fbf8 100%);}
+.airbnb-badges{display:flex; gap:8px; flex-wrap:wrap;}
 .offer-badge-airbnb{background:linear-gradient(120deg, var(--pink), var(--coral));}
+.offer-badge-zone{background:var(--gradient-brand);}
 .airbnb-actions{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:6px;}
 .airbnb-actions .btn{margin-top:0;}
+
+.filter-bar{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:10px;
+  margin-bottom:36px;
+}
+.filter-btn{
+  padding:10px 20px;
+  border-radius:999px;
+  border:1.5px solid var(--teal-500);
+  background:var(--white);
+  color:var(--teal-700);
+  font-weight:600;
+  font-size:.9rem;
+  cursor:pointer;
+  transition:all .15s ease;
+  font-family:inherit;
+}
+.filter-btn:hover{background:#e9fbf8;}
+.filter-btn.active{background:var(--gradient-brand); color:var(--white); border-color:transparent;}
+.filter-empty{text-align:center; color:var(--ink-soft); padding:20px;}
 
 /* NOTICIAS */
 .news{padding:90px 0;}

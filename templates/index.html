@@ -225,14 +225,27 @@
         Reserva directo en Airbnb o pídenos ayuda para coordinar todo tu viaje.
       </p>
     </div>
-    <div class="offers-grid">
+
+    {% if airbnb_zones|length > 1 %}
+    <div class="filter-bar" id="airbnbFilters">
+      <button type="button" class="filter-btn active" data-zone="todos">Todos</button>
+      {% for zone in airbnb_zones %}
+      <button type="button" class="filter-btn" data-zone="{{ zone }}">{{ zone }}</button>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="offers-grid" id="airbnbGrid">
       {% for a in airbnb_listings %}
-      <article class="offer-card">
+      <article class="offer-card" data-zone="{{ a.zone }}">
         {% if a.image %}
         <div class="offer-img" style="background-image:url('/static/{{ a.image }}');"></div>
         {% endif %}
         <div class="offer-body">
-          {% if a.tag %}<span class="offer-badge offer-badge-airbnb">{{ a.tag }}</span>{% endif %}
+          <div class="airbnb-badges">
+            {% if a.tag %}<span class="offer-badge offer-badge-airbnb">{{ a.tag }}</span>{% endif %}
+            {% if a.zone %}<span class="offer-badge offer-badge-zone">{{ a.zone }}</span>{% endif %}
+          </div>
           <h3>{{ a.name }}</h3>
           <p class="dest-tagline">📍 {{ a.location }}{% if a.price_label %} · {{ a.price_label }}{% endif %}</p>
           <p>{{ a.description }}</p>
@@ -249,6 +262,7 @@
       </article>
       {% endfor %}
     </div>
+    <p class="filter-empty" id="airbnbEmpty" hidden>No tenemos alojamientos en esta zona todavía. Escríbenos y te ayudamos a buscar uno.</p>
   </div>
 </section>
 {% endif %}

@@ -14,6 +14,12 @@
     <label>{{ field.label }}{% if field.required %} *{% endif %}</label>
     {% if field.type == 'textarea' %}
     <textarea name="{{ field.name }}" rows="4" {{ 'required' if field.required else '' }}>{{ item.get(field.name, '') }}</textarea>
+    {% elif field.type == 'select' %}
+    <select name="{{ field.name }}" {{ 'required' if field.required else '' }}>
+      {% for opt in field.options %}
+      <option value="{{ opt }}" {{ 'selected' if item.get(field.name) == opt else '' }}>{{ opt }}</option>
+      {% endfor %}
+    </select>
     {% elif field.type == 'date' %}
     <input type="text" name="{{ field.name }}" placeholder="ej: 30 de septiembre"
            value="{{ item.get(field.name, '') }}" {{ 'required' if field.required else '' }}>

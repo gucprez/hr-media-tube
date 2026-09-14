@@ -1,3 +1,12 @@
+AIRBNB_ZONES = [
+    "Punta Cana",
+    "Puerto Plata",
+    "Santo Domingo",
+    "Samaná",
+    "La Romana",
+    "Otras zonas",
+]
+
 SECTIONS = {
     "destinos": {
         "title": "Destinos",
@@ -57,7 +66,14 @@ SECTIONS = {
         "title_field": "name",
         "fields": [
             {"name": "name", "label": "Nombre del alojamiento", "type": "text", "required": True},
-            {"name": "location", "label": "Ubicación (ej: Punta Cana, Bávaro)", "type": "text", "required": True},
+            {
+                "name": "zone",
+                "label": "Zona (para el filtro del sitio)",
+                "type": "select",
+                "required": True,
+                "options": AIRBNB_ZONES,
+            },
+            {"name": "location", "label": "Ubicación específica (ej: Bávaro, cerca de la playa)", "type": "text", "required": False},
             {"name": "price_label", "label": "Precio (ej: US$45/noche)", "type": "text", "required": False},
             {"name": "tag", "label": "Etiqueta (ej: Tendencia, Más barato, Top calificado)", "type": "text", "required": False},
             {"name": "description", "label": "Descripción", "type": "textarea", "required": True},

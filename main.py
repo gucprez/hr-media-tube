@@ -9,6 +9,7 @@ from starlette.requests import Request
 
 import db
 from admin import router as admin_router
+from sections import AIRBNB_ZONES
 
 app = FastAPI(title="AR Excursiones")
 
@@ -54,6 +55,8 @@ def on_startup():
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
+    airbnb_listings = db.list_items("airbnb", active_only=True)
+    airbnb_zones = [z for z in AIRBNB_ZONES if any(a.get("zone") == z for a in airbnb_listings)]
     return templates.TemplateResponse(
         request,
         "index.html",
@@ -67,7 +70,8 @@ def home(request: Request):
             "cruise_faqs": CRUISE_FAQS,
             "offers": db.list_items("ofertas", active_only=True),
             "news": db.list_items("noticias", active_only=True),
-            "airbnb_listings": db.list_items("airbnb", active_only=True),
+            "airbnb_listings": airbnb_listings,
+            "airbnb_zones": airbnb_zones,
         },
     )
 
