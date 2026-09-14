@@ -28,7 +28,9 @@
   "priceRange": "$$",
   "address": {
     "@type": "PostalAddress",
+    "streetAddress": "Calle 4 #13",
     "addressLocality": "Puerto Plata",
+    "postalCode": "57001",
     "addressCountry": "DO"
   },
   "areaServed": ["Puerto Plata", "República Dominicana", "Medellín", "Bogotá", "Perú", "México", "Estados Unidos"],
@@ -327,9 +329,9 @@
            href="https://wa.me/{{ whatsapp_number }}?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20sus%20excursiones">
           <span>📱</span> +1 829 817 1402 (WhatsApp)
         </a>
-        <div class="contact-item">
-          <span>📍</span> Puerto Plata, República Dominicana
-        </div>
+        <a class="contact-item" target="_blank" rel="noopener" href="{{ maps_url }}">
+          <span>📍</span> {{ address }}
+        </a>
         <div class="contact-item">
           <span>🕒</span> Lunes a sábado · 9:00 am – 7:00 pm
         </div>
@@ -356,6 +358,11 @@
         <button type="submit" class="btn btn-primary full">Enviar solicitud</button>
         <p class="form-note" id="formNote"></p>
       </form>
+    </div>
+    <div class="contact-map">
+      <iframe src="{{ maps_embed_url }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+              title="Ubicación de {{ agency_name }}"></iframe>
+      <a class="dest-link contact-map-link" target="_blank" rel="noopener" href="{{ maps_url }}">📍 Cómo llegar →</a>
     </div>
   </div>
 </section>

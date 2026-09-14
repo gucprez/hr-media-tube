@@ -27,6 +27,12 @@ WHATSAPP_NUMBER = "18298171402"  # +1 829 817 1402
 AGENCY_NAME = "AR Excursiones"
 INSTAGRAM_URL = "https://www.instagram.com/arialdysrexcursiones"
 FACEBOOK_URL = "https://www.facebook.com/share/19Ad9MJNq3/"
+ADDRESS = "Calle 4 #13, Puerto Plata 57001, República Dominicana"
+MAPS_URL = "https://maps.app.goo.gl/WpcoZxjqS932nNia9"
+MAPS_EMBED_URL = (
+    "https://www.google.com/maps/embed?origin=mfe&pb=!1m2!2m1!1s"
+    "Calle+4+%2313%2C+Puerto+Plata+57001%2C+Dominican+Republic"
+)
 
 CRUISE_FAQS = [
     {
@@ -65,6 +71,9 @@ def home(request: Request):
             "whatsapp_number": WHATSAPP_NUMBER,
             "instagram_url": INSTAGRAM_URL,
             "facebook_url": FACEBOOK_URL,
+            "address": ADDRESS,
+            "maps_url": MAPS_URL,
+            "maps_embed_url": MAPS_EMBED_URL,
             "destinations": db.list_items("destinos", active_only=True),
             "cruise_excursions": db.list_items("cruceros", active_only=True),
             "cruise_faqs": CRUISE_FAQS,
