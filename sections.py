@@ -50,4 +50,19 @@ SECTIONS = {
             {"name": "image", "label": "Imagen", "type": "image", "required": False},
         ],
     },
+    "airbnb": {
+        "title": "Alojamientos (Airbnb)",
+        "singular": "alojamiento",
+        "icon": "🏠",
+        "title_field": "name",
+        "fields": [
+            {"name": "name", "label": "Nombre del alojamiento", "type": "text", "required": True},
+            {"name": "location", "label": "Ubicación (ej: Punta Cana, Bávaro)", "type": "text", "required": True},
+            {"name": "price_label", "label": "Precio (ej: US$45/noche)", "type": "text", "required": False},
+            {"name": "tag", "label": "Etiqueta (ej: Tendencia, Más barato, Top calificado)", "type": "text", "required": False},
+            {"name": "description", "label": "Descripción", "type": "textarea", "required": True},
+            {"name": "airbnb_url", "label": "Link al Airbnb", "type": "text", "required": True},
+            {"name": "image", "label": "Imagen", "type": "image", "required": False},
+        ],
+    },
 }

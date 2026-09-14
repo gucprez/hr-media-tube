@@ -287,6 +287,12 @@ img{max-width:100%; display:block;}
 .offer-valid{font-size:.85rem; color:var(--ink-soft); font-style:italic; margin:0;}
 .offer-body .btn{align-self:flex-start; margin-top:6px;}
 
+/* AIRBNB */
+.airbnb{padding:90px 0; background:linear-gradient(180deg, var(--sand) 0%, #e9fbf8 100%);}
+.offer-badge-airbnb{background:linear-gradient(120deg, var(--pink), var(--coral));}
+.airbnb-actions{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:6px;}
+.airbnb-actions .btn{margin-top:0;}
+
 /* NOTICIAS */
 .news{padding:90px 0;}
 .news-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:26px;}

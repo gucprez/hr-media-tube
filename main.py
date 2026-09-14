@@ -67,6 +67,7 @@ def home(request: Request):
             "cruise_faqs": CRUISE_FAQS,
             "offers": db.list_items("ofertas", active_only=True),
             "news": db.list_items("noticias", active_only=True),
+            "airbnb_listings": db.list_items("airbnb", active_only=True),
         },
     )
 

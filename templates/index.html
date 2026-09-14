@@ -48,6 +48,7 @@
       <a href="#inicio">Inicio</a>
       <a href="#destinos">Destinos</a>
       <a href="#cruceros">Cruceros</a>
+      {% if airbnb_listings %}<a href="#alojamientos">Alojamientos</a>{% endif %}
       {% if offers %}<a href="#ofertas">Ofertas</a>{% endif %}
       {% if news %}<a href="#noticias">Noticias</a>{% endif %}
       <a href="#vuelos">Boletos aéreos</a>
@@ -211,6 +212,46 @@
     </div>
   </div>
 </section>
+
+{% if airbnb_listings %}
+<!-- AIRBNB -->
+<section class="airbnb" id="alojamientos">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Selección curada por {{ agency_name }}</p>
+      <h2>Alojamientos recomendados en República Dominicana</h2>
+      <p class="section-sub">
+        Airbnbs en tendencia y con los mejores precios que hemos encontrado para ti.
+        Reserva directo en Airbnb o pídenos ayuda para coordinar todo tu viaje.
+      </p>
+    </div>
+    <div class="offers-grid">
+      {% for a in airbnb_listings %}
+      <article class="offer-card">
+        {% if a.image %}
+        <div class="offer-img" style="background-image:url('/static/{{ a.image }}');"></div>
+        {% endif %}
+        <div class="offer-body">
+          {% if a.tag %}<span class="offer-badge offer-badge-airbnb">{{ a.tag }}</span>{% endif %}
+          <h3>{{ a.name }}</h3>
+          <p class="dest-tagline">📍 {{ a.location }}{% if a.price_label %} · {{ a.price_label }}{% endif %}</p>
+          <p>{{ a.description }}</p>
+          <div class="airbnb-actions">
+            <a class="btn btn-primary" target="_blank" rel="noopener noreferrer nofollow" href="{{ a.airbnb_url }}">
+              Ver en Airbnb
+            </a>
+            <a class="dest-link" target="_blank" rel="noopener"
+               href="https://wa.me/{{ whatsapp_number }}?text=Hola%2C%20quiero%20ayuda%20para%20reservar%20el%20alojamiento%3A%20{{ a.name | urlencode }}">
+              Reservar con nosotros →
+            </a>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
 
 <!-- NOSOTROS / CONFIANZA -->
 <section class="trust" id="nosotros">
