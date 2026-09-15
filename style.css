@@ -1,0 +1,101 @@
+:root {
+    --panel-bg: rgba(12, 16, 24, 0.82);
+    --panel-border: #d8b45f;
+    --panel-border-dim: rgba(216, 180, 95, 0.35);
+    --accent: #7fd8d0;
+    --text-main: #eae2c8;
+    --text-dim: #9aa3ab;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #05070a;
+    font-family: 'Segoe UI', 'Trebuchet MS', Arial, sans-serif;
+    user-select: none;
+}
+
+#game-canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    cursor: default;
+    image-rendering: pixelated;
+}
+
+.hud-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.hud-panel {
+    position: absolute;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border-dim);
+    border-radius: 4px;
+    padding: 10px 14px;
+    color: var(--text-main);
+    font-size: 12px;
+    letter-spacing: 0.3px;
+    backdrop-filter: blur(2px);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+
+.hud-panel--status {
+    top: 14px;
+    left: 14px;
+    min-width: 240px;
+}
+
+.hud-panel--controls {
+    top: 14px;
+    right: 14px;
+    min-width: 210px;
+}
+
+.hud-panel__title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--panel-border);
+    border-bottom: 1px solid var(--panel-border-dim);
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    white-space: nowrap;
+}
+
+.hud-panel__tag {
+    font-size: 9px;
+    font-weight: 400;
+    color: var(--accent);
+    letter-spacing: 1px;
+}
+
+.hud-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 2px 0;
+    color: var(--text-dim);
+}
+
+.hud-row b {
+    color: var(--text-main);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}

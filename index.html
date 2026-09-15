@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crónicas de Aldenmark — Prototipo RTS</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <canvas id="game-canvas"></canvas>
+
+    <div id="dev-hud" class="hud-layer">
+        <div class="hud-panel hud-panel--status">
+            <div class="hud-panel__title">CRÓNICAS DE ALDENMARK <span class="hud-panel__tag">FASE 1 · MOTOR BASE</span></div>
+            <div class="hud-row"><span>FPS</span><b id="hud-fps">0</b></div>
+            <div class="hud-row"><span>CÁMARA</span><b id="hud-coords">0, 0</b></div>
+            <div class="hud-row"><span>ZOOM</span><b id="hud-zoom">1.00x</b></div>
+            <div class="hud-row"><span>TERRENO</span><b id="hud-terrain">—</b></div>
+        </div>
+
+        <div class="hud-panel hud-panel--controls">
+            <div class="hud-panel__title">CONTROLES</div>
+            <div class="hud-row"><span>Mover cámara</span><b>WASD</b></div>
+            <div class="hud-row"><span>Scroll de borde</span><b>Ratón en bordes</b></div>
+            <div class="hud-row"><span>Arrastrar mapa</span><b>Clic central</b></div>
+            <div class="hud-row"><span>Zoom</span><b>Rueda del ratón</b></div>
+        </div>
+    </div>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html>
