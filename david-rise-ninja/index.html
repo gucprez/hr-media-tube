@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DAVID: RISE OF THE NINJA</title>
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/ui.css" />
+</head>
+<body>
+    <canvas id="game-canvas"></canvas>
+
+    <canvas id="minimap-canvas" class="minimap" width="220" height="150"></canvas>
+
+    <div id="hud" class="hud-layer">
+        <div class="hud-title-panel">
+            <div class="hud-title">DAVID: RISE OF THE NINJA</div>
+            <div class="hud-alpha-tag">ALPHA BUILD</div>
+        </div>
+
+        <div id="debug-panel" class="hud-panel debug-panel" hidden>
+            <div class="hud-row"><span>FPS</span><b id="debug-fps">0</b></div>
+            <div class="hud-row"><span>Cámara</span><b id="debug-camera">0, 0</b></div>
+            <div class="hud-row"><span>Zoom</span><b id="debug-zoom">1.00x</b></div>
+            <div class="hud-row"><span>Ratón (mundo)</span><b id="debug-mouse">0, 0</b></div>
+            <div class="hud-row"><span>Mapa</span><b id="debug-mapsize">-</b></div>
+        </div>
+    </div>
+
+    <div id="main-menu" class="menu-overlay">
+        <div id="menu-leaves" class="menu-leaves"></div>
+
+        <div id="menu-content" class="menu-content">
+            <h1 class="menu-title">DAVID:<br /><span>RISE OF THE NINJA</span></h1>
+            <p class="menu-subtitle">Ninja Village · Fase 1</p>
+            <nav class="menu-buttons">
+                <button id="btn-play" class="menu-btn menu-btn--primary">JUGAR</button>
+                <button id="btn-options" class="menu-btn">OPCIONES</button>
+                <button id="btn-exit" class="menu-btn">SALIR</button>
+            </nav>
+            <p id="menu-exit-note" class="menu-exit-note" hidden>
+                Tu navegador no permite cerrar esta pestaña automáticamente. Puedes cerrarla manualmente.
+            </p>
+        </div>
+
+        <div id="options-panel" class="options-panel" hidden>
+            <h2>Opciones</h2>
+            <label class="options-row">Música <input type="range" id="opt-music" min="0" max="1" step="0.05" /></label>
+            <label class="options-row">Efectos <input type="range" id="opt-sfx" min="0" max="1" step="0.05" /></label>
+            <button id="btn-options-back" class="menu-btn">VOLVER</button>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
