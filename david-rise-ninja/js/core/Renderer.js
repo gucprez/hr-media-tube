@@ -1,11 +1,10 @@
-import { TileType, TILE_SIZE } from '../world/Terrain.js';
-import { hash2i } from './utils.js';
+import { TILE_SIZE } from '../world/Terrain.js';
+import { drawSprite } from './SpriteRenderer.js';
 
-const WATER_ANIM_FPS = 6;
-
-// Pipeline de dibujado: terreno -> capa de profundidad (decoraciones + edificios,
-// ya ordenada por Y) -> partículas -> luz direccional de escena. Todo con culling
-// por viewport para no procesar lo que queda fuera de cámara.
+// Pipeline de dibujado: lienzo de terreno pre-pintado (sin cuadrícula, ver
+// TerrainPainter) -> capa de profundidad (decoraciones + edificios, ya ordenada por
+// Y) -> brillo animado del río -> partículas -> glow cálido de la aldea -> luz
+// direccional de escena. Todo con culling por viewport.
 export class Renderer {
     render(ctx, canvasW, canvasH, camera, world) {
         ctx.clearRect(0, 0, canvasW, canvasH);
@@ -14,36 +13,31 @@ export class Renderer {
 
         this._renderTerrain(ctx, camera, world);
         this._renderDepthList(ctx, camera, world);
+        this._renderRiverShimmer(ctx, camera, world);
         world.particles.render(ctx, camera);
+        this._renderVillageGlow(ctx, camera, world);
         this._renderDirectionalLight(ctx, canvasW, canvasH);
         this._renderVignette(ctx, canvasW, canvasH);
     }
 
+    // El mapa entero ya está pintado en un único canvas continuo (TerrainPainter);
+    // aquí sólo se recorta y dibuja la porción visible, igual que un motor real
+    // recortaría un "world texture atlas". Nada de dibujar tile a tile cada frame.
     _renderTerrain(ctx, camera, world) {
-        const map = world.map;
-        const view = camera.getVisibleWorldRect();
-        const minTX = Math.max(0, Math.floor(view.left / TILE_SIZE) - 1);
-        const maxTX = Math.min(map.width - 1, Math.ceil(view.right / TILE_SIZE) + 1);
-        const minTY = Math.max(0, Math.floor(view.top / TILE_SIZE) - 1);
-        const maxTY = Math.min(map.height - 1, Math.ceil(view.bottom / TILE_SIZE) + 1);
+        const big = world.terrainPainter.canvas;
+        const view = camera.getVisibleWorldRect(TILE_SIZE);
+        const sx = Math.max(0, view.left);
+        const sy = Math.max(0, view.top);
+        const sw = Math.min(big.width, view.right) - sx;
+        const sh = Math.min(big.height, view.bottom) - sy;
+        if (sw <= 0 || sh <= 0) return;
 
-        const drawSize = Math.ceil(TILE_SIZE * camera.zoom) + 1;
-        const waterFrame = Math.floor(world.elapsedTime * WATER_ANIM_FPS);
-
-        for (let ty = minTY; ty <= maxTY; ty++) {
-            for (let tx = minTX; tx <= maxTX; tx++) {
-                const type = map.getTileTypeAt(tx, ty);
-                const variant = Math.floor(hash2i(tx, ty, 7) * 4);
-                const texture = world.terrainArt.getTexture(type, variant, waterFrame);
-                if (!texture) continue;
-                const screen = camera.worldToScreen(tx * TILE_SIZE, ty * TILE_SIZE);
-                ctx.drawImage(texture, Math.round(screen.x), Math.round(screen.y), drawSize, drawSize);
-            }
-        }
+        const dst = camera.worldToScreen(sx, sy);
+        ctx.drawImage(big, sx, sy, sw, sh, dst.x, dst.y, sw * camera.zoom, sh * camera.zoom);
     }
 
     _renderDepthList(ctx, camera, world) {
-        const view = camera.getVisibleWorldRect(140);
+        const view = camera.getVisibleWorldRect(160);
         for (const item of world.depthList) {
             if (item.y < view.top || item.y > view.bottom) continue;
 
@@ -58,31 +52,59 @@ export class Renderer {
             const sprite = world.decorationArt.get(deco.kind, deco.variant);
             if (!sprite) continue;
 
-            const screen = camera.worldToScreen(deco.x, deco.y);
-            const scale = deco.scale * camera.zoom;
-            const w = sprite.width * scale;
-            const h = sprite.height * scale;
-
-            const shadow = world.decorationArt.shadow;
-            const shadowScale = (w / shadow.width) * 1.1;
-            ctx.drawImage(
-                shadow,
-                screen.x - (shadow.width * shadowScale) / 2,
-                screen.y - shadow.height * shadowScale * 0.42,
-                shadow.width * shadowScale,
-                shadow.height * shadowScale * 0.55
-            );
-
-            ctx.save();
-            ctx.translate(screen.x, screen.y - h + h * 0.08);
-            if (deco.flip < 0) ctx.scale(-1, 1);
-            ctx.drawImage(sprite, -w / 2, 0, w, h);
-            ctx.restore();
+            drawSprite(ctx, camera, sprite, deco.x, deco.y, {
+                scale: deco.scale,
+                rotation: deco.rotation || 0,
+                flipX: deco.flip < 0,
+                anchorY: 0.92,
+                shadowSprite: world.decorationArt.shadow,
+                shadowScale: 1.1,
+            });
         }
     }
 
-    // Luz "de sol" de tarde cálida aplicada una sola vez sobre toda la escena (no por
-    // tile), para dar volumen sin generar costuras entre casillas.
+    // El agua base ya está pintada en el lienzo estático; encima se dibuja, sólo en
+    // la franja visible, una fila de destellos que se desplazan con el tiempo — es
+    // la parte que de verdad necesita animarse frame a frame.
+    _renderRiverShimmer(ctx, camera, world) {
+        const map = world.map;
+        const view = camera.getVisibleWorldRect(64);
+        const minX = Math.max(0, Math.floor(view.left / TILE_SIZE) - 1);
+        const maxX = Math.min(map.width, Math.ceil(view.right / TILE_SIZE) + 1);
+        const t = world.elapsedTime;
+
+        ctx.save();
+        ctx.lineWidth = Math.max(1, 1.6 * camera.zoom);
+        for (let row = -1; row <= 1; row++) {
+            ctx.strokeStyle = `rgba(220,242,255,${0.16 - Math.abs(row) * 0.05})`;
+            ctx.beginPath();
+            let started = false;
+            for (let x = minX; x <= maxX; x += 0.5) {
+                const { centerY, thickness } = map.riverProfileAt(x);
+                const wobble = Math.sin(x * 0.4 + t * 1.6 + row * 2) * thickness * 0.35;
+                const wy = (centerY + row * thickness * 0.5 + wobble) * TILE_SIZE;
+                const screen = camera.worldToScreen(x * TILE_SIZE, wy);
+                started ? ctx.lineTo(screen.x, screen.y) : (ctx.moveTo(screen.x, screen.y), (started = true));
+            }
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // Halo cálido y suave alrededor de la aldea: vende la sensación de "asentamiento
+    // acogedor" sin necesitar un sistema de luces real.
+    _renderVillageGlow(ctx, camera, world) {
+        const center = world.map.villageCenterWorld;
+        const screen = camera.worldToScreen(center.x, center.y);
+        const radius = 420 * camera.zoom;
+        if (!(radius > 0)) return;
+        const grad = ctx.createRadialGradient(screen.x, screen.y, radius * 0.1, screen.x, screen.y, radius);
+        grad.addColorStop(0, 'rgba(255,214,150,0.14)');
+        grad.addColorStop(1, 'rgba(255,214,150,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(screen.x - radius, screen.y - radius, radius * 2, radius * 2);
+    }
+
     _renderDirectionalLight(ctx, canvasW, canvasH) {
         const grad = ctx.createLinearGradient(0, 0, canvasW * 0.6, canvasH * 0.6);
         grad.addColorStop(0, 'rgba(255,225,170,0.10)');

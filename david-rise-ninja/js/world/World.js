@@ -1,17 +1,19 @@
 import { GameMap } from './Map.js';
-import { TerrainArt, TileType, TILE_SIZE } from './Terrain.js';
+import { TileType, TILE_SIZE } from './Terrain.js';
+import { TerrainPainter } from './TerrainPainter.js';
 import { DecorationArt, scatterDecorations } from './Decoration.js';
-import { VillageArt, buildVillage } from './Village.js';
+import { VillageArt, buildVillage, buildBridge } from './Village.js';
 import { ParticleSystem } from '../core/ParticleSystem.js';
 import { hash2i } from '../core/utils.js';
 
-// Orquestador del mundo: junta mapa, decoración, aldea y partículas ambientales, y
-// mantiene una única lista de profundidad (decoraciones + edificios) ya ordenada por Y
-// para que el Renderer la recorra en un solo paso (algoritmo del pintor).
+// Orquestador del mundo: junta mapa, terreno pintado, decoración, aldea y partículas
+// ambientales, y mantiene una única lista de profundidad (decoraciones + edificios)
+// ya ordenada por Y para que el Renderer la recorra en un solo paso (algoritmo del
+// pintor).
 export class World {
     constructor(seed = 20240101) {
         this.map = new GameMap({ seed });
-        this.terrainArt = new TerrainArt(seed + 1);
+        this.terrainPainter = new TerrainPainter(this.map, seed + 1);
         this.decorationArt = new DecorationArt(seed + 2);
         this.decorations = scatterDecorations(this.map, seed + 3);
         this.villageArt = new VillageArt(seed + 4);
@@ -20,6 +22,9 @@ export class World {
         this.villageEntities = village.entities;
         this.lanternPositions = village.lanternPositions;
         this.chimneyPositions = village.chimneyPositions;
+
+        const bridge = buildBridge(this.map, this.villageArt);
+        if (bridge) this.villageEntities.push(bridge);
 
         this.depthList = this._mergeDepthList();
 

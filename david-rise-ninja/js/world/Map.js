@@ -1,4 +1,4 @@
-import { ValueNoise2D, mulberry32, hash2i, clamp } from '../core/utils.js';
+import { ValueNoise2D, mulberry32, hash2i, clamp, lerp } from '../core/utils.js';
 import { TileType, TILE_DEFS, TILE_SIZE } from './Terrain.js';
 
 const TILE_ORDER = [
@@ -16,8 +16,9 @@ const idToType = (id) => TILE_ORDER[id];
 
 // Interpolación Catmull-Rom a través de una lista de puntos de control: da al camino
 // principal curvas suaves en vez de segmentos rectos, sin necesitar una librería de
-// splines externa.
-function catmullRom(points, t) {
+// splines externa. Se exporta porque TerrainPainter la reutiliza para pintar el
+// camino como una cinta continua en vez de casillas.
+export function catmullRom(points, t) {
     const n = points.length - 1;
     const segT = t * n;
     const i = clamp(Math.floor(segT), 0, n - 1);
@@ -106,15 +107,23 @@ export class GameMap {
         }
     }
 
+    // Perfil del río en la columna de tile `x` (puede ser fraccionario): centro y
+    // semi-grosor, en coordenadas de tile. TerrainPainter reutiliza exactamente esta
+    // función para pintar el río como una cinta continua y para el brillo animado,
+    // así el arte y la lógica de colisión nunca pueden desincronizarse.
+    riverProfileAt(x) {
+        const wave = Math.sin(x * 0.09) * 4 + this._riverNoise.fbm(x, 0, 2, 0.5, 0.08) * 3;
+        const thickness = 2.4 + this._riverNoise.fbm(x, 50, 2, 0.5, 0.1) * 1.6;
+        return { centerY: this.riverBaseY + wave, thickness };
+    }
+
     _carveRiver() {
         const { width, height } = this;
-        const noise = new ValueNoise2D(this.seed + 55);
+        this._riverNoise = new ValueNoise2D(this.seed + 55);
         this.riverBaseY = Math.floor(height * 0.66);
 
         for (let x = 0; x < width; x++) {
-            const wave = Math.sin(x * 0.09) * 4 + noise.fbm(x, 0, 2, 0.5, 0.08) * 3;
-            const centerY = this.riverBaseY + wave;
-            const thickness = 2.4 + noise.fbm(x, 50, 2, 0.5, 0.1) * 1.6;
+            const { centerY, thickness } = this.riverProfileAt(x);
             for (let y = 0; y < height; y++) {
                 if (Math.abs(y - centerY) < thickness) {
                     const distToEdge = Math.min(x, y, width - 1 - x, height - 1 - y);
@@ -143,23 +152,72 @@ export class GameMap {
         ];
     }
 
+    // Ancho (en tiles) del camino en el parámetro `t` [0,1] de la curva. Método único
+    // usado tanto para tallar las casillas lógicas PATH como para pintar la cinta
+    // visual del camino, así arte y colisión nunca se desincronizan.
+    pathWidthAt(t) {
+        const i = Math.round(t * 1000);
+        return 1.6 + hash2i(i, 0, this.seed) * 1.1;
+    }
+
+    samplePath(t) {
+        return catmullRom(this.pathControlPoints, t);
+    }
+
+    // Catmull-Rom no avanza a velocidad constante: cerca de la aldea la curva
+    // "se detiene" (varios `t` caen casi en el mismo punto). Muestrear en `t`
+    // uniforme ahí apila cientos de círculos translúcidos casi idénticos y deja un
+    // artefacto de anillos concéntricos muy visible. Esta función re-parametriza la
+    // curva por longitud de arco real, para que cualquier pintor (o una futura IA
+    // que camine por la ruta) avance a un ritmo constante en píxeles de mundo.
+    buildPathArcLengthSamples(stepWorldPx) {
+        const fineCount = 3000;
+        const fine = [];
+        let cumLen = 0;
+        let prev = null;
+        for (let i = 0; i <= fineCount; i++) {
+            const t = i / fineCount;
+            const p = this.samplePath(t);
+            const wx = p.x * TILE_SIZE;
+            const wy = p.y * TILE_SIZE;
+            if (prev) cumLen += Math.hypot(wx - prev.wx, wy - prev.wy);
+            fine.push({ t, wx, wy, cumLen });
+            prev = { wx, wy };
+        }
+
+        const totalLen = cumLen;
+        const steps = Math.max(1, Math.round(totalLen / stepWorldPx));
+        const samples = [];
+        let fi = 0;
+        for (let k = 0; k <= steps; k++) {
+            const target = (k / steps) * totalLen;
+            while (fi < fine.length - 2 && fine[fi + 1].cumLen < target) fi++;
+            const a = fine[fi];
+            const b = fine[fi + 1] ?? a;
+            const span = b.cumLen - a.cumLen;
+            const localT = span > 0 ? (target - a.cumLen) / span : 0;
+            samples.push({
+                x: lerp(a.wx, b.wx, localT) / TILE_SIZE,
+                y: lerp(a.wy, b.wy, localT) / TILE_SIZE,
+                t: lerp(a.t, b.t, localT),
+            });
+        }
+        return samples;
+    }
+
     _carvePath() {
-        const samples = 400;
-        const rng = mulberry32(this.seed + 2024);
         this.pathWaypoints = [];
         this.bridgeTiles = [];
+        const samples = this.buildPathArcLengthSamples(TILE_SIZE * 0.5);
 
-        for (let i = 0; i <= samples; i++) {
-            const t = i / samples;
-            const p = catmullRom(this.pathControlPoints, t);
+        samples.forEach((p, i) => {
             const tx = Math.round(p.x);
             const ty = Math.round(p.y);
             if (i % 8 === 0) {
                 this.pathWaypoints.push({ x: p.x * TILE_SIZE, y: p.y * TILE_SIZE });
             }
 
-            const widthJitter = 1.6 + hash2i(i, 0, this.seed) * 1.1;
-            const radius = Math.round(widthJitter);
+            const radius = Math.round(this.pathWidthAt(p.t));
             for (let dx = -radius; dx <= radius; dx++) {
                 for (let dy = -radius; dy <= radius; dy++) {
                     if (dx * dx + dy * dy > radius * radius + 0.5) continue;
@@ -173,12 +231,13 @@ export class GameMap {
                     this._setType(nx, ny, TileType.PATH);
                 }
             }
-        }
+        });
     }
 
     _carveVillageZone() {
         const { x: cx, y: cy } = this.villageCenterTile;
         const radius = 11;
+        this.villageRadiusTiles = radius;
         for (let dy = -radius; dy <= radius; dy++) {
             for (let dx = -radius; dx <= radius; dx++) {
                 const dist = Math.hypot(dx, dy);

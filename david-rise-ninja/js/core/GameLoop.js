@@ -12,7 +12,11 @@ export class GameLoop {
     start() {
         if (this.running) return;
         this.running = true;
-        this._lastTimestamp = performance.now();
+        // `null` en vez de `performance.now()`: así el primer frame real fija su
+        // propio punto de partida (ver más abajo) en lugar de medirse contra un
+        // instante anterior a la creación del mundo, que puede haber bloqueado el
+        // hilo principal varios segundos y dejar un timestamp de rAF "atrasado".
+        this._lastTimestamp = null;
         requestAnimationFrame(this._tick);
     }
 
@@ -22,7 +26,8 @@ export class GameLoop {
 
     _tick(timestamp) {
         if (!this.running) return;
-        const dt = Math.min((timestamp - this._lastTimestamp) / 1000, 0.1);
+        if (this._lastTimestamp === null) this._lastTimestamp = timestamp;
+        const dt = Math.max(0, Math.min((timestamp - this._lastTimestamp) / 1000, 0.1));
         this._lastTimestamp = timestamp;
         this.callback(dt);
         requestAnimationFrame(this._tick);

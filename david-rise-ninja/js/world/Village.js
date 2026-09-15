@@ -1,11 +1,13 @@
 import { mulberry32, makeCanvas } from '../core/utils.js';
 import { Building } from '../entities/Building.js';
 import { Entity } from '../entities/Entity.js';
+import { drawSprite } from '../core/SpriteRenderer.js';
 
 // Construye la aldea ninja como un conjunto de entidades (Building/Entity) puramente
 // visuales por ahora: el Dojo principal, casas pequeñas, torres de vigilancia, faroles,
-// cercas y banderas. Cada una ya tiene nombre/tipo/posición propios para que la Fase 6
-// (economía + construcción) pueda darles función real sin rehacer el arte.
+// cercas, banderas, barriles, cajas, bancos y un puente. Cada una ya tiene nombre/tipo/
+// posición propios para que la Fase 6 (economía + construcción) pueda darles función
+// real sin rehacer el arte.
 
 function roofPolygon(ctx, cx, topY, baseY, halfWidthTop, halfWidthBase, flare) {
     ctx.beginPath();
@@ -21,32 +23,64 @@ function drawRoofTier(ctx, cx, topY, baseY, halfWidthBase, flare, colorTop, colo
     const grad = ctx.createLinearGradient(0, topY, 0, baseY);
     grad.addColorStop(0, colorTop);
     grad.addColorStop(1, colorBottom);
+    ctx.save();
     ctx.fillStyle = grad;
     roofPolygon(ctx, cx, topY, baseY, halfWidthBase * 0.15, halfWidthBase, flare);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(30,14,10,0.5)';
-    ctx.lineWidth = 1.5;
+    ctx.clip();
+
+    // Tejas en forma de escama (arcos superpuestos) en vez de simples líneas rectas:
+    // se lee como un tejado japonés trabajado, no como un triángulo con rayas.
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+    ctx.lineWidth = 1;
+    const rowH = (baseY - topY) * 0.16;
+    for (let row = 0; row < 7; row++) {
+        const y = baseY - row * rowH * 0.92;
+        const rowWidth = halfWidthBase * (1 - row * 0.11) + flare * (1 - row * 0.11);
+        const scaleR = rowH * 0.62;
+        for (let sx = -rowWidth; sx <= rowWidth; sx += scaleR * 1.3) {
+            ctx.beginPath();
+            ctx.arc(cx + sx + (row % 2 ? scaleR * 0.65 : 0), y, scaleR, Math.PI, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(30,14,10,0.55)';
+    ctx.lineWidth = 1.8;
+    roofPolygon(ctx, cx, topY, baseY, halfWidthBase * 0.15, halfWidthBase, flare);
     ctx.stroke();
 
-    // Líneas de tejas.
-    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-    ctx.lineWidth = 1;
-    for (let i = 1; i < 6; i++) {
-        const t = i / 6;
-        ctx.beginPath();
-        ctx.moveTo(cx - halfWidthBase * (1 - t) - flare * (1 - t), baseY - (baseY - topY) * t * 0.15);
-        ctx.lineTo(cx + halfWidthBase * (1 - t) + flare * (1 - t), baseY - (baseY - topY) * t * 0.15);
-        ctx.stroke();
-    }
+    // Cumbrera con leve brillo para separar el tejado del cielo/fondo.
+    ctx.strokeStyle = 'rgba(255,220,190,0.35)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(cx - halfWidthBase * 0.6, baseY - (baseY - topY) * 0.12);
+    ctx.lineTo(cx, baseY - (baseY - topY) * 0.08);
+    ctx.lineTo(cx + halfWidthBase * 0.6, baseY - (baseY - topY) * 0.12);
+    ctx.stroke();
 }
 
 function drawWoodWall(ctx, x, y, w, h, doorway) {
     const grad = ctx.createLinearGradient(x, 0, x + w, 0);
-    grad.addColorStop(0, '#8a5a34');
+    grad.addColorStop(0, '#7c4f2c');
     grad.addColorStop(0.5, '#a06e40');
-    grad.addColorStop(1, '#8a5a34');
+    grad.addColorStop(1, '#7c4f2c');
     ctx.fillStyle = grad;
     ctx.fillRect(x, y, w, h);
+
+    // Veta de madera: trazos horizontales cortos e irregulares sobre cada tabla.
+    const rng = mulberry32(Math.floor(x * 13 + y * 7 + w));
+    ctx.strokeStyle = 'rgba(60,35,18,0.25)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < Math.floor((w * h) / 220); i++) {
+        const lx = x + rng() * w;
+        const ly = y + rng() * h;
+        ctx.beginPath();
+        ctx.moveTo(lx, ly);
+        ctx.lineTo(lx + 4 + rng() * 8, ly + (rng() - 0.5) * 2);
+        ctx.stroke();
+    }
 
     ctx.strokeStyle = 'rgba(50,30,15,0.35)';
     ctx.lineWidth = 1.5;
@@ -61,6 +95,13 @@ function drawWoodWall(ctx, x, y, w, h, doorway) {
     // Franja roja de acento, sello distintivo del Dojo.
     ctx.fillStyle = '#8c2c2c';
     ctx.fillRect(x, y + h * 0.12, w, h * 0.1);
+
+    // Contacto con el suelo ligeramente oscurecido (ambient occlusion básico).
+    const aoGrad = ctx.createLinearGradient(0, y + h * 0.82, 0, y + h);
+    aoGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    aoGrad.addColorStop(1, 'rgba(0,0,0,0.28)');
+    ctx.fillStyle = aoGrad;
+    ctx.fillRect(x, y + h * 0.82, w, h * 0.18);
 
     if (doorway) {
         const dw = w * 0.28;
@@ -86,6 +127,33 @@ function drawWindowGlow(ctx, x, y, w, h) {
     ctx.strokeRect(x, y, w, h);
 }
 
+// Cimiento de piedra hecho de bloques individuales en vez de una elipse plana.
+function drawStoneFoundation(ctx, cx, groundY, halfWidth, seed) {
+    const rng = mulberry32(seed);
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath();
+    ctx.ellipse(cx, groundY + 6, halfWidth * 1.02, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const blocks = Math.round((halfWidth * 2) / 26);
+    for (let i = 0; i < blocks; i++) {
+        const bx = cx - halfWidth + (i / blocks) * halfWidth * 2;
+        const bw = (halfWidth * 2) / blocks + 3;
+        const bh = 14 + rng() * 6;
+        const by = groundY - bh * 0.6 + rng() * 3;
+        const grad = ctx.createLinearGradient(0, by, 0, by + bh);
+        grad.addColorStop(0, '#a7a49b');
+        grad.addColorStop(1, '#767268');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.roundRect(bx, by, bw, bh, 3);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(40,38,34,0.4)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+}
+
 function buildDojoSprite(seed) {
     const w = 220;
     const h = 250;
@@ -93,14 +161,7 @@ function buildDojoSprite(seed) {
     const ctx = c.getContext('2d');
     const cx = w / 2;
 
-    // Cimiento de piedra.
-    const foundGrad = ctx.createLinearGradient(0, h - 26, 0, h);
-    foundGrad.addColorStop(0, '#9a978f');
-    foundGrad.addColorStop(1, '#6f6c64');
-    ctx.fillStyle = foundGrad;
-    ctx.beginPath();
-    ctx.ellipse(cx, h - 14, 92, 16, 0, 0, Math.PI * 2);
-    ctx.fill();
+    drawStoneFoundation(ctx, cx, h - 14, 92, seed);
 
     // Cuerpo de madera principal.
     drawWoodWall(ctx, cx - 78, h - 108, 156, 78, true);
@@ -108,13 +169,13 @@ function buildDojoSprite(seed) {
     drawWindowGlow(ctx, cx + 46, h - 96, 20, 22);
 
     // Tejado inferior (más ancho).
-    drawRoofTier(ctx, cx, h - 168, h - 100, 108, 16, '#9c3f3a', '#6e2723');
+    drawRoofTier(ctx, cx, h - 168, h - 100, 108, 16, '#a8433d', '#6e2723');
 
     // Segundo cuerpo (torre superior, estilo pagoda).
     drawWoodWall(ctx, cx - 34, h - 190, 68, 34, false);
 
     // Tejado superior (más pequeño).
-    drawRoofTier(ctx, cx, h - 232, h - 182, 50, 10, '#a8483f', '#7a2f28');
+    drawRoofTier(ctx, cx, h - 232, h - 182, 50, 10, '#b04d43', '#7a2f28');
 
     // Remate / asta de bandera en la cumbrera.
     ctx.strokeStyle = '#3a2a1a';
@@ -166,7 +227,7 @@ function buildHouseSprite(seed, variant) {
 
     drawWoodWall(ctx, cx - 32, h - 52, 64, 40, variant === 0);
     if (variant !== 0) drawWindowGlow(ctx, cx - 8, h - 42, 16, 16);
-    drawRoofTier(ctx, cx, h - 84, h - 46, 46, 8, '#5c6a7a', '#37414d');
+    drawRoofTier(ctx, cx, h - 84, h - 46, 46, 8, '#637282', '#37414d');
 
     if (variant === 1) {
         // Pequeña chimenea (uno de los edificios "humea" ligeramente; el humo lo
@@ -197,7 +258,7 @@ function buildTowerSprite(seed) {
     ctx.fillRect(cx - 7, h - 100, 14, 92);
 
     drawWoodWall(ctx, cx - 22, h - 118, 44, 22, false);
-    drawRoofTier(ctx, cx, h - 140, h - 112, 32, 8, '#6e7f8e', '#414d59');
+    drawRoofTier(ctx, cx, h - 140, h - 112, 32, 8, '#75879a', '#414d59');
 
     ctx.strokeStyle = 'rgba(40,25,12,0.5)';
     ctx.lineWidth = 2;
@@ -239,11 +300,6 @@ function buildFencePostSprite() {
     const c = makeCanvas(w, h);
     const ctx = c.getContext('2d');
 
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath();
-    ctx.ellipse(w / 2, h - 2, 13, 3, 0, 0, Math.PI * 2);
-    ctx.fill();
-
     const postGrad = ctx.createLinearGradient(0, 0, 6, 0);
     postGrad.addColorStop(0, '#5c3f26');
     postGrad.addColorStop(1, '#7a5734');
@@ -259,6 +315,145 @@ function buildFencePostSprite() {
     ctx.lineWidth = 1;
     ctx.strokeRect(2, 9, w - 4, 3.5);
     ctx.strokeRect(2, 16, w - 4, 3.5);
+    return c;
+}
+
+function buildBarrelSprite(seed) {
+    const w = 24;
+    const h = 28;
+    const c = makeCanvas(w, h);
+    const ctx = c.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, w, 0);
+    grad.addColorStop(0, '#6e4a28');
+    grad.addColorStop(0.5, '#9a6d3e');
+    grad.addColorStop(1, '#6e4a28');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(2, 2, w - 4, h - 4, 6);
+    ctx.fill();
+    ctx.strokeStyle = '#3a2814';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(2, h * 0.32);
+    ctx.lineTo(w - 2, h * 0.32);
+    ctx.moveTo(2, h * 0.7);
+    ctx.lineTo(w - 2, h * 0.7);
+    ctx.stroke();
+    return c;
+}
+
+function buildCrateSprite(seed) {
+    const w = 26;
+    const h = 24;
+    const c = makeCanvas(w, h);
+    const ctx = c.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#a97b46');
+    grad.addColorStop(1, '#7c5730');
+    ctx.fillStyle = grad;
+    ctx.fillRect(1, 1, w - 2, h - 2);
+    ctx.strokeStyle = 'rgba(50,32,16,0.6)';
+    ctx.lineWidth = 1.6;
+    ctx.strokeRect(1, 1, w - 2, h - 2);
+    ctx.beginPath();
+    ctx.moveTo(1, 1);
+    ctx.lineTo(w - 1, h - 1);
+    ctx.moveTo(w - 1, 1);
+    ctx.lineTo(1, h - 1);
+    ctx.stroke();
+    return c;
+}
+
+function buildBenchSprite(seed) {
+    const w = 40;
+    const h = 20;
+    const c = makeCanvas(w, h);
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#5c3f26';
+    ctx.fillRect(4, h - 8, 3, 8);
+    ctx.fillRect(w - 7, h - 8, 3, 8);
+    const grad = ctx.createLinearGradient(0, h - 12, 0, h - 4);
+    grad.addColorStop(0, '#a06e40');
+    grad.addColorStop(1, '#7c4f2c');
+    ctx.fillStyle = grad;
+    ctx.fillRect(2, h - 12, w - 4, 5);
+    return c;
+}
+
+function buildBannerPostSprite(seed) {
+    const w = 22;
+    const h = 62;
+    const c = makeCanvas(w, h);
+    const ctx = c.getContext('2d');
+    ctx.strokeStyle = '#3a2a1a';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(w / 2, h - 4);
+    ctx.lineTo(w / 2, 4);
+    ctx.stroke();
+    const grad = ctx.createLinearGradient(0, 6, 0, h * 0.66);
+    grad.addColorStop(0, '#a8433d');
+    grad.addColorStop(1, '#6e2723');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 9, 6);
+    ctx.lineTo(w / 2 + 9, 6);
+    ctx.lineTo(w / 2 + 9, h * 0.6);
+    ctx.lineTo(w / 2, h * 0.5);
+    ctx.lineTo(w / 2 - 9, h * 0.6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    return c;
+}
+
+// Puente de madera para el cruce camino/río: tablones + barandillas laterales. Se
+// coloca y rota para alinearse con la dirección del camino en ese punto.
+function buildBridgeSprite(seed) {
+    const w = 130;
+    const h = 60;
+    const c = makeCanvas(w, h);
+    const ctx = c.getContext('2d');
+    const rng = mulberry32(seed);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h * 0.62, w * 0.46, h * 0.16, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const deckGrad = ctx.createLinearGradient(0, h * 0.32, 0, h * 0.58);
+    deckGrad.addColorStop(0, '#9a6d3e');
+    deckGrad.addColorStop(1, '#6e4a28');
+    ctx.fillStyle = deckGrad;
+    ctx.fillRect(6, h * 0.32, w - 12, h * 0.26);
+
+    ctx.strokeStyle = 'rgba(50,32,16,0.55)';
+    ctx.lineWidth = 1.4;
+    for (let x = 12; x < w - 6; x += 9) {
+        ctx.beginPath();
+        ctx.moveTo(x + (rng() - 0.5) * 2, h * 0.32);
+        ctx.lineTo(x + (rng() - 0.5) * 2, h * 0.58);
+        ctx.stroke();
+    }
+
+    // Barandillas.
+    for (const railY of [h * 0.3, h * 0.6]) {
+        ctx.strokeStyle = '#3a2a1a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(4, railY);
+        ctx.lineTo(w - 4, railY);
+        ctx.stroke();
+        for (let x = 8; x < w - 4; x += 20) {
+            ctx.beginPath();
+            ctx.moveTo(x, railY - 7);
+            ctx.lineTo(x, railY + 3);
+            ctx.stroke();
+        }
+    }
+
     return c;
 }
 
@@ -281,43 +476,39 @@ export class VillageArt {
         this.tower = buildTowerSprite(seed);
         this.lantern = buildLanternSprite();
         this.fencePost = buildFencePostSprite();
+        this.barrel = buildBarrelSprite(seed);
+        this.crate = buildCrateSprite(seed);
+        this.bench = buildBenchSprite(seed);
+        this.bannerPost = buildBannerPostSprite(seed);
+        this.bridge = buildBridgeSprite(seed);
         this.shadow = buildShadow();
     }
 }
 
-// Farol independiente (Entity, no Building: nunca tendrá función de producción, sólo
-// decorativo + emite partículas de brillo cálido).
-class Lantern extends Entity {
-    constructor(x, y, sprite) {
-        super({ x, y, width: sprite.width, height: sprite.height, zIndex: 0 });
+// Entidad genérica para props sin lógica propia (farol, cerca, barril, caja, banco,
+// bandera, puente): todas dibujan a través de SpriteRenderer con sombra opcional.
+class Prop extends Entity {
+    constructor(x, y, sprite, { shadow = null, rotation = 0, zIndexBonus = 0, anchorY = 1 } = {}) {
+        super({ x, y, width: sprite.width, height: sprite.height, zIndex: zIndexBonus });
         this.sprite = sprite;
+        this.shadow = shadow;
+        this.rotation = rotation;
+        this.anchorY = anchorY;
     }
 
     render(ctx, camera) {
-        const screen = camera.worldToScreen(this.x, this.y);
-        const w = this.sprite.width * camera.zoom;
-        const h = this.sprite.height * camera.zoom;
-        ctx.drawImage(this.sprite, screen.x - w / 2, screen.y - h, w, h);
-    }
-}
-
-class FencePost extends Entity {
-    constructor(x, y, sprite) {
-        super({ x, y, width: sprite.width, height: sprite.height });
-        this.sprite = sprite;
-    }
-
-    render(ctx, camera) {
-        const screen = camera.worldToScreen(this.x, this.y);
-        const w = this.sprite.width * camera.zoom;
-        const h = this.sprite.height * camera.zoom;
-        ctx.drawImage(this.sprite, screen.x - w / 2, screen.y - h, w, h);
+        drawSprite(ctx, camera, this.sprite, this.x, this.y, {
+            rotation: this.rotation,
+            anchorY: this.anchorY,
+            shadowSprite: this.shadow,
+            shadowScale: 0.5,
+        });
     }
 }
 
 // Construye todas las entidades de la aldea alrededor de `centerWorld` y devuelve
-// { entities, lanternPositions } — las posiciones de farol las usa World.js para
-// anclar las partículas de brillo cálido.
+// { entities, lanternPositions, chimneyPositions } — World.js usa las posiciones de
+// farol/chimenea para anclar partículas de brillo/humo.
 export function buildVillage(centerWorld, art, seed = 555) {
     const rng = mulberry32(seed);
     const entities = [];
@@ -369,6 +560,14 @@ export function buildVillage(centerWorld, art, seed = 555) {
                 y: centerWorld.y + off.dy - sprite.height * 0.82,
             });
         }
+
+        // Barriles/cajas apoyados junto a cada casa: hacen que la aldea se sienta
+        // habitada en vez de un decorado vacío.
+        const propAngle = rng() * Math.PI * 2;
+        const propDist = 34 + rng() * 10;
+        const px = centerWorld.x + off.dx + Math.cos(propAngle) * propDist;
+        const py = centerWorld.y + off.dy + Math.sin(propAngle) * propDist * 0.6 + sprite.height * 0.3;
+        entities.push(new Prop(px, py, rng() < 0.5 ? art.barrel : art.crate, { shadow: art.shadow }));
     });
 
     const towerOffsets = [
@@ -402,9 +601,17 @@ export function buildVillage(centerWorld, art, seed = 555) {
     lanternOffsets.forEach((off) => {
         const x = centerWorld.x + off.dx;
         const y = centerWorld.y + off.dy;
-        entities.push(new Lantern(x, y, art.lantern));
+        entities.push(new Prop(x, y, art.lantern));
         lanternPositions.push({ x, y: y - art.lantern.height * 0.75 });
     });
+
+    // Bancos junto al camino interno, frente al dojo.
+    entities.push(new Prop(centerWorld.x - 90, centerWorld.y + 95, art.bench, { shadow: art.shadow }));
+    entities.push(new Prop(centerWorld.x + 90, centerWorld.y + 95, art.bench, { shadow: art.shadow, rotation: Math.PI }));
+
+    // Estandartes flanqueando la entrada norte de la aldea.
+    entities.push(new Prop(centerWorld.x - 46, centerWorld.y - 170, art.bannerPost, { shadow: art.shadow }));
+    entities.push(new Prop(centerWorld.x + 46, centerWorld.y - 170, art.bannerPost, { shadow: art.shadow }));
 
     // Cerca perimetral: postes espaciados a lo largo de un anillo irregular.
     const fenceRadius = 300;
@@ -414,9 +621,43 @@ export function buildVillage(centerWorld, art, seed = 555) {
         const jitter = 1 + (rng() - 0.5) * 0.08;
         const x = centerWorld.x + Math.cos(angle) * fenceRadius * jitter;
         const y = centerWorld.y + Math.sin(angle) * fenceRadius * 0.5 * jitter;
-        entities.push(new FencePost(x, y, art.fencePost));
+        entities.push(new Prop(x, y, art.fencePost));
     }
 
     entities.sort((a, b) => a.depthY - b.depthY);
     return { entities, lanternPositions, chimneyPositions };
+}
+
+// Puente sobre el río en el punto donde lo cruza el camino. Se calcula aparte
+// (necesita el mapa, no sólo el centro de la aldea) y se añade al mundo si existe
+// un cruce real.
+export function buildBridge(map, art) {
+    if (!map.bridgeTiles.length) return null;
+    let sx = 0;
+    let sy = 0;
+    for (const t of map.bridgeTiles) {
+        sx += t.x;
+        sy += t.y;
+    }
+    const cx = (sx / map.bridgeTiles.length) * map.tileSize;
+    const cy = (sy / map.bridgeTiles.length) * map.tileSize;
+
+    // Orientación: tangente de la curva del camino en ese punto (muestreo fino
+    // alrededor de t donde pasa más cerca del centro del puente).
+    let bestT = 0.5;
+    let bestDist = Infinity;
+    for (let i = 0; i <= 200; i++) {
+        const t = i / 200;
+        const p = map.samplePath(t);
+        const d = Math.hypot(p.x * map.tileSize - cx, p.y * map.tileSize - cy);
+        if (d < bestDist) {
+            bestDist = d;
+            bestT = t;
+        }
+    }
+    const p0 = map.samplePath(Math.max(0, bestT - 0.01));
+    const p1 = map.samplePath(Math.min(1, bestT + 0.01));
+    const angle = Math.atan2(p1.y - p0.y, p1.x - p0.x) + Math.PI / 2;
+
+    return new Prop(cx, cy, art.bridge, { rotation: angle, zIndexBonus: -2, anchorY: 0.5 });
 }

@@ -1,14 +1,17 @@
 import { mulberry32, hash2i, makeCanvas } from '../core/utils.js';
 import { TileType, TILE_SIZE } from './Terrain.js';
 
-// Vegetación y objetos decorativos: fábrica de sprites procedurales (árboles grandes y
-// pequeños, arbustos, flores, troncos caídos, rocas sueltas, juncos) + el algoritmo que
+// Vegetación y objetos decorativos: fábrica de sprites procedurales + el algoritmo que
 // los reparte sobre el mapa según el tipo de terreno. Cada sprite se genera con varias
 // variantes y una semilla distinta por instancia, así que ninguna copia visual se repite
 // exactamente igual (tal como pide el diseño: "NO generar árboles idénticos").
+//
+// Los árboles usan una copa "nube" (muchos lóbulos pequeños superpuestos con luz de
+// borde) en vez de 3-4 círculos perfectos apilados: se lee como follaje ilustrado, no
+// como geometría reconocible.
 
 function canopyBlob(ctx, cx, cy, r, top, bottom) {
-    const g = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.4, r * 0.2, cx, cy, r);
+    const g = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.4, r * 0.15, cx, cy, r);
     g.addColorStop(0, top);
     g.addColorStop(1, bottom);
     ctx.fillStyle = g;
@@ -17,42 +20,130 @@ function canopyBlob(ctx, cx, cy, r, top, bottom) {
     ctx.fill();
 }
 
-function buildTreeSprite(seed, big) {
-    const w = big ? 72 : 46;
-    const h = big ? 108 : 68;
+// Copa de follaje "nube": muchos lóbulos pequeños y desplazados en vez de pocos
+// círculos grandes, más un realce de luz arriba-izquierda para que se lea como una
+// masa orgánica iluminada, no como manchas circulares individuales.
+function cloudCanopy(ctx, cx, cy, rx, ry, top, bottom, seed, lobes = 11) {
+    const rng = mulberry32(seed);
+    for (let i = 0; i < lobes; i++) {
+        const angle = rng() * Math.PI * 2;
+        const dist = rng() * 0.5;
+        const lx = cx + Math.cos(angle) * rx * dist;
+        const ly = cy + Math.sin(angle) * ry * dist;
+        const lr = (0.4 + rng() * 0.5) * Math.min(rx, ry);
+        canopyBlob(ctx, lx, ly, lr, top, bottom);
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    for (let i = 0; i < 3; i++) {
+        const lx = cx - rx * 0.35 + rng() * rx * 0.35;
+        const ly = cy - ry * 0.55 + rng() * ry * 0.3;
+        ctx.beginPath();
+        ctx.arc(lx, ly, Math.min(rx, ry) * 0.24, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function drawTrunk(ctx, baseX, groundY, trunkH, trunkW, lean = 0) {
+    const grad = ctx.createLinearGradient(baseX - trunkW, 0, baseX + trunkW, 0);
+    grad.addColorStop(0, '#3f2c1a');
+    grad.addColorStop(0.5, '#6e4c2c');
+    grad.addColorStop(1, '#4a3320');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(baseX - trunkW, groundY);
+    ctx.lineTo(baseX - trunkW * 0.5 + lean, groundY - trunkH);
+    ctx.lineTo(baseX + trunkW * 0.5 + lean, groundY - trunkH);
+    ctx.lineTo(baseX + trunkW, groundY);
+    ctx.closePath();
+    ctx.fill();
+    // Raíces/ensanche en la base para anclar el tronco al suelo.
+    ctx.beginPath();
+    ctx.moveTo(baseX - trunkW * 1.5, groundY);
+    ctx.lineTo(baseX - trunkW * 0.7, groundY - trunkH * 0.18);
+    ctx.lineTo(baseX + trunkW * 0.7, groundY - trunkH * 0.18);
+    ctx.lineTo(baseX + trunkW * 1.5, groundY);
+    ctx.closePath();
+    ctx.fill();
+}
+
+const TREE_GREENS = [
+    ['#6cb457', '#2f6329'],
+    ['#5fa84c', '#2b5c26'],
+    ['#4f9440', '#254f21'],
+    ['#79c164', '#356e2e'],
+];
+
+// Cinco siluetas distintas (tree_01..tree_05) para que la vegetación nunca se sienta
+// repetida: redonda frondosa, cónica tipo conífera, asimétrica de doble copa,
+// alta y esbelta, y de ramas caídas tipo sauce.
+function buildTreeSprite(seed, archetype, big) {
+    const scale = big ? 1 : 0.62;
+    const w = Math.round(80 * scale);
+    const h = Math.round(120 * scale);
     const c = makeCanvas(w, h);
     const ctx = c.getContext('2d');
     const rng = mulberry32(seed);
     const baseX = w / 2;
     const groundY = h - 6;
-    const trunkH = big ? 34 : 20;
+    const [top, bottom] = TREE_GREENS[Math.floor(rng() * TREE_GREENS.length)];
 
-    const trunkGrad = ctx.createLinearGradient(baseX - 6, 0, baseX + 6, 0);
-    trunkGrad.addColorStop(0, '#4a3320');
-    trunkGrad.addColorStop(1, '#6e4c2c');
-    ctx.fillStyle = trunkGrad;
-    const trunkW = big ? 7 : 4.5;
-    ctx.beginPath();
-    ctx.moveTo(baseX - trunkW, groundY);
-    ctx.lineTo(baseX - trunkW * 0.55, groundY - trunkH);
-    ctx.lineTo(baseX + trunkW * 0.55, groundY - trunkH);
-    ctx.lineTo(baseX + trunkW, groundY);
-    ctx.closePath();
-    ctx.fill();
-
-    const canopyY = groundY - trunkH;
-    const rBase = big ? 24 : 15;
-    canopyBlob(ctx, baseX, canopyY - rBase * 0.8, rBase, '#5fa84c', '#2b5c26');
-    canopyBlob(ctx, baseX - rBase * 0.7, canopyY - rBase * 0.35, rBase * 0.72, '#529644', '#254f21');
-    canopyBlob(ctx, baseX + rBase * 0.68, canopyY - rBase * 0.4, rBase * 0.75, '#529644', '#254f21');
-    canopyBlob(ctx, baseX, canopyY - rBase * 1.5, rBase * 0.62, '#72c15b', '#2f6329');
-
-    if (rng() < 0.5) {
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.beginPath();
-        ctx.arc(baseX - rBase * 0.4, canopyY - rBase * 1.1, rBase * 0.4, 0, Math.PI * 2);
-        ctx.fill();
+    if (archetype === 1) {
+        // Conífera: capas triangulares apiladas con textura de lóbulos.
+        const trunkH = h * 0.22;
+        drawTrunk(ctx, baseX, groundY, trunkH, w * 0.05);
+        const layers = 4;
+        for (let i = 0; i < layers; i++) {
+            const ly = groundY - trunkH - i * h * 0.16;
+            const lw = w * (0.44 - i * 0.07);
+            const grad = ctx.createLinearGradient(baseX - lw, ly, baseX + lw, ly - h * 0.2);
+            grad.addColorStop(0, top);
+            grad.addColorStop(1, bottom);
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(baseX, ly - h * 0.22);
+            for (let s = -3; s <= 3; s++) {
+                const t = s / 3;
+                ctx.lineTo(baseX + t * lw, ly - h * 0.02 * (1 - Math.abs(t)));
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+    } else if (archetype === 3) {
+        // Alta y esbelta: tronco largo, copa alargada hacia arriba.
+        const trunkH = h * 0.42;
+        drawTrunk(ctx, baseX, groundY, trunkH, w * 0.06);
+        cloudCanopy(ctx, baseX, groundY - trunkH - h * 0.16, w * 0.24, h * 0.26, top, bottom, seed + 1, 9);
+        cloudCanopy(ctx, baseX, groundY - trunkH - h * 0.32, w * 0.17, h * 0.16, top, bottom, seed + 2, 6);
+    } else if (archetype === 4) {
+        // Ramas caídas (tipo sauce): copa ancha + trazos curvos colgando.
+        const trunkH = h * 0.26;
+        drawTrunk(ctx, baseX, groundY, trunkH, w * 0.06);
+        const canopyY = groundY - trunkH - h * 0.14;
+        cloudCanopy(ctx, baseX, canopyY, w * 0.36, h * 0.2, top, bottom, seed + 1, 12);
+        ctx.strokeStyle = bottom;
+        ctx.lineWidth = Math.max(1.2, w * 0.02);
+        for (let i = 0; i < 6; i++) {
+            const sx = baseX + (rng() - 0.5) * w * 0.6;
+            const sy = canopyY + (rng() - 0.5) * h * 0.1;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.quadraticCurveTo(sx + (rng() - 0.5) * 10, sy + h * 0.18, sx + (rng() - 0.5) * 6, sy + h * 0.3);
+            ctx.stroke();
+        }
+    } else {
+        // Redonda frondosa (archetype 0) o asimétrica de doble copa (archetype 2).
+        const trunkH = h * 0.3;
+        const lean = archetype === 2 ? w * 0.08 : 0;
+        drawTrunk(ctx, baseX, groundY, trunkH, w * 0.065, lean);
+        const canopyY = groundY - trunkH;
+        if (archetype === 2) {
+            cloudCanopy(ctx, baseX - w * 0.14, canopyY - h * 0.12, w * 0.26, h * 0.2, top, bottom, seed + 1, 10);
+            cloudCanopy(ctx, baseX + w * 0.16, canopyY - h * 0.22, w * 0.22, h * 0.18, top, bottom, seed + 2, 8);
+        } else {
+            cloudCanopy(ctx, baseX, canopyY - h * 0.18, w * 0.32, h * 0.24, top, bottom, seed + 1, 13);
+        }
     }
+
     return c;
 }
 
@@ -61,14 +152,7 @@ function buildBushSprite(seed) {
     const h = 26;
     const c = makeCanvas(w, h);
     const ctx = c.getContext('2d');
-    const rng = mulberry32(seed);
-    const cy = h - 8;
-    for (let i = 0; i < 4; i++) {
-        const bx = 8 + i * 6 + (rng() - 0.5) * 3;
-        const by = cy - rng() * 4;
-        const r = 7 + rng() * 3;
-        canopyBlob(ctx, bx, by, r, '#5f9a49', '#2f5e1f');
-    }
+    cloudCanopy(ctx, w / 2, h * 0.6, w * 0.42, h * 0.5, '#5f9a49', '#2f5e1f', seed, 9);
     return c;
 }
 
@@ -195,8 +279,8 @@ function buildShadowSprite() {
 export class DecorationArt {
     constructor(seed = 6100) {
         this.sprites = {
-            treeBig: [buildTreeSprite(seed + 1, true), buildTreeSprite(seed + 2, true), buildTreeSprite(seed + 3, true)],
-            treeSmall: [buildTreeSprite(seed + 4, false), buildTreeSprite(seed + 5, false)],
+            treeBig: [0, 1, 2, 3, 4].map((archetype) => buildTreeSprite(seed + archetype, archetype, true)),
+            treeSmall: [0, 1, 2, 3, 4].map((archetype) => buildTreeSprite(seed + 20 + archetype, archetype, false)),
             bush: [buildBushSprite(seed + 6), buildBushSprite(seed + 7)],
             flowers: [buildFlowerClusterSprite(seed + 8), buildFlowerClusterSprite(seed + 9)],
             log: [buildLogSprite(seed + 10)],
@@ -222,7 +306,10 @@ function isNearWater(map, x, y) {
     return false;
 }
 
-function place(kind, variantCount, worldX, worldY, seed) {
+// `rotates`: true para objetos sin una orientación "natural" (arbustos, rocas,
+// troncos, flores) — les da variedad extra. Los árboles y juncos se quedan
+// derechos, como en una ilustración real.
+function place(kind, variantCount, worldX, worldY, seed, rotates = false) {
     return {
         kind,
         variant: Math.floor(hash2i(worldX, worldY, seed) * variantCount),
@@ -230,6 +317,7 @@ function place(kind, variantCount, worldX, worldY, seed) {
         y: worldY,
         scale: 0.85 + hash2i(worldX, worldY, seed + 1) * 0.4,
         flip: hash2i(worldX, worldY, seed + 2) < 0.5 ? -1 : 1,
+        rotation: rotates ? (hash2i(worldX, worldY, seed + 3) - 0.5) * 0.7 : 0,
     };
 }
 
@@ -250,22 +338,22 @@ export function scatterDecorations(map, seed = 7331) {
             const nearShore = (type === TileType.GRASS || type === TileType.DIRT) && isNearWater(map, x, y);
 
             if (type === TileType.FOREST) {
-                if (roll < 0.55) decorations.push(place('treeBig', 3, wx, wy, seed));
-                else if (roll < 0.8) decorations.push(place('treeSmall', 2, wx, wy, seed + 1));
-                else if (roll < 0.9) decorations.push(place('bush', 2, wx, wy, seed + 2));
-                else if (roll < 0.95) decorations.push(place('log', 1, wx, wy, seed + 3));
+                if (roll < 0.55) decorations.push(place('treeBig', 5, wx, wy, seed));
+                else if (roll < 0.8) decorations.push(place('treeSmall', 5, wx, wy, seed + 1));
+                else if (roll < 0.9) decorations.push(place('bush', 2, wx, wy, seed + 2, true));
+                else if (roll < 0.95) decorations.push(place('log', 1, wx, wy, seed + 3, true));
             } else if (type === TileType.ROCK) {
-                if (roll > 0.55) decorations.push(place('rockMedium', 1, wx, wy, seed + 8));
-                else if (roll > 0.3) decorations.push(place('rockSmall', 2, wx, wy, seed + 9));
+                if (roll > 0.55) decorations.push(place('rockMedium', 1, wx, wy, seed + 8, true));
+                else if (roll > 0.3) decorations.push(place('rockSmall', 2, wx, wy, seed + 9, true));
             } else if (nearShore && roll > 0.45) {
                 decorations.push(place('reed', 1, wx, wy, seed + 11));
             } else if (type === TileType.GRASS) {
-                if (roll > 0.985) decorations.push(place('treeSmall', 2, wx, wy, seed + 4));
-                else if (roll > 0.95) decorations.push(place('bush', 2, wx, wy, seed + 5));
-                else if (roll > 0.9) decorations.push(place('flowers', 2, wx, wy, seed + 6));
-                else if (roll > 0.88) decorations.push(place('rockSmall', 2, wx, wy, seed + 7));
+                if (roll > 0.985) decorations.push(place('treeSmall', 5, wx, wy, seed + 4));
+                else if (roll > 0.95) decorations.push(place('bush', 2, wx, wy, seed + 5, true));
+                else if (roll > 0.9) decorations.push(place('flowers', 2, wx, wy, seed + 6, true));
+                else if (roll > 0.88) decorations.push(place('rockSmall', 2, wx, wy, seed + 7, true));
             } else if (type === TileType.DIRT && roll > 0.97) {
-                decorations.push(place('rockSmall', 2, wx, wy, seed + 10));
+                decorations.push(place('rockSmall', 2, wx, wy, seed + 10, true));
             }
         }
     }
