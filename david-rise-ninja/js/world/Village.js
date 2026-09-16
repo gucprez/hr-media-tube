@@ -485,18 +485,84 @@ export class VillageArt {
         this.houseAnchorY = overrides.houses?.anchorY ?? 0.95;
         this.houseHasOwnShadow = overrides.houses?.hasOwnShadow ?? false;
 
-        this.tower = buildTowerSprite(seed);
+        this.towers = overrides.towers?.images ?? [buildTowerSprite(seed)];
+        this.towerScale = overrides.towers?.scale ?? 1;
+        this.towerAnchorY = overrides.towers?.anchorY ?? 0.97;
+        this.towerHasOwnShadow = overrides.towers?.hasOwnShadow ?? false;
+
+        // El portón y los props nuevos (cofres, cubos, cuerda, cartel, perchero de
+        // armas, espantapájaros, shuriken) no tienen equivalente procedural: el
+        // diseño pide arte real directamente para estos, así que sólo aparecen en
+        // la aldea cuando el override se resuelve (ver los `if (art.xxx)` en
+        // buildVillage).
+        this.gate = overrides.gate?.image ?? null;
+        this.gateScale = overrides.gate?.scale ?? 1;
+        this.gateAnchorY = overrides.gate?.anchorY ?? 0.92;
+        this.gateHasOwnShadow = overrides.gate?.hasOwnShadow ?? true;
+
+        this.chests = overrides.chests?.images ?? null;
+        this.chestScale = overrides.chests?.scale ?? 1;
+        this.chestAnchorY = overrides.chests?.anchorY ?? 0.92;
+        this.chestHasOwnShadow = overrides.chests?.hasOwnShadow ?? true;
+
+        this.buckets = overrides.buckets?.images ?? null;
+        this.bucketScale = overrides.buckets?.scale ?? 1;
+        this.bucketAnchorY = overrides.buckets?.anchorY ?? 0.95;
+        this.bucketHasOwnShadow = overrides.buckets?.hasOwnShadow ?? true;
+
+        this.rope = overrides.rope?.image ?? null;
+        this.ropeScale = overrides.rope?.scale ?? 1;
+        this.ropeAnchorY = overrides.rope?.anchorY ?? 0.85;
+        this.ropeHasOwnShadow = overrides.rope?.hasOwnShadow ?? true;
+
+        this.sign = overrides.sign?.image ?? null;
+        this.signScale = overrides.sign?.scale ?? 1;
+        this.signAnchorY = overrides.sign?.anchorY ?? 0.95;
+        this.signHasOwnShadow = overrides.sign?.hasOwnShadow ?? true;
+
+        this.weaponRack = overrides.weaponRack?.image ?? null;
+        this.weaponRackScale = overrides.weaponRack?.scale ?? 1;
+        this.weaponRackAnchorY = overrides.weaponRack?.anchorY ?? 0.95;
+        this.weaponRackHasOwnShadow = overrides.weaponRack?.hasOwnShadow ?? true;
+
+        this.scarecrow = overrides.scarecrow?.image ?? null;
+        this.scarecrowScale = overrides.scarecrow?.scale ?? 1;
+        this.scarecrowAnchorY = overrides.scarecrow?.anchorY ?? 0.95;
+        this.scarecrowHasOwnShadow = overrides.scarecrow?.hasOwnShadow ?? true;
+
+        this.shuriken = overrides.shuriken?.image ?? null;
+        this.shurikenScale = overrides.shuriken?.scale ?? 1;
+        this.shurikenAnchorY = overrides.shuriken?.anchorY ?? 0.9;
 
         this.lanterns = overrides.lanterns?.images ?? [buildLanternSprite()];
         this.lanternScale = overrides.lanterns?.scale ?? 1;
         this.lanternAnchorY = overrides.lanterns?.anchorY ?? 1;
         this.lanternHasOwnShadow = overrides.lanterns?.hasOwnShadow ?? false;
 
-        this.fencePost = buildFencePostSprite();
-        this.barrel = buildBarrelSprite(seed);
-        this.crate = buildCrateSprite(seed);
-        this.bench = buildBenchSprite(seed);
-        this.bannerPost = buildBannerPostSprite(seed);
+        this.fences = overrides.fences?.images ?? [buildFencePostSprite()];
+        this.fenceScale = overrides.fences?.scale ?? 1;
+        this.fenceAnchorY = overrides.fences?.anchorY ?? 0.92;
+        this.fenceHasOwnShadow = overrides.fences?.hasOwnShadow ?? false;
+
+        this.barrels = overrides.barrels?.images ?? [buildBarrelSprite(seed)];
+        this.barrelScale = overrides.barrels?.scale ?? 1;
+        this.barrelAnchorY = overrides.barrels?.anchorY ?? 1;
+        this.barrelHasOwnShadow = overrides.barrels?.hasOwnShadow ?? false;
+
+        this.crates = overrides.crates?.images ?? [buildCrateSprite(seed)];
+        this.crateScale = overrides.crates?.scale ?? 1;
+        this.crateAnchorY = overrides.crates?.anchorY ?? 1;
+        this.crateHasOwnShadow = overrides.crates?.hasOwnShadow ?? false;
+
+        this.benches = overrides.benches?.images ?? [buildBenchSprite(seed)];
+        this.benchScale = overrides.benches?.scale ?? 1;
+        this.benchAnchorY = overrides.benches?.anchorY ?? 1;
+        this.benchHasOwnShadow = overrides.benches?.hasOwnShadow ?? false;
+
+        this.banner = overrides.banner?.image ?? buildBannerPostSprite(seed);
+        this.bannerScale = overrides.banner?.scale ?? 1;
+        this.bannerAnchorY = overrides.banner?.anchorY ?? 1;
+        this.bannerHasOwnShadow = overrides.banner?.hasOwnShadow ?? false;
 
         this.bridge = overrides.bridge?.image ?? buildBridgeSprite(seed);
         this.bridgeScale = overrides.bridge?.scale ?? 1;
@@ -605,7 +671,17 @@ export function buildVillage(centerWorld, art, seed = 555) {
             const propDist = 34 + rng() * 10;
             const px = centerWorld.x + off.dx + Math.cos(propAngle) * propDist;
             const py = centerWorld.y + off.dy + Math.sin(propAngle) * propDist * 0.6 + sprite.height * 0.3;
-            entities.push(new Prop(px, py, rng() < 0.5 ? art.barrel : art.crate, { shadow: art.shadow }));
+            const useBarrel = rng() < 0.5;
+            const propSprite = useBarrel
+                ? art.barrels[Math.floor(rng() * art.barrels.length)]
+                : art.crates[Math.floor(rng() * art.crates.length)];
+            entities.push(
+                new Prop(px, py, propSprite, {
+                    scale: useBarrel ? art.barrelScale : art.crateScale,
+                    anchorY: useBarrel ? art.barrelAnchorY : art.crateAnchorY,
+                    shadow: (useBarrel ? art.barrelHasOwnShadow : art.crateHasOwnShadow) ? null : art.shadow,
+                })
+            );
         }
     });
 
@@ -614,21 +690,111 @@ export function buildVillage(centerWorld, art, seed = 555) {
         { dx: 240, dy: 10 },
     ];
     towerOffsets.forEach((off, i) => {
+        const tower = art.towers[i % art.towers.length];
         entities.push(
             new Building({
                 name: `Torre de vigilancia ${i + 1}`,
                 buildingType: 'watchtower',
-                sprite: art.tower,
-                shadowSprite: art.shadow,
+                sprite: tower,
+                shadowSprite: art.towerHasOwnShadow ? null : art.shadow,
+                scale: art.towerScale,
                 x: centerWorld.x + off.dx,
                 y: centerWorld.y + off.dy,
-                width: art.tower.width,
-                height: art.tower.height,
-                spriteAnchorY: 0.97,
+                width: tower.width,
+                height: tower.height,
+                spriteAnchorY: art.towerAnchorY,
                 zIndex: 3,
             })
         );
     });
+
+    // Portón de entrada a la aldea: sólo aparece con arte real (no hay placeholder
+    // procedural para él), centrado entre los dos estandartes/faroles de la entrada
+    // norte.
+    if (art.gate) {
+        entities.push(
+            new Prop(centerWorld.x, centerWorld.y - 190, art.gate, {
+                scale: art.gateScale,
+                anchorY: art.gateAnchorY,
+                shadow: art.gateHasOwnShadow ? null : art.shadow,
+            })
+        );
+    }
+
+    // Props de ambientación adicionales: cofres, cubos, cuerda, cartel, perchero de
+    // armas, espantapájaros y shuriken. Todos sin equivalente procedural — el diseño
+    // pide arte real directo para estos, así que sólo se colocan si el override
+    // existe.
+    if (art.chests) {
+        entities.push(
+            new Prop(centerWorld.x + 60, centerWorld.y + 40, art.chests[0], {
+                scale: art.chestScale,
+                anchorY: art.chestAnchorY,
+                shadow: art.chestHasOwnShadow ? null : art.shadow,
+            })
+        );
+        entities.push(
+            new Prop(centerWorld.x - 200, centerWorld.y + 55, art.chests[1 % art.chests.length], {
+                scale: art.chestScale,
+                anchorY: art.chestAnchorY,
+                shadow: art.chestHasOwnShadow ? null : art.shadow,
+            })
+        );
+    }
+    if (art.buckets) {
+        entities.push(
+            new Prop(centerWorld.x + 165, centerWorld.y + 85, art.buckets[0], {
+                scale: art.bucketScale,
+                anchorY: art.bucketAnchorY,
+                shadow: art.bucketHasOwnShadow ? null : art.shadow,
+            })
+        );
+    }
+    if (art.rope) {
+        entities.push(
+            new Prop(centerWorld.x - 30, centerWorld.y + 30, art.rope, {
+                scale: art.ropeScale,
+                anchorY: art.ropeAnchorY,
+                shadow: art.ropeHasOwnShadow ? null : art.shadow,
+            })
+        );
+    }
+    if (art.sign) {
+        entities.push(
+            new Prop(centerWorld.x, centerWorld.y - 210, art.sign, {
+                scale: art.signScale,
+                anchorY: art.signAnchorY,
+                shadow: art.signHasOwnShadow ? null : art.shadow,
+            })
+        );
+    }
+    if (art.weaponRack) {
+        entities.push(
+            new Prop(centerWorld.x - 60, centerWorld.y - 20, art.weaponRack, {
+                scale: art.weaponRackScale,
+                anchorY: art.weaponRackAnchorY,
+                shadow: art.weaponRackHasOwnShadow ? null : art.shadow,
+            })
+        );
+    }
+    if (art.scarecrow) {
+        entities.push(
+            new Prop(centerWorld.x + 260, centerWorld.y - 130, art.scarecrow, {
+                scale: art.scarecrowScale,
+                anchorY: art.scarecrowAnchorY,
+                shadow: art.scarecrowHasOwnShadow ? null : art.shadow,
+            })
+        );
+    }
+    if (art.shuriken) {
+        entities.push(
+            new Prop(centerWorld.x - 62, centerWorld.y - 18, art.shuriken, {
+                scale: art.shurikenScale,
+                anchorY: art.shurikenAnchorY,
+                rotation: 0.4,
+            })
+        );
+    }
 
     // Faroles flanqueando la entrada del dojo y el camino interno — se omiten con
     // el arte real del Dojo porque ya trae los suyos pintados junto a la entrada.
@@ -654,12 +820,37 @@ export function buildVillage(centerWorld, art, seed = 555) {
         });
 
         // Bancos junto al camino interno, frente al dojo.
-        entities.push(new Prop(centerWorld.x - 90, centerWorld.y + 95, art.bench, { shadow: art.shadow }));
-        entities.push(new Prop(centerWorld.x + 90, centerWorld.y + 95, art.bench, { shadow: art.shadow, rotation: Math.PI }));
+        entities.push(
+            new Prop(centerWorld.x - 90, centerWorld.y + 95, art.benches[0], {
+                scale: art.benchScale,
+                anchorY: art.benchAnchorY,
+                shadow: art.benchHasOwnShadow ? null : art.shadow,
+            })
+        );
+        entities.push(
+            new Prop(centerWorld.x + 90, centerWorld.y + 95, art.benches[1 % art.benches.length], {
+                scale: art.benchScale,
+                anchorY: art.benchAnchorY,
+                shadow: art.benchHasOwnShadow ? null : art.shadow,
+                rotation: Math.PI,
+            })
+        );
 
         // Estandartes flanqueando la entrada norte de la aldea.
-        entities.push(new Prop(centerWorld.x - 46, centerWorld.y - 170, art.bannerPost, { shadow: art.shadow }));
-        entities.push(new Prop(centerWorld.x + 46, centerWorld.y - 170, art.bannerPost, { shadow: art.shadow }));
+        entities.push(
+            new Prop(centerWorld.x - 46, centerWorld.y - 170, art.banner, {
+                scale: art.bannerScale,
+                anchorY: art.bannerAnchorY,
+                shadow: art.bannerHasOwnShadow ? null : art.shadow,
+            })
+        );
+        entities.push(
+            new Prop(centerWorld.x + 46, centerWorld.y - 170, art.banner, {
+                scale: art.bannerScale,
+                anchorY: art.bannerAnchorY,
+                shadow: art.bannerHasOwnShadow ? null : art.shadow,
+            })
+        );
     } else {
         // Con el Dojo real, unos pocos faroles reales SÍ lejos de su propio patio
         // (junto a las casas exteriores) para que sigan iluminando esa zona.
@@ -678,7 +869,9 @@ export function buildVillage(centerWorld, art, seed = 555) {
         });
     }
 
-    // Cerca perimetral: postes espaciados a lo largo de un anillo irregular.
+    // Cerca perimetral: segmentos espaciados a lo largo de un anillo irregular,
+    // eligiendo variante al azar entre las piezas reales para que no se repita
+    // siempre el mismo tramo de cerca.
     const fenceRadius = 300;
     const fenceCount = 26;
     for (let i = 0; i < fenceCount; i++) {
@@ -686,7 +879,14 @@ export function buildVillage(centerWorld, art, seed = 555) {
         const jitter = 1 + (rng() - 0.5) * 0.08;
         const x = centerWorld.x + Math.cos(angle) * fenceRadius * jitter;
         const y = centerWorld.y + Math.sin(angle) * fenceRadius * 0.5 * jitter;
-        entities.push(new Prop(x, y, art.fencePost));
+        const fence = art.fences[Math.floor(rng() * art.fences.length)];
+        entities.push(
+            new Prop(x, y, fence, {
+                scale: art.fenceScale,
+                anchorY: art.fenceAnchorY,
+                shadow: art.fenceHasOwnShadow ? null : art.shadow,
+            })
+        );
     }
 
     entities.sort((a, b) => a.depthY - b.depthY);

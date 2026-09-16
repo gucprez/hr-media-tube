@@ -321,6 +321,39 @@ export class DecorationArt {
             this.kindMeta.rockSmall = { scaleMul: r.scale * 0.7, anchorY: r.anchorY, hasOwnShadow: r.hasOwnShadow };
             this.kindMeta.rockMedium = { scaleMul: r.scale * 1.15, anchorY: r.anchorY, hasOwnShadow: r.hasOwnShadow };
         }
+        if (overrides.logs) {
+            const l = overrides.logs;
+            this.sprites.log = l.images;
+            this.kindMeta.log = { scaleMul: l.scale, anchorY: l.anchorY, hasOwnShadow: l.hasOwnShadow };
+        }
+        if (overrides.reeds) {
+            const rd = overrides.reeds;
+            this.sprites.reed = rd.images;
+            this.kindMeta.reed = { scaleMul: rd.scale, anchorY: rd.anchorY, hasOwnShadow: rd.hasOwnShadow };
+        }
+        // Vegetación nueva sin equivalente procedural: sólo aparece en el reparto de
+        // scatterDecorations() cuando el override existe (get() devuelve null si no
+        // hay lista, y el Renderer ya sabe saltarse un sprite nulo).
+        if (overrides.grassTufts) {
+            const g = overrides.grassTufts;
+            this.sprites.grassTuft = g.images;
+            this.kindMeta.grassTuft = { scaleMul: g.scale, anchorY: g.anchorY, hasOwnShadow: g.hasOwnShadow };
+        }
+        if (overrides.bamboo) {
+            const b = overrides.bamboo;
+            this.sprites.bamboo = [b.image];
+            this.kindMeta.bamboo = { scaleMul: b.scale, anchorY: b.anchorY, hasOwnShadow: b.hasOwnShadow };
+        }
+        if (overrides.waterPlants) {
+            const wp = overrides.waterPlants;
+            this.sprites.waterPlant = wp.images;
+            this.kindMeta.waterPlant = { scaleMul: wp.scale, anchorY: wp.anchorY, hasOwnShadow: wp.hasOwnShadow };
+        }
+        if (overrides.moss) {
+            const m = overrides.moss;
+            this.sprites.moss = m.images;
+            this.kindMeta.moss = { scaleMul: m.scale, anchorY: m.anchorY, hasOwnShadow: m.hasOwnShadow };
+        }
     }
 
     get(kind, variant) {
@@ -377,17 +410,22 @@ export function scatterDecorations(map, seed = 7331) {
                 if (roll < 0.55) decorations.push(place('treeBig', 5, wx, wy, seed));
                 else if (roll < 0.8) decorations.push(place('treeSmall', 5, wx, wy, seed + 1));
                 else if (roll < 0.9) decorations.push(place('bush', 2, wx, wy, seed + 2, true));
-                else if (roll < 0.95) decorations.push(place('log', 1, wx, wy, seed + 3, true));
+                else if (roll < 0.95) decorations.push(place('log', 8, wx, wy, seed + 3, true));
             } else if (type === TileType.ROCK) {
                 if (roll > 0.55) decorations.push(place('rockMedium', 1, wx, wy, seed + 8, true));
                 else if (roll > 0.3) decorations.push(place('rockSmall', 2, wx, wy, seed + 9, true));
+                else if (roll > 0.15) decorations.push(place('moss', 2, wx, wy, seed + 17, true));
+            } else if (type === TileType.WATER && roll > 0.85) {
+                decorations.push(place('waterPlant', 20, wx, wy, seed + 16));
             } else if (nearShore && roll > 0.45) {
-                decorations.push(place('reed', 1, wx, wy, seed + 11));
+                if (roll > 0.9) decorations.push(place('bamboo', 1, wx, wy, seed + 15));
+                else decorations.push(place('reed', 10, wx, wy, seed + 11));
             } else if (type === TileType.GRASS) {
                 if (roll > 0.985) decorations.push(place('treeSmall', 5, wx, wy, seed + 4));
                 else if (roll > 0.95) decorations.push(place('bush', 2, wx, wy, seed + 5, true));
                 else if (roll > 0.9) decorations.push(place('flowers', 2, wx, wy, seed + 6, true));
                 else if (roll > 0.88) decorations.push(place('rockSmall', 2, wx, wy, seed + 7, true));
+                else if (roll > 0.8) decorations.push(place('grassTuft', 4, wx, wy, seed + 12, true));
             } else if (type === TileType.DIRT && roll > 0.97) {
                 decorations.push(place('rockSmall', 2, wx, wy, seed + 10, true));
             }
