@@ -13,12 +13,53 @@ import { TileType, TILE_SIZE, BIOME_PALETTE } from './Terrain.js';
 // recorta y dibuja (drawImage) según la cámara — barato en tiempo real, todo el
 // coste de "pintar" se paga una sola vez al crear el mundo.
 export class TerrainPainter {
-    constructor(map, seed = 3300) {
+    // `assetOverrides` puede traer `grassTexture`/`waterTexture`/`pathTexture` (ver
+    // ArtOverrides.js): fotografías/ilustraciones reales de esos terrenos. En vez de
+    // repetirlas como un patrón rígido (`ctx.createPattern`) — que dejaría una
+    // costura visible en cada borde porque no son texturas perfectamente
+    // "seamless" — se recortan en "sellos" con un halo de alpha suave y se estampan
+    // muchas veces, rotados y solapados, exactamente con la misma filosofía que ya
+    // usamos para el terreno procedural: ninguna costura sobrevive a un borde
+    // difuminado y aleatorio.
+    constructor(map, seed = 3300, assetOverrides = {}) {
         this.map = map;
         this.seed = seed;
         this.canvas = makeCanvas(map.pixelWidth, map.pixelHeight);
         this.mountainPeaks = [];
+        this.grassStamp = assetOverrides.grassTexture ? this._buildStamp(assetOverrides.grassTexture.image, 620) : null;
+        this.waterStamp = assetOverrides.waterTexture ? this._buildStamp(assetOverrides.waterTexture.image, 420) : null;
+        this.pathStamp = assetOverrides.pathTexture ? this._buildStamp(assetOverrides.pathTexture.image, 340) : null;
         this._paint();
+    }
+
+    // Recorta `image` a un sello cuadrado de `size`x`size` con una máscara elíptica
+    // de alpha (opaca en el centro, transparente en el borde) via 'destination-in'.
+    _buildStamp(image, size) {
+        const c = makeCanvas(size, size);
+        const ctx = c.getContext('2d');
+        // Cubre el cuadrado manteniendo proporción (como `background-size: cover`).
+        const scale = Math.max(size / image.width, size / image.height);
+        const dw = image.width * scale;
+        const dh = image.height * scale;
+        ctx.drawImage(image, (size - dw) / 2, (size - dh) / 2, dw, dh);
+
+        ctx.globalCompositeOperation = 'destination-in';
+        const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.28, size / 2, size / 2, size * 0.5);
+        g.addColorStop(0, 'rgba(0,0,0,1)');
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, size, size);
+        ctx.globalCompositeOperation = 'source-over';
+        return c;
+    }
+
+    _stamp(ctx, stamp, x, y, size, rotation, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        ctx.drawImage(stamp, -size / 2, -size / 2, size, size);
+        ctx.restore();
     }
 
     _paint() {
@@ -28,10 +69,35 @@ export class TerrainPainter {
 
         this._paintBaseBlobs(ctx);
         this._paintDetailSpeckle(ctx);
+        if (this.grassStamp) this._paintGrassTexture(ctx);
         this._paintRiver(ctx);
         this._paintPath(ctx);
         this._collectMountainPeaks();
         this._paintMountainRange(ctx);
+    }
+
+    // Esparce el sello de hierba real sobre las casillas de hierba del mapa,
+    // solapado y rotado al azar — la misma técnica que usa `_paintBaseBlobs` para
+    // que no se perciba ninguna repetición en rejilla.
+    _paintGrassTexture(ctx) {
+        const map = this.map;
+        const stampSize = 620;
+        const step = TILE_SIZE * 2.1;
+        for (let wy = -stampSize * 0.3; wy < map.pixelHeight + stampSize * 0.3; wy += step) {
+            for (let wx = -stampSize * 0.3; wx < map.pixelWidth + stampSize * 0.3; wx += step) {
+                const jx = (hash2i(Math.round(wx / step), Math.round(wy / step), this.seed + 601) - 0.5) * step * 1.3;
+                const jy = (hash2i(Math.round(wx / step), Math.round(wy / step), this.seed + 602) - 0.5) * step * 1.3;
+                const px = wx + jx;
+                const py = wy + jy;
+                const tx = Math.floor(px / TILE_SIZE);
+                const ty = Math.floor(py / TILE_SIZE);
+                if (map.getTileTypeAt(tx, ty) !== TileType.GRASS) continue;
+                const rot = hash2i(tx, ty, this.seed + 603) * Math.PI * 2;
+                const scale = 0.85 + hash2i(tx, ty, this.seed + 604) * 0.4;
+                const alpha = 0.4 + hash2i(tx, ty, this.seed + 605) * 0.25;
+                this._stamp(ctx, this.grassStamp, px, py, stampSize * scale, rot, alpha);
+            }
+        }
     }
 
     _colorFor(type, tx, ty, extraSeed = 0) {
@@ -72,12 +138,16 @@ export class TerrainPainter {
         return { left, right };
     }
 
-    _fillRibbon(ctx, ribbon, fillStyle, strokeStyle = null, lineWidth = 0) {
+    _ribbonPath(ctx, ribbon) {
         ctx.beginPath();
         ctx.moveTo(ribbon.left[0].x, ribbon.left[0].y);
         for (let i = 1; i < ribbon.left.length; i++) ctx.lineTo(ribbon.left[i].x, ribbon.left[i].y);
         for (let i = ribbon.right.length - 1; i >= 0; i--) ctx.lineTo(ribbon.right[i].x, ribbon.right[i].y);
         ctx.closePath();
+    }
+
+    _fillRibbon(ctx, ribbon, fillStyle, strokeStyle = null, lineWidth = 0) {
+        this._ribbonPath(ctx, ribbon);
         if (fillStyle) {
             ctx.fillStyle = fillStyle;
             ctx.fill();
@@ -87,6 +157,34 @@ export class TerrainPainter {
             ctx.lineWidth = lineWidth;
             ctx.stroke();
         }
+    }
+
+    // Recorta el lienzo a la silueta de la cinta y estampa la textura real dentro
+    // repetidamente: al estar recortado, ningún sello puede "salirse" del río o del
+    // camino hacia la tierra vecina, así que no hace falta que cada sello encaje
+    // perfectamente con el ancho variable de la cinta.
+    _stampInsideRibbon(ctx, ribbon, samples, halfWidths, stamp, stampSize, spacing, alpha) {
+        ctx.save();
+        this._ribbonPath(ctx, ribbon);
+        ctx.clip();
+        const n = samples.length;
+        for (let i = 0; i < n; i += Math.max(1, Math.round(spacing))) {
+            const p = samples[i];
+            const hw = halfWidths[i];
+            // Alinea el sello con la dirección local de la cinta (± un poco de
+            // ruido) en vez de un ángulo totalmente aleatorio: el agua y el camino
+            // tienen una dirección visual (ondas, huellas) que no debe apuntar en
+            // cualquier sentido de un sello al siguiente.
+            const prev = samples[Math.max(0, i - 1)];
+            const next = samples[Math.min(n - 1, i + 1)];
+            const tangentAngle = Math.atan2(next.y - prev.y, next.x - prev.x);
+            const rot = tangentAngle + (hash2i(i, 1, this.seed + 707) - 0.5) * 0.6;
+            const jx = (hash2i(i, 2, this.seed + 708) - 0.5) * hw;
+            const jy = (hash2i(i, 3, this.seed + 709) - 0.5) * hw;
+            const a = alpha * (0.75 + hash2i(i, 4, this.seed + 710) * 0.35);
+            this._stamp(ctx, stamp, p.x + jx, p.y + jy, stampSize, rot, a);
+        }
+        ctx.restore();
     }
 
     // Mancha irregular (polígono con vértices perturbados) más grande que la propia
@@ -208,6 +306,10 @@ export class TerrainPainter {
             this._ribbon(samples, halfWidths.map((w) => w * 0.55)),
             `rgb(${Math.max(0, wr - 16)},${Math.max(0, wg - 14)},${Math.max(0, wb - 10)})`
         );
+
+        if (this.waterStamp) {
+            this._stampInsideRibbon(ctx, body, samples, halfWidths, this.waterStamp, 420, 6, 0.8);
+        }
     }
 
     // Camino pintado igual que el río: cinta extruida con halo suave + cuerpo sólido
@@ -223,12 +325,17 @@ export class TerrainPainter {
         ctx.globalAlpha = 0.35;
         this._fillRibbon(ctx, this._ribbon(samples, halfWidths.map((w) => w * 1.8)), `rgb(${pr},${pg},${pb})`);
         ctx.globalAlpha = 1;
-        this._fillRibbon(ctx, this._ribbon(samples, halfWidths), `rgb(${pr},${pg},${pb})`);
+        const body = this._ribbon(samples, halfWidths);
+        this._fillRibbon(ctx, body, `rgb(${pr},${pg},${pb})`);
         this._fillRibbon(
             ctx,
             this._ribbon(samples, halfWidths.map((w) => w * 0.5)),
             `rgb(${Math.min(255, pr + 16)},${Math.min(255, pg + 14)},${Math.min(255, pb + 10)})`
         );
+
+        if (this.pathStamp) {
+            this._stampInsideRibbon(ctx, body, samples, halfWidths, this.pathStamp, 340, 5, 0.85);
+        }
 
         // Piedrecitas y marcas de desgaste a lo largo del camino.
         const rng = mulberry32(this.seed + 909);

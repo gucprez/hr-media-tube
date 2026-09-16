@@ -51,13 +51,17 @@ export class Renderer {
             if (deco.x < view.left || deco.x > view.right) continue;
             const sprite = world.decorationArt.get(deco.kind, deco.variant);
             if (!sprite) continue;
+            const meta = world.decorationArt.getMeta(deco.kind);
 
             drawSprite(ctx, camera, sprite, deco.x, deco.y, {
-                scale: deco.scale,
+                scale: deco.scale * meta.scaleMul,
                 rotation: deco.rotation || 0,
-                flipX: deco.flip < 0,
-                anchorY: 0.92,
-                shadowSprite: world.decorationArt.shadow,
+                // Un sprite pintado (con sombra e iluminación propias) se ve mal
+                // reflejado: la sombra "cambiaría de lado". Sólo se refleja el
+                // placeholder procedural, que es simétrico.
+                flipX: !meta.hasOwnShadow && deco.flip < 0,
+                anchorY: meta.anchorY,
+                shadowSprite: meta.hasOwnShadow ? null : world.decorationArt.shadow,
                 shadowScale: 1.1,
             });
         }

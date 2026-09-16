@@ -13,8 +13,8 @@ import { hash2i } from '../core/utils.js';
 export class World {
     constructor(seed = 20240101, assetOverrides = {}) {
         this.map = new GameMap({ seed });
-        this.terrainPainter = new TerrainPainter(this.map, seed + 1);
-        this.decorationArt = new DecorationArt(seed + 2);
+        this.terrainPainter = new TerrainPainter(this.map, seed + 1, assetOverrides);
+        this.decorationArt = new DecorationArt(seed + 2, assetOverrides);
         this.decorations = scatterDecorations(this.map, seed + 3);
         this.villageArt = new VillageArt(seed + 4, assetOverrides);
 
@@ -31,6 +31,7 @@ export class World {
         this.particles = new ParticleSystem();
         this.elapsedTime = 0;
         this._ambientTimer = 0;
+        this._lanternGlowTimer = 0;
         this._smokeTimer = 0;
     }
 
@@ -114,8 +115,15 @@ export class World {
                 });
             }
 
-            // Brillo cálido persistente de cada farol (recreado con frecuencia baja
-            // para simular un parpadeo suave sin coste de un sistema de luces real).
+        }
+
+        // Brillo cálido de cada farol, en su propio temporizador más lento: si se
+        // recreara en el mismo intervalo de 0.08s que el polvo, con una vida de 0.5s
+        // llegan a solaparse ~6 partículas idénticas en el mismo punto y el brillo se
+        // ve "quemado" en vez de suave.
+        this._lanternGlowTimer -= dt;
+        if (this._lanternGlowTimer <= 0) {
+            this._lanternGlowTimer = 0.4;
             for (const pos of this.lanternPositions) {
                 this.particles.spawn({
                     x: pos.x,

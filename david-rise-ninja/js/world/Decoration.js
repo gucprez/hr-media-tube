@@ -276,8 +276,14 @@ function buildShadowSprite() {
     return c;
 }
 
+const DEFAULT_META = { scaleMul: 1, anchorY: 0.92, hasOwnShadow: false };
+
+// `overrides` viene de ArtOverrides.resolveArtOverrides(): con `trees`/`rocks`
+// reales, sustituye los pools procedurales de esos tipos y guarda su propio
+// multiplicador de escala/anclaje/sombra en `kindMeta` — el Renderer lo consulta en
+// vez de asumir siempre la sombra y el ancla del placeholder de Canvas.
 export class DecorationArt {
-    constructor(seed = 6100) {
+    constructor(seed = 6100, overrides = {}) {
         this.sprites = {
             treeBig: [0, 1, 2, 3, 4].map((archetype) => buildTreeSprite(seed + archetype, archetype, true)),
             treeSmall: [0, 1, 2, 3, 4].map((archetype) => buildTreeSprite(seed + 20 + archetype, archetype, false)),
@@ -289,11 +295,41 @@ export class DecorationArt {
             reed: [buildReedSprite(seed + 14)],
         };
         this.shadow = buildShadowSprite();
+        this.kindMeta = {};
+
+        if (overrides.trees) {
+            const t = overrides.trees;
+            this.sprites.treeBig = t.images;
+            this.sprites.treeSmall = t.images;
+            this.kindMeta.treeBig = { scaleMul: t.scale, anchorY: t.anchorY, hasOwnShadow: t.hasOwnShadow };
+            this.kindMeta.treeSmall = { scaleMul: t.scale * 0.6, anchorY: t.anchorY, hasOwnShadow: t.hasOwnShadow };
+
+            // La hoja de árboles trae dos arbustos redondos (índices 6 y 10) y un
+            // arbusto florido (índice 11): mucho mejor que dejar el "bush"/"flowers"
+            // procedural (un círculo verde plano) al lado de una hierba pintada real.
+            if (t.images.length >= 12) {
+                this.sprites.bush = [t.images[6], t.images[10]];
+                this.kindMeta.bush = { scaleMul: t.scale * 0.55, anchorY: t.anchorY, hasOwnShadow: t.hasOwnShadow };
+                this.sprites.flowers = [t.images[11]];
+                this.kindMeta.flowers = { scaleMul: t.scale * 0.5, anchorY: t.anchorY, hasOwnShadow: t.hasOwnShadow };
+            }
+        }
+        if (overrides.rocks) {
+            const r = overrides.rocks;
+            this.sprites.rockSmall = r.images;
+            this.sprites.rockMedium = r.images;
+            this.kindMeta.rockSmall = { scaleMul: r.scale * 0.7, anchorY: r.anchorY, hasOwnShadow: r.hasOwnShadow };
+            this.kindMeta.rockMedium = { scaleMul: r.scale * 1.15, anchorY: r.anchorY, hasOwnShadow: r.hasOwnShadow };
+        }
     }
 
     get(kind, variant) {
         const list = this.sprites[kind];
         return list ? list[variant % list.length] : null;
+    }
+
+    getMeta(kind) {
+        return this.kindMeta[kind] ?? DEFAULT_META;
     }
 }
 

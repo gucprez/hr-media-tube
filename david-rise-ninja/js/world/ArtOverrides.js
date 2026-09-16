@@ -1,41 +1,83 @@
 import { tryLoadImage } from '../core/AssetManager.js';
 
-// Manifiesto de piezas de arte "sustituibles": cada entrada nombra dónde debería
-// vivir el PNG/WEBP definitivo, cuánto debe medir en el mundo (el motor calcula la
-// escala a partir de eso, no importa la resolución del archivo) y si esa imagen ya
-// trae su propia sombra pintada (en cuyo caso el motor NO dibuja además la sombra
-// procedural, para no duplicarla).
+// Manifiesto de piezas de arte "sustituibles". Cada entrada dice dónde debería vivir
+// el PNG/WEBP definitivo y con qué escala dibujarlo en el mundo.
 //
-// Mientras el archivo no exista, `resolveArtOverrides()` simplemente no lo incluye
-// en el resultado y el mundo sigue usando el placeholder de Canvas — no hay que
-// tocar nada más para que el juego siga funcionando.
+// Importante sobre `scale`: NO normalizamos cada imagen a un ancho/alto objetivo
+// individual (eso destruiría las proporciones relativas entre variantes: un árbol
+// grande y uno pequeño de la misma hoja de sprites se dibujarían del mismo tamaño).
+// En su lugar aplicamos una única escala uniforme por categoría — igual que si todas
+// las piezas vinieran de la misma "cámara" isométrica del ilustrador, que es
+// literalmente el caso — así que las proporciones originales del arte se conservan.
+//
+// Mientras un archivo no exista, `resolveArtOverrides()` simplemente lo omite del
+// resultado y esa pieza sigue usando el placeholder de Canvas: no hay ninguna ruta
+// que se pueda romper mientras se suben los PNG poco a poco.
 export const ART_MANIFEST = {
     dojo: {
-        url: 'assets/village/buildings/dojo.png',
-        targetWidth: 260, // ancho deseado en píxeles de mundo (a zoom 1)
-        anchorY: 0.94, // fracción del sprite, desde arriba, que toca el suelo
+        kind: 'single',
+        url: 'assets/village/buildings/dojo.webp',
+        scale: 0.24,
+        anchorY: 0.95,
         hasOwnShadow: true,
     },
+    houses: {
+        kind: 'array',
+        urls: [0, 1, 2, 3, 4, 5].map((i) => `assets/village/buildings/house_${i}.webp`),
+        scale: 0.35,
+        anchorY: 0.93,
+        hasOwnShadow: true,
+    },
+    lanterns: {
+        kind: 'array',
+        urls: Array.from({ length: 10 }, (_, i) => `assets/village/props/lantern_${i}.webp`),
+        scale: 0.16,
+        anchorY: 0.97,
+        hasOwnShadow: false,
+    },
+    bridge: {
+        kind: 'single',
+        url: 'assets/environment/bridges/bridge.webp',
+        scale: 0.52,
+        anchorY: 0.5,
+        hasOwnShadow: true,
+    },
+    trees: {
+        kind: 'array',
+        urls: Array.from({ length: 13 }, (_, i) => `assets/environment/trees/tree_${String(i).padStart(2, '0')}.webp`),
+        scale: 0.48,
+        anchorY: 0.96,
+        hasOwnShadow: true,
+    },
+    rocks: {
+        kind: 'array',
+        urls: Array.from({ length: 15 }, (_, i) => `assets/environment/rocks/rock_${String(i).padStart(2, '0')}.webp`),
+        scale: 0.32,
+        anchorY: 0.94,
+        hasOwnShadow: true,
+    },
+    grassTexture: { kind: 'single', url: 'assets/environment/terrain/grass_texture.webp' },
+    waterTexture: { kind: 'single', url: 'assets/environment/water/water_texture.webp' },
+    pathTexture: { kind: 'single', url: 'assets/environment/terrain/dirt_path_texture.webp' },
 };
 
-// Comprueba en paralelo qué piezas del manifiesto ya existen como imagen real y
-// devuelve sólo esas, listas para usar (con la escala ya calculada).
+async function resolveEntry(spec) {
+    if (spec.kind === 'single') {
+        const image = await tryLoadImage(spec.url);
+        if (!image) return null;
+        return { image, scale: spec.scale, anchorY: spec.anchorY, hasOwnShadow: spec.hasOwnShadow };
+    }
+
+    // 'array': todas deben existir para activar el reemplazo — una hoja de sprites a
+    // medias (p.ej. 4 de 13 árboles) se queda en el placeholder hasta completarse,
+    // para no mezclar arte real y procedural dentro del mismo tipo de decoración.
+    const images = await Promise.all(spec.urls.map(tryLoadImage));
+    if (images.some((img) => !img)) return null;
+    return { images, scale: spec.scale, anchorY: spec.anchorY, hasOwnShadow: spec.hasOwnShadow };
+}
+
 export async function resolveArtOverrides(manifest = ART_MANIFEST) {
     const entries = Object.entries(manifest);
-    const results = await Promise.all(
-        entries.map(async ([key, spec]) => {
-            const image = await tryLoadImage(spec.url);
-            if (!image) return null;
-            return [
-                key,
-                {
-                    image,
-                    scale: spec.targetWidth / image.naturalWidth,
-                    anchorY: spec.anchorY,
-                    hasOwnShadow: spec.hasOwnShadow,
-                },
-            ];
-        })
-    );
-    return Object.fromEntries(results.filter(Boolean));
+    const resolved = await Promise.all(entries.map(async ([key, spec]) => [key, await resolveEntry(spec)]));
+    return Object.fromEntries(resolved.filter(([, value]) => value !== null));
 }

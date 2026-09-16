@@ -480,15 +480,34 @@ export class VillageArt {
         this.dojoAnchorY = overrides.dojo?.anchorY ?? 0.98;
         this.dojoHasOwnShadow = overrides.dojo?.hasOwnShadow ?? false;
 
-        this.houses = [buildHouseSprite(seed, 0), buildHouseSprite(seed, 1), buildHouseSprite(seed, 2)];
+        this.houses = overrides.houses?.images ?? [buildHouseSprite(seed, 0), buildHouseSprite(seed, 1), buildHouseSprite(seed, 2)];
+        this.houseScale = overrides.houses?.scale ?? 1;
+        this.houseAnchorY = overrides.houses?.anchorY ?? 0.95;
+        this.houseHasOwnShadow = overrides.houses?.hasOwnShadow ?? false;
+
         this.tower = buildTowerSprite(seed);
-        this.lantern = buildLanternSprite();
+
+        this.lanterns = overrides.lanterns?.images ?? [buildLanternSprite()];
+        this.lanternScale = overrides.lanterns?.scale ?? 1;
+        this.lanternAnchorY = overrides.lanterns?.anchorY ?? 1;
+        this.lanternHasOwnShadow = overrides.lanterns?.hasOwnShadow ?? false;
+
         this.fencePost = buildFencePostSprite();
         this.barrel = buildBarrelSprite(seed);
         this.crate = buildCrateSprite(seed);
         this.bench = buildBenchSprite(seed);
         this.bannerPost = buildBannerPostSprite(seed);
-        this.bridge = buildBridgeSprite(seed);
+
+        this.bridge = overrides.bridge?.image ?? buildBridgeSprite(seed);
+        this.bridgeScale = overrides.bridge?.scale ?? 1;
+        this.bridgeAnchorY = overrides.bridge?.anchorY ?? 0.5;
+        this.bridgeHasOwnShadow = overrides.bridge?.hasOwnShadow ?? false;
+        // El arte procedural (tablones simples) se puede rotar libremente para seguir
+        // la dirección del camino; una ilustración isométrica pintada tiene una
+        // perspectiva fija y rotarla la haría ver "tumbada" — así que con arte real
+        // se coloca sin rotar.
+        this.bridgeIsRealArt = Boolean(overrides.bridge);
+
         this.shadow = buildShadow();
     }
 }
@@ -496,8 +515,8 @@ export class VillageArt {
 // Entidad genérica para props sin lógica propia (farol, cerca, barril, caja, banco,
 // bandera, puente): todas dibujan a través de SpriteRenderer con sombra opcional.
 class Prop extends Entity {
-    constructor(x, y, sprite, { shadow = null, rotation = 0, zIndexBonus = 0, anchorY = 1 } = {}) {
-        super({ x, y, width: sprite.width, height: sprite.height, zIndex: zIndexBonus });
+    constructor(x, y, sprite, { shadow = null, rotation = 0, zIndexBonus = 0, anchorY = 1, scale = 1 } = {}) {
+        super({ x, y, width: sprite.width, height: sprite.height, zIndex: zIndexBonus, scale });
         this.sprite = sprite;
         this.shadow = shadow;
         this.rotation = rotation;
@@ -506,6 +525,7 @@ class Prop extends Entity {
 
     render(ctx, camera) {
         drawSprite(ctx, camera, this.sprite, this.x, this.y, {
+            scale: this.scale,
             rotation: this.rotation,
             anchorY: this.anchorY,
             shadowSprite: this.shadow,
@@ -522,6 +542,11 @@ export function buildVillage(centerWorld, art, seed = 555) {
     const entities = [];
     const lanternPositions = [];
     const chimneyPositions = [];
+    // La ilustración real del Dojo ya trae su propio patio: escalera, faroles y
+    // banderas pintados junto a la entrada. Si la usamos, no dupliquemos esos
+    // mismos elementos justo encima; los que van más lejos (casas, torres, la
+    // cerca exterior) sí siguen aportando.
+    const dojoIsReal = art.dojoHasOwnShadow;
 
     const dojo = new Building({
         name: 'Ninja Dojo',
@@ -552,31 +577,36 @@ export function buildVillage(centerWorld, art, seed = 555) {
                 name: `Casa ${i + 1}`,
                 buildingType: 'house',
                 sprite,
-                shadowSprite: art.shadow,
+                shadowSprite: art.houseHasOwnShadow ? null : art.shadow,
+                scale: art.houseScale,
                 x: centerWorld.x + off.dx,
                 y: centerWorld.y + off.dy,
                 width: sprite.width,
                 height: sprite.height,
-                spriteAnchorY: 0.95,
+                spriteAnchorY: art.houseAnchorY,
                 zIndex: 2,
             })
         );
-        // La casa "variante 1" tiene chimenea: aquí es donde World.js ancla el
-        // humo sutil que pide el diseño ("saliendo de alguna casa").
-        if (variantIndex === 1) {
+        // La casa "forja" (índice 3 en la hoja real; antes la variante 1 procedural)
+        // tiene brasas encendidas: aquí es donde World.js ancla el humo sutil que
+        // pide el diseño ("saliendo de alguna casa").
+        if (variantIndex === 3) {
             chimneyPositions.push({
-                x: centerWorld.x + off.dx + 18,
-                y: centerWorld.y + off.dy - sprite.height * 0.82,
+                x: centerWorld.x + off.dx + sprite.width * art.houseScale * 0.22,
+                y: centerWorld.y + off.dy - sprite.height * art.houseScale * 0.7,
             });
         }
 
         // Barriles/cajas apoyados junto a cada casa: hacen que la aldea se sienta
-        // habitada en vez de un decorado vacío.
-        const propAngle = rng() * Math.PI * 2;
-        const propDist = 34 + rng() * 10;
-        const px = centerWorld.x + off.dx + Math.cos(propAngle) * propDist;
-        const py = centerWorld.y + off.dy + Math.sin(propAngle) * propDist * 0.6 + sprite.height * 0.3;
-        entities.push(new Prop(px, py, rng() < 0.5 ? art.barrel : art.crate, { shadow: art.shadow }));
+        // habitada en vez de un decorado vacío. Se omiten si la casa ya trae los
+        // suyos pintados (la hoja real ya incluye barriles/cajas en varias).
+        if (!art.houseHasOwnShadow) {
+            const propAngle = rng() * Math.PI * 2;
+            const propDist = 34 + rng() * 10;
+            const px = centerWorld.x + off.dx + Math.cos(propAngle) * propDist;
+            const py = centerWorld.y + off.dy + Math.sin(propAngle) * propDist * 0.6 + sprite.height * 0.3;
+            entities.push(new Prop(px, py, rng() < 0.5 ? art.barrel : art.crate, { shadow: art.shadow }));
+        }
     });
 
     const towerOffsets = [
@@ -600,27 +630,53 @@ export function buildVillage(centerWorld, art, seed = 555) {
         );
     });
 
-    // Faroles flanqueando la entrada del dojo y el camino interno.
-    const lanternOffsets = [
-        { dx: -50, dy: 60 },
-        { dx: 50, dy: 60 },
-        { dx: -140, dy: 130 },
-        { dx: 140, dy: 130 },
-    ];
-    lanternOffsets.forEach((off) => {
-        const x = centerWorld.x + off.dx;
-        const y = centerWorld.y + off.dy;
-        entities.push(new Prop(x, y, art.lantern));
-        lanternPositions.push({ x, y: y - art.lantern.height * 0.75 });
-    });
+    // Faroles flanqueando la entrada del dojo y el camino interno — se omiten con
+    // el arte real del Dojo porque ya trae los suyos pintados junto a la entrada.
+    if (!dojoIsReal) {
+        const lanternOffsets = [
+            { dx: -50, dy: 60 },
+            { dx: 50, dy: 60 },
+            { dx: -140, dy: 130 },
+            { dx: 140, dy: 130 },
+        ];
+        lanternOffsets.forEach((off) => {
+            const x = centerWorld.x + off.dx;
+            const y = centerWorld.y + off.dy;
+            const lantern = art.lanterns[Math.floor(rng() * art.lanterns.length)];
+            entities.push(
+                new Prop(x, y, lantern, {
+                    scale: art.lanternScale,
+                    anchorY: art.lanternAnchorY,
+                    shadow: art.lanternHasOwnShadow ? null : art.shadow,
+                })
+            );
+            lanternPositions.push({ x, y: y - lantern.height * art.lanternScale * 0.75 });
+        });
 
-    // Bancos junto al camino interno, frente al dojo.
-    entities.push(new Prop(centerWorld.x - 90, centerWorld.y + 95, art.bench, { shadow: art.shadow }));
-    entities.push(new Prop(centerWorld.x + 90, centerWorld.y + 95, art.bench, { shadow: art.shadow, rotation: Math.PI }));
+        // Bancos junto al camino interno, frente al dojo.
+        entities.push(new Prop(centerWorld.x - 90, centerWorld.y + 95, art.bench, { shadow: art.shadow }));
+        entities.push(new Prop(centerWorld.x + 90, centerWorld.y + 95, art.bench, { shadow: art.shadow, rotation: Math.PI }));
 
-    // Estandartes flanqueando la entrada norte de la aldea.
-    entities.push(new Prop(centerWorld.x - 46, centerWorld.y - 170, art.bannerPost, { shadow: art.shadow }));
-    entities.push(new Prop(centerWorld.x + 46, centerWorld.y - 170, art.bannerPost, { shadow: art.shadow }));
+        // Estandartes flanqueando la entrada norte de la aldea.
+        entities.push(new Prop(centerWorld.x - 46, centerWorld.y - 170, art.bannerPost, { shadow: art.shadow }));
+        entities.push(new Prop(centerWorld.x + 46, centerWorld.y - 170, art.bannerPost, { shadow: art.shadow }));
+    } else {
+        // Con el Dojo real, unos pocos faroles reales SÍ lejos de su propio patio
+        // (junto a las casas exteriores) para que sigan iluminando esa zona.
+        [-1, 1].forEach((side) => {
+            const x = centerWorld.x + side * 170;
+            const y = centerWorld.y + 55;
+            const lantern = art.lanterns[Math.floor(rng() * art.lanterns.length)];
+            entities.push(
+                new Prop(x, y, lantern, {
+                    scale: art.lanternScale,
+                    anchorY: art.lanternAnchorY,
+                    shadow: art.lanternHasOwnShadow ? null : art.shadow,
+                })
+            );
+            lanternPositions.push({ x, y: y - lantern.height * art.lanternScale * 0.75 });
+        });
+    }
 
     // Cerca perimetral: postes espaciados a lo largo de un anillo irregular.
     const fenceRadius = 300;
@@ -666,7 +722,13 @@ export function buildBridge(map, art) {
     }
     const p0 = map.samplePath(Math.max(0, bestT - 0.01));
     const p1 = map.samplePath(Math.min(1, bestT + 0.01));
-    const angle = Math.atan2(p1.y - p0.y, p1.x - p0.x) + Math.PI / 2;
+    const angle = art.bridgeIsRealArt ? 0 : Math.atan2(p1.y - p0.y, p1.x - p0.x) + Math.PI / 2;
 
-    return new Prop(cx, cy, art.bridge, { rotation: angle, zIndexBonus: -2, anchorY: 0.5 });
+    return new Prop(cx, cy, art.bridge, {
+        rotation: angle,
+        zIndexBonus: -2,
+        anchorY: art.bridgeAnchorY,
+        scale: art.bridgeScale,
+        shadow: art.bridgeHasOwnShadow ? null : art.shadow,
+    });
 }
