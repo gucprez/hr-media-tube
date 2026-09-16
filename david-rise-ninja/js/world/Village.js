@@ -470,8 +470,16 @@ function buildShadow() {
 }
 
 export class VillageArt {
-    constructor(seed = 8800) {
-        this.dojo = buildDojoSprite(seed);
+    // `overrides` viene de ArtOverrides.resolveArtOverrides(): por cada clave que
+    // exista ahí (p.ej. `dojo`) ya hay un PNG real cargado y se usa en vez del
+    // placeholder de Canvas, sin que el resto del motor tenga que saberlo — Building
+    // sigue recibiendo simplemente "un sprite" y "un spriteAnchorY".
+    constructor(seed = 8800, overrides = {}) {
+        this.dojo = overrides.dojo?.image ?? buildDojoSprite(seed);
+        this.dojoScale = overrides.dojo?.scale ?? 1;
+        this.dojoAnchorY = overrides.dojo?.anchorY ?? 0.98;
+        this.dojoHasOwnShadow = overrides.dojo?.hasOwnShadow ?? false;
+
         this.houses = [buildHouseSprite(seed, 0), buildHouseSprite(seed, 1), buildHouseSprite(seed, 2)];
         this.tower = buildTowerSprite(seed);
         this.lantern = buildLanternSprite();
@@ -519,12 +527,13 @@ export function buildVillage(centerWorld, art, seed = 555) {
         name: 'Ninja Dojo',
         buildingType: 'dojo',
         sprite: art.dojo,
-        shadowSprite: art.shadow,
+        shadowSprite: art.dojoHasOwnShadow ? null : art.shadow,
+        scale: art.dojoScale,
         x: centerWorld.x,
         y: centerWorld.y,
         width: art.dojo.width,
         height: art.dojo.height,
-        spriteAnchorY: 0.98,
+        spriteAnchorY: art.dojoAnchorY,
         zIndex: 4,
     });
     entities.push(dojo);

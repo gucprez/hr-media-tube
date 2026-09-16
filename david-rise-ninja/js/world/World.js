@@ -11,12 +11,12 @@ import { hash2i } from '../core/utils.js';
 // ya ordenada por Y para que el Renderer la recorra en un solo paso (algoritmo del
 // pintor).
 export class World {
-    constructor(seed = 20240101) {
+    constructor(seed = 20240101, assetOverrides = {}) {
         this.map = new GameMap({ seed });
         this.terrainPainter = new TerrainPainter(this.map, seed + 1);
         this.decorationArt = new DecorationArt(seed + 2);
         this.decorations = scatterDecorations(this.map, seed + 3);
-        this.villageArt = new VillageArt(seed + 4);
+        this.villageArt = new VillageArt(seed + 4, assetOverrides);
 
         const village = buildVillage(this.map.villageCenterWorld, this.villageArt, seed + 5);
         this.villageEntities = village.entities;

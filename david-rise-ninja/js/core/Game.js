@@ -17,7 +17,10 @@ const CAMERA_PAN_SPEED = 900; // px de mundo por segundo a zoom 1
 // el mundo y toda la UI. GameLoop sólo mide tiempo; aquí es donde vive
 // INPUT -> UPDATE -> WORLD UPDATE -> RENDER -> UI.
 export class Game {
-    constructor(canvas, minimapCanvas) {
+    // `assetOverrides` viene de ArtOverrides.resolveArtOverrides(), resuelto en
+    // main.js ANTES de crear el Game: por cada pieza de arte para la que ya exista
+    // un PNG/WEBP real en /assets, el mundo la usa en vez del placeholder de Canvas.
+    constructor(canvas, minimapCanvas, assetOverrides = {}) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.state = 'menu';
@@ -29,7 +32,7 @@ export class Game {
         this.cursor = new Cursor(canvas);
 
         this.camera = new Camera(canvas.clientWidth, canvas.clientHeight);
-        this.world = new World(20240101);
+        this.world = new World(20240101, assetOverrides);
         this._registerWorldAssets();
 
         const villageCenter = this.world.map.villageCenterWorld;

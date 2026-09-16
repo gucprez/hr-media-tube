@@ -41,3 +41,17 @@ export class AssetManager {
         this.pending.length = 0;
     }
 }
+
+// Comprueba si existe un PNG/WEBP real en `url` y lo devuelve ya cargado, o `null`
+// si no existe (404) o no puede decodificarse. Se usa ANTES de construir el mundo,
+// para decidir por cada pieza de arte si dibujamos el placeholder procedural o la
+// imagen definitiva — sin esto, tendríamos que mutar sprites ya repartidos entre
+// entidades después de que el juego ya empezó a renderizar.
+export function tryLoadImage(url) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = url;
+    });
+}
