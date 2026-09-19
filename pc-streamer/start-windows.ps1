@@ -28,17 +28,15 @@
     Requisitos previos en el PC:
       - ffmpeg instalado y en el PATH (https://ffmpeg.org/download.html).
       - Python 3 instalado y en el PATH (para el anunciador).
-      - Para capturar audio del sistema, un dispositivo de audio virtual tipo
-        "virtual-audio-capturer" o VB-Audio Virtual Cable. Si no tienes uno,
-        usa -NoAudio para transmitir solo video.
       - Ejecutar en PowerShell: si da error de permisos, ejecutar antes
         una sola vez:  Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+
+    Nota: transmite solo video, sin audio (las TV no necesitan sonido del PC).
 
     Uso:
       .\list-monitors.ps1
       .\start-windows.ps1 -OffsetX 1920 -OffsetY 0 -Width 1920 -Height 1080
       .\start-windows.ps1 -OffsetX 1920 -OffsetY 0 -Width 1920 -Height 1080 -Mode Stable
-      .\start-windows.ps1 -OffsetX 1920 -OffsetY 0 -Width 1920 -Height 1080 -NoAudio
 #>
 
 param(
@@ -51,8 +49,7 @@ param(
     [string]$Bitrate = "6M",
     [int]$Fps = 30,
     [string]$StreamPath = "pc",
-    [int]$RtspPort = 8554,
-    [switch]$NoAudio
+    [int]$RtspPort = 8554
 )
 
 $ErrorActionPreference = "Stop"
@@ -103,14 +100,8 @@ $videoArgs = @(
     "-i", "desktop"
 )
 
-$audioArgs = @()
-$audioEncodeArgs = @()
-if (-not $NoAudio) {
-    $audioArgs = @("-f", "dshow", "-i", "audio=virtual-audio-capturer")
-    $audioEncodeArgs = @("-c:a", "aac", "-b:a", "128k")
-}
-
 $encodeArgs = @(
+    "-an",
     "-c:v", "libx264", "-preset", $preset, "-tune", "zerolatency",
     "-bf", "0",
     "-b:v", $Bitrate, "-g", $gop
@@ -119,7 +110,7 @@ $encodeArgs = @(
 $outputArgs = @("-rtsp_transport", "tcp", "-f", "rtsp", $rtspUrl)
 
 try {
-    & ffmpeg @videoArgs @audioArgs @encodeArgs @audioEncodeArgs @outputArgs
+    & ffmpeg @videoArgs @encodeArgs @outputArgs
 }
 finally {
     Write-Host "Deteniendo servicios..."

@@ -13,10 +13,11 @@
 #
 # Requisitos: ffmpeg y python3 instalados.
 #
+# Transmite solo video, sin audio (las TV no necesitan sonido del PC).
+#
 # Uso:
 #   ./start-linux.sh --offset-x 1920 --offset-y 0 --width 1920 --height 1080
 #   MODE=stable ./start-linux.sh --offset-x 1920 --offset-y 0 --width 1920 --height 1080
-#   ./start-linux.sh --offset-x 1920 --offset-y 0 --width 1920 --height 1080 --no-audio
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -32,7 +33,6 @@ OFFSET_X=0
 OFFSET_Y=0
 WIDTH=1920
 HEIGHT=1080
-NO_AUDIO=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -40,7 +40,6 @@ while [ $# -gt 0 ]; do
         --offset-y) OFFSET_Y="$2"; shift 2 ;;
         --width) WIDTH="$2"; shift 2 ;;
         --height) HEIGHT="$2"; shift 2 ;;
-        --no-audio) NO_AUDIO=1; shift ;;
         *) echo "Argumento no reconocido: $1"; exit 1 ;;
     esac
 done
@@ -84,18 +83,10 @@ echo "Modo: $MODE (preset=$PRESET, gop=$GOP)"
 echo "Capturando región: $CAPTURE_GEOMETRY de la pantalla $DISPLAY_NAME"
 echo "Iniciando captura y transmisión (ffmpeg). Ctrl+C para detener."
 
-AUDIO_ARGS=()
-AUDIO_ENCODE_ARGS=()
-if [ "$NO_AUDIO" -eq 0 ]; then
-    AUDIO_ARGS=(-f pulse -i default)
-    AUDIO_ENCODE_ARGS=(-c:a aac -b:a 128k)
-fi
-
 ffmpeg -f x11grab -framerate "$FPS" -video_size "${WIDTH}x${HEIGHT}" \
     -i "${DISPLAY_NAME}+${OFFSET_X},${OFFSET_Y}" \
-    "${AUDIO_ARGS[@]}" \
+    -an \
     -c:v libx264 -preset "$PRESET" -tune zerolatency -bf 0 \
     -b:v "$BITRATE" -g "$GOP" \
-    "${AUDIO_ENCODE_ARGS[@]}" \
     -rtsp_transport tcp \
     -f rtsp "$RTSP_URL"

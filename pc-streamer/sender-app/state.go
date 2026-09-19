@@ -14,7 +14,6 @@ type AppState struct {
 	mode        string // "lowlatency" | "stable"
 	windowTitle string // "" means whole desktop
 	bitrate     string
-	audioFound  bool
 	lastError   string
 
 	ffmpegCmd     *exec.Cmd
@@ -39,7 +38,6 @@ func (s *AppState) snapshot() map[string]interface{} {
 		"mode":           s.mode,
 		"windowTitle":    s.windowTitle,
 		"bitrate":        s.bitrate,
-		"audioFound":     s.audioFound,
 		"lastError":      s.lastError,
 		"preparing":      s.preparing,
 		"prepareMessage": s.prepareMessage,

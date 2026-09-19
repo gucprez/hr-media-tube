@@ -1,13 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -29,55 +27,11 @@ func hidden(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 }
 
-// detectSystemAudioDevice asks ffmpeg for the list of DirectShow audio
-// capture devices and returns the first one that looks like a loopback /
-// "hear what you hear" device. Returns "" if none is found (most Windows
-// PCs don't have one enabled by default) — streaming then continues
-// video-only instead of failing.
-func detectSystemAudioDevice() string {
-	cmd := exec.Command(ffmpegPath(), "-hide_banner", "-list_devices", "true", "-f", "dshow", "-i", "dummy")
-	hidden(cmd)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	_ = cmd.Run() // ffmpeg exits non-zero here on purpose; we only want the device list
-
-	output := stderr.String()
-	candidates := []string{"virtual-audio-capturer", "stereo mix", "mezcla estéreo", "cable output", "what u hear"}
-
-	inAudioSection := false
-	for _, line := range strings.Split(output, "\n") {
-		lower := strings.ToLower(line)
-		if strings.Contains(lower, "directshow audio devices") {
-			inAudioSection = true
-			continue
-		}
-		if strings.Contains(lower, "directshow video devices") {
-			inAudioSection = false
-			continue
-		}
-		if !inAudioSection || !strings.Contains(line, "\"") {
-			continue
-		}
-		start := strings.Index(line, "\"")
-		end := strings.LastIndex(line, "\"")
-		if start == -1 || end <= start {
-			continue
-		}
-		name := line[start+1 : end]
-		nameLower := strings.ToLower(name)
-		for _, c := range candidates {
-			if strings.Contains(nameLower, c) {
-				return name
-			}
-		}
-	}
-	return ""
-}
-
 // StartStreaming launches MediaMTX + ffmpeg with the requested settings and
 // starts the LAN discovery broadcast. windowTitle == "" captures the whole
-// desktop; otherwise ffmpeg captures just that window.
-func StartStreaming(mode, windowTitle, bitrate string, forceNoAudio bool) error {
+// desktop; otherwise ffmpeg captures just that window. Video only — no audio
+// is captured or sent, by design (the TVs don't need sound from the PC).
+func StartStreaming(mode, windowTitle, bitrate string) error {
 	state.mu.Lock()
 	if state.running {
 		state.mu.Unlock()
@@ -108,11 +62,6 @@ func StartStreaming(mode, windowTitle, bitrate string, forceNoAudio bool) error 
 		return fmt.Errorf("MediaMTX no arrancó a tiempo")
 	}
 
-	audioDevice := ""
-	if !forceNoAudio {
-		audioDevice = detectSystemAudioDevice()
-	}
-
 	fps := 30
 	var preset string
 	var gop int
@@ -132,18 +81,11 @@ func StartStreaming(mode, windowTitle, bitrate string, forceNoAudio bool) error 
 		args = append(args, "-f", "gdigrab", "-framerate", strconv.Itoa(fps), "-i", "title="+windowTitle)
 	}
 
-	if audioDevice != "" {
-		args = append(args, "-f", "dshow", "-i", "audio="+audioDevice)
-	}
-
 	args = append(args,
+		"-an",
 		"-c:v", "libx264", "-preset", preset, "-tune", "zerolatency", "-bf", "0",
 		"-b:v", bitrate, "-g", strconv.Itoa(gop),
 	)
-
-	if audioDevice != "" {
-		args = append(args, "-c:a", "aac", "-b:a", "128k")
-	}
 
 	rtspURL := fmt.Sprintf("rtsp://127.0.0.1:%d/%s", rtspPort, streamPath)
 	args = append(args, "-rtsp_transport", "tcp", "-f", "rtsp", rtspURL)
@@ -167,7 +109,6 @@ func StartStreaming(mode, windowTitle, bitrate string, forceNoAudio bool) error 
 	state.mode = mode
 	state.windowTitle = windowTitle
 	state.bitrate = bitrate
-	state.audioFound = audioDevice != ""
 	state.lastError = ""
 	state.ffmpegCmd = ffmpegCmd
 	state.mediamtxCmd = mediamtxCmd

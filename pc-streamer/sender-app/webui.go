@@ -112,7 +112,6 @@ async function poll() {
     let html = '<span class="ok">Transmitiendo</span><br>';
     html += 'IP para configurar en las TV: <b>' + s.ip + '</b><br>';
     html += 'Puerto: <b>8554</b> &nbsp; Stream: <b>pc</b><br>';
-    html += 'Audio del sistema: ' + (s.audioFound ? '<span class="ok">detectado</span>' : '<span class="warn">no detectado (solo video)</span>') + '<br>';
     html += '<small>Las TV con autodescubrimiento activado deberían encontrar esta IP solas.</small>';
     el.innerHTML = html;
     startBtn.style.display = 'none';

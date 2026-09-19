@@ -62,7 +62,7 @@ func handleStart(w http.ResponseWriter, r *http.Request) {
 		bitrate = "6M"
 	}
 
-	err := StartStreaming(mode, windowTitle, bitrate, false)
+	err := StartStreaming(mode, windowTitle, bitrate)
 	if err != nil {
 		writeJSON(w, map[string]interface{}{"ok": false, "error": err.Error()})
 		return
