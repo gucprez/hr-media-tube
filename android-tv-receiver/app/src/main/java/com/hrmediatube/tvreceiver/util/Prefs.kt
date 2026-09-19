@@ -19,11 +19,17 @@ class Prefs(context: Context) {
         get() = prefs.getString(KEY_PATH, DEFAULT_PATH) ?: DEFAULT_PATH
         set(value) = prefs.edit().putString(KEY_PATH, value).apply()
 
-    fun save(ip: String, port: Int, path: String) {
+    /** true = modo llamadas (baja latencia), false = modo película (más buffer, más estable). */
+    var lowLatencyMode: Boolean
+        get() = prefs.getBoolean(KEY_LOW_LATENCY, true)
+        set(value) = prefs.edit().putBoolean(KEY_LOW_LATENCY, value).apply()
+
+    fun save(ip: String, port: Int, path: String, lowLatency: Boolean) {
         prefs.edit()
             .putString(KEY_IP, ip)
             .putInt(KEY_PORT, port)
             .putString(KEY_PATH, path)
+            .putBoolean(KEY_LOW_LATENCY, lowLatency)
             .apply()
     }
 
@@ -35,6 +41,7 @@ class Prefs(context: Context) {
         private const val KEY_IP = "server_ip"
         private const val KEY_PORT = "server_port"
         private const val KEY_PATH = "stream_path"
+        private const val KEY_LOW_LATENCY = "low_latency_mode"
         const val DEFAULT_PORT = 8554
         const val DEFAULT_PATH = "pc"
     }

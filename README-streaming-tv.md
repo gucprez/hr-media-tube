@@ -1,35 +1,64 @@
-# Transmitir video del PC a dos Android TV por WiFi
+# Transmitir video/llamadas del PC a dos Android TV por WiFi
 
 Este proyecto añade dos piezas al repositorio (independientes del servicio
-FastAPI existente) para transmitir video desde tu PC a **dos televisores
-Android TV** por WiFi, con reconexión automática si la señal se corta:
+FastAPI existente) para mostrar contenido de tu PC en **dos televisores
+Android TV simultáneamente, mostrando ambas lo mismo**, mientras tu laptop
+sigue usando su propia pantalla para otra cosa.
 
 - **`android-tv-receiver/`** — App Android TV (APK) que recibe el stream y
-  lo muestra a pantalla completa.
+  lo muestra a pantalla completa, con reconexión automática.
 - **`pc-streamer/`** — Scripts para el PC: levantan un servidor RTSP local
-  y transmiten la pantalla del PC hacia él.
+  y transmiten una región específica de la pantalla hacia él.
 
 ## Cómo funciona (arquitectura)
 
 ```
-[ PC ]                                    [ TV 1 ]
- ffmpeg (captura pantalla) --RTSP/TCP-->  App Android TV
-        |                     \
-        v                      \--RTSP/TCP--> [ TV 2 ]
-   MediaMTX (servidor RTSP local, puerto 8554)
+[ Laptop/PC ]
+  Pantalla real  -> sigue siendo tuya, uso normal, no se toca.
+  Monitor virtual (pantalla extra) -> lo que pones ahí es lo que ven las TV.
+        |
+        v  ffmpeg captura SOLO esa región --RTSP/TCP-->  MediaMTX (puerto 8554)
+                                                             |         \
+                                                             v          v
+                                                          [ TV 1 ]   [ TV 2 ]
+                                                          (mismo stream, mismo contenido)
 ```
 
-El PC codifica el video **una sola vez** con ffmpeg y lo publica en un
-servidor RTSP local (MediaMTX). Cada TV se conecta a ese servidor de forma
-independiente, así que puedes tener las dos encendidas o solo una, sin que
-una TV dependa de la otra.
+El PC codifica el video **una sola vez** y lo publica en un servidor RTSP
+local (MediaMTX). Las dos TV se conectan a ese mismo stream, por eso ven
+exactamente lo mismo. Tu pantalla real de laptop no se transmite ni se ve
+afectada — solo se transmite el "monitor virtual" extra.
 
-Se usa **RTSP sobre TCP** (no UDP) a propósito: en WiFi doméstico es
-mucho más resistente a microcortes y pérdida de paquetes que UDP, que es
-lo que normalmente causa "cuadros verdes" o congelamientos en apps de
-streaming caseras.
+Se usa **RTSP sobre TCP** (no UDP) porque en WiFi doméstico es mucho más
+resistente a microcortes y pérdida de paquetes que UDP.
 
-## 1. Preparar el PC
+## 1. Crear el "monitor virtual" en Windows
+
+Para que puedas mandar contenido a las TV sin tocar tu pantalla real,
+Windows necesita ver una pantalla extra (aunque no exista físicamente).
+
+1. Instala una herramienta de "monitor virtual / dummy plug para Windows"
+   (hay varias gratuitas, búscalas en internet — instalan un controlador
+   liviano y firmado que añade una pantalla extra en Configuración de
+   pantalla, sin necesidad de un monitor físico).
+2. Ve a **Configuración > Sistema > Pantalla** y confirma que aparece la
+   pantalla nueva. Ponla en modo "Extender" y ubícala donde prefieras (por
+   ejemplo, a la derecha de tu laptop) con la resolución que quieras usar
+   en las TV (recomendado: 1920x1080).
+3. Desde `pc-streamer/`, corre:
+   ```powershell
+   .\list-monitors.ps1
+   ```
+   Esto imprime el `OffsetX`, `OffsetY`, `Width` y `Height` de cada
+   pantalla — anota los del monitor nuevo (el que no dice "principal").
+4. Arrastra a esa pantalla nueva lo que quieras que vean las TV: el
+   reproductor de video, la ventana de la videollamada, lo que sea.
+
+> Si tu PC ya tiene físicamente un segundo monitor/salida HDMI libre que no
+> usas, puedes usar esa salida en vez de un monitor virtual — el resto del
+> proceso es idéntico, solo cambia de dónde sale la imagen.
+
+## 2. Preparar el PC (transmitir)
 
 Requisitos: [ffmpeg](https://ffmpeg.org/download.html) y Python 3 instalados
 y en el PATH.
@@ -37,28 +66,41 @@ y en el PATH.
 **Windows** (PowerShell, dentro de `pc-streamer/`):
 ```powershell
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned   # solo la primera vez
-.\start-windows.ps1
+.\start-windows.ps1 -OffsetX 1920 -OffsetY 0 -Width 1920 -Height 1080
 ```
 
-**Linux**:
+**Linux** (con una pantalla extendida vía xrandr):
 ```bash
 cd pc-streamer
-./start-linux.sh
+./start-linux.sh --offset-x 1920 --offset-y 0 --width 1920 --height 1080
 ```
 
-El script descarga MediaMTX automáticamente la primera vez, levanta el
-servidor RTSP, empieza a capturar tu pantalla y anuncia la IP del PC por la
-red para que las TV se autoconfiguren. Puedes ajustar bitrate/fps con
-variables (`BITRATE`, `FPS` en Linux; `-Bitrate`, `-Fps` en Windows).
+Usa los valores de `OffsetX/OffsetY/Width/Height` que anotaste con
+`list-monitors.ps1` (Windows) o `xrandr --query` (Linux).
 
-> macOS: usa el mismo `start-linux.sh` como base cambiando `-f x11grab` por
-> `-f avfoundation -i "1:0"` (captura de pantalla + audio de macOS).
+Si no tienes un dispositivo de audio virtual instalado (para capturar el
+sonido del sistema), agrega `-NoAudio` (Windows) o `--no-audio` (Linux)
+para transmitir solo video.
 
-## 2. Instalar la app en las dos TV
+## 3. Elegir modo: llamadas o película
+
+Ambos scripts aceptan un modo que ajusta la codificación en el PC:
+
+- **LowLatency** (por defecto) — casi tiempo real, pensado para
+  videollamadas. `.\start-windows.ps1 ... -Mode LowLatency`
+- **Stable** — más buffer/GOP más largo, prioriza que no se corte sobre la
+  inmediatez. `.\start-windows.ps1 ... -Mode Stable` / `MODE=stable ./start-linux.sh ...`
+
+**Este modo debe combinarse con el mismo modo elegido en la app de la TV**
+(ver siguiente sección) — el modo del PC ajusta cómo se codifica el video
+(keyframes más frecuentes), y el modo de la TV ajusta cuánto buffer usa el
+reproductor antes de mostrar imagen. Usa **LowLatency + "Llamadas"** juntos,
+o **Stable + "Película"** juntos.
+
+## 4. Instalar la app en las dos TV
 
 El proyecto Android está en `android-tv-receiver/` y ya se compiló y
 verificó en este entorno (`./gradlew assembleDebug` — build exitoso).
-Para generar el APK tú mismo:
 
 ```bash
 cd android-tv-receiver
@@ -66,49 +108,47 @@ cd android-tv-receiver
 # APK resultante en: app/build/outputs/apk/debug/app-debug.apk
 ```
 
-También puedes abrir la carpeta `android-tv-receiver/` directamente en
-Android Studio y pulsar "Run" o "Build APK(s)".
+También puedes abrir la carpeta en Android Studio y pulsar "Run" o
+"Build APK(s)".
 
 Para instalarlo en cada TV:
-- Con **ADB** (recomendado): `adb connect <ip-de-la-tv>` y luego
-  `adb install app-debug.apk`.
+- Con **ADB**: `adb connect <ip-de-la-tv>` y luego `adb install app-debug.apk`.
 - O copiando el APK a una memoria USB y abriéndolo desde un explorador de
   archivos en la TV (activa antes "Orígenes desconocidos" en Ajustes).
 
-Repite la instalación en las dos TV — es el mismo APK para ambas.
+Es el mismo APK para las dos TV.
 
-## 3. Configurar cada TV
+## 5. Configurar cada TV
 
-Al abrir la app por primera vez:
-- Si el router no bloquea el broadcast, la IP del PC aparece sola
-  ("Servidor encontrado") — solo pulsa **Conectar**.
-- Si no aparece (algunos routers activan "aislamiento de clientes" en
-  WiFi), escribe la IP del PC a mano con el control remoto. La IP del PC
-  se imprime en la consola al arrancar el script (`start-windows.ps1` /
-  `start-linux.sh`).
+Al abrir la app por primera vez, en **ambas TV**:
+- Escribe la **misma IP, puerto y nombre de stream** en las dos (o espera a
+  que se autodetecte por broadcast UDP) — así ambas muestran exactamente lo
+  mismo.
+- Elige el modo: **"Llamadas (tiempo real)"** o **"Película (más
+  estable)"**, según lo que vayas a usar (debe coincidir con el `-Mode` que
+  usaste en el script del PC).
+- Pulsa **Conectar**.
 
-La app guarda la configuración: la próxima vez conecta directo, sin pasar
-por esta pantalla. Para cambiar de servidor más adelante, mantén pulsado
-**MENÚ** en el control remoto mientras el video está en pantalla.
+La app guarda la configuración: la próxima vez conecta directo. Para
+cambiar de servidor o de modo más adelante, mantén pulsado **MENÚ** en el
+control remoto mientras el video está en pantalla.
 
 Si la señal WiFi se corta, la app lo detecta sola y muestra
 "Reconectando…", reintentando cada pocos segundos hasta recuperar la
 imagen — no hace falta reiniciar la app ni la TV.
 
-## 4. Recomendaciones para que no se corte la señal
+## 6. Recomendaciones para que no se corte la señal
 
-- Usa la banda **5GHz** del router en el PC y en ambas TV (menos
-  interferencia que 2.4GHz, aunque de menor alcance — si hay mucha
-  distancia, prueba 2.4GHz con un canal poco usado).
-- Si es posible, ubica el router centrado entre el PC y las dos TV, o usa
-  un access point / mesh adicional cerca de las TV.
-- Evita bitrates demasiado altos para tu WiFi: como referencia,
-  `-Bitrate 6M`/`BITRATE=6M` (6 Mbps) funciona bien en la mayoría de redes
-  domésticas a 1080p30. Si notas cortes, bájalo a `3M`o `4M`.
-- Reserva la IP del PC en el router (DHCP reservation) para que no cambie
-  y siempre puedas reconectar con la misma dirección.
-- Si el router tiene control de **QoS**, prioriza el tráfico del PC y de
-  las TV.
+- Usa la banda **5GHz** del router en el PC y en ambas TV.
+- Si es posible, ubica el router centrado entre el PC y las dos TV.
+- Bitrate de referencia: `-Bitrate 6M` (6 Mbps) funciona bien en la mayoría
+  de redes domésticas a 1080p30. Si notas cortes, bájalo a `3M` o `4M`
+  (`.\start-windows.ps1 ... -Bitrate 4M`).
+- En **modo llamadas**, el WiFi necesita ser bastante estable porque hay
+  poco margen de buffer — si notas tartamudeos frecuentes, cambia
+  temporalmente a modo Estable/Película.
+- Reserva la IP del PC en el router (DHCP reservation) para que no cambie.
+- Si el router tiene **QoS**, prioriza el tráfico del PC y de las TV.
 
 ## Notas
 

@@ -15,4 +15,9 @@
     <string name="status_reconnecting">Señal perdida. Reintentando conexión…</string>
     <string name="status_buffering">Cargando video…</string>
     <string name="hint_menu_key">Mantén pulsado MENÚ para cambiar de servidor</string>
+
+    <string name="label_mode">Modo de conexión</string>
+    <string name="mode_low_latency">Llamadas (tiempo real)</string>
+    <string name="mode_stable">Película (más estable)</string>
+    <string name="hint_same_config">Usa la misma IP, puerto y nombre de stream en ambas TV para que muestren lo mismo.</string>
 </resources>

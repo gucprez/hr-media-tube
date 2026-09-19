@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
 #
-# Transmite la pantalla de este PC (Linux, X11) a las TVs Android por WiFi.
+# Transmite SOLO una región de tu pantalla (Linux, X11) a las dos TV Android
+# por WiFi. Pensado para apuntar a un monitor virtual/extendido añadido con
+# xrandr, para no tocar lo que muestra tu pantalla real.
 #
-# Qué hace:
-#   1. Descarga MediaMTX (servidor RTSP) si no está ya en esta carpeta.
-#   2. Lo arranca escuchando en el puerto 8554.
-#   3. Arranca ffmpeg capturando la pantalla (x11grab) y el audio (pulse),
-#      y lo publica hacia MediaMTX por RTSP/TCP.
-#   4. Arranca el anunciador UDP para que las TV encuentren el PC solas.
+# Antes de usarlo:
+#   1. Agrega una pantalla extendida virtual con xrandr (o usa un segundo
+#      monitor HDMI real si lo tienes) y ubícala, por ejemplo, a la derecha
+#      de tu pantalla principal.
+#   2. Averigua su posición y tamaño con: xrandr --query
+#   3. Arrastra a esa pantalla la ventana que quieras que vean las TV.
 #
 # Requisitos: ffmpeg y python3 instalados.
 #
 # Uso:
-#   ./start-linux.sh
-#   BITRATE=6M FPS=30 ./start-linux.sh
+#   ./start-linux.sh --offset-x 1920 --offset-y 0 --width 1920 --height 1080
+#   MODE=stable ./start-linux.sh --offset-x 1920 --offset-y 0 --width 1920 --height 1080
+#   ./start-linux.sh --offset-x 1920 --offset-y 0 --width 1920 --height 1080 --no-audio
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -22,7 +25,25 @@ BITRATE="${BITRATE:-6M}"
 FPS="${FPS:-30}"
 STREAM_PATH="${STREAM_PATH:-pc}"
 RTSP_PORT="${RTSP_PORT:-8554}"
-SCREEN="${DISPLAY:-:0.0}"
+DISPLAY_NAME="${DISPLAY:-:0.0}"
+MODE="${MODE:-lowlatency}"
+
+OFFSET_X=0
+OFFSET_Y=0
+WIDTH=1920
+HEIGHT=1080
+NO_AUDIO=0
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --offset-x) OFFSET_X="$2"; shift 2 ;;
+        --offset-y) OFFSET_Y="$2"; shift 2 ;;
+        --width) WIDTH="$2"; shift 2 ;;
+        --height) HEIGHT="$2"; shift 2 ;;
+        --no-audio) NO_AUDIO=1; shift ;;
+        *) echo "Argumento no reconocido: $1"; exit 1 ;;
+    esac
+done
 
 if [ ! -f "./mediamtx" ]; then
     echo "Descargando MediaMTX..."
@@ -48,13 +69,33 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-RTSP_URL="rtsp://127.0.0.1:${RTSP_PORT}/${STREAM_PATH}"
+if [ "$MODE" = "stable" ]; then
+    PRESET="veryfast"
+    GOP=$((FPS * 4))
+else
+    PRESET="ultrafast"
+    GOP=$FPS
+fi
 
-echo "Iniciando captura de pantalla y transmisión (ffmpeg). Ctrl+C para detener."
-ffmpeg -f x11grab -framerate "$FPS" -i "$SCREEN" \
-    -f pulse -i default \
-    -c:v libx264 -preset veryfast -tune zerolatency \
-    -b:v "$BITRATE" -g "$((FPS * 2))" \
-    -c:a aac -b:a 128k \
+RTSP_URL="rtsp://127.0.0.1:${RTSP_PORT}/${STREAM_PATH}"
+CAPTURE_GEOMETRY="${WIDTH}x${HEIGHT}+${OFFSET_X},${OFFSET_Y}"
+
+echo "Modo: $MODE (preset=$PRESET, gop=$GOP)"
+echo "Capturando región: $CAPTURE_GEOMETRY de la pantalla $DISPLAY_NAME"
+echo "Iniciando captura y transmisión (ffmpeg). Ctrl+C para detener."
+
+AUDIO_ARGS=()
+AUDIO_ENCODE_ARGS=()
+if [ "$NO_AUDIO" -eq 0 ]; then
+    AUDIO_ARGS=(-f pulse -i default)
+    AUDIO_ENCODE_ARGS=(-c:a aac -b:a 128k)
+fi
+
+ffmpeg -f x11grab -framerate "$FPS" -video_size "${WIDTH}x${HEIGHT}" \
+    -i "${DISPLAY_NAME}+${OFFSET_X},${OFFSET_Y}" \
+    "${AUDIO_ARGS[@]}" \
+    -c:v libx264 -preset "$PRESET" -tune zerolatency -bf 0 \
+    -b:v "$BITRATE" -g "$GOP" \
+    "${AUDIO_ENCODE_ARGS[@]}" \
     -rtsp_transport tcp \
     -f rtsp "$RTSP_URL"

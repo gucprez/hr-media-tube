@@ -22,6 +22,7 @@ class MainActivity : Activity() {
                 putExtra(PlayerActivity.EXTRA_IP, savedIp)
                 putExtra(PlayerActivity.EXTRA_PORT, prefs.serverPort)
                 putExtra(PlayerActivity.EXTRA_PATH, prefs.streamPath)
+                putExtra(PlayerActivity.EXTRA_LOW_LATENCY, prefs.lowLatencyMode)
             }
         } else {
             Intent(this, SetupActivity::class.java)

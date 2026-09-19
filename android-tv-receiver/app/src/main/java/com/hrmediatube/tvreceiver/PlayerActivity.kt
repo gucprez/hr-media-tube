@@ -36,6 +36,7 @@ class PlayerActivity : Activity() {
 
     private var player: ExoPlayer? = null
     private lateinit var streamUrl: String
+    private var lowLatencyMode: Boolean = true
 
     private val retryHandler = Handler(Looper.getMainLooper())
     private var retryDelayMs = INITIAL_RETRY_DELAY_MS
@@ -59,6 +60,7 @@ class PlayerActivity : Activity() {
         }
         val port = intent.getIntExtra(EXTRA_PORT, Prefs.DEFAULT_PORT)
         val path = intent.getStringExtra(EXTRA_PATH) ?: Prefs.DEFAULT_PATH
+        lowLatencyMode = intent.getBooleanExtra(EXTRA_LOW_LATENCY, true)
         streamUrl = "rtsp://$ip:$port/$path"
     }
 
@@ -78,14 +80,25 @@ class PlayerActivity : Activity() {
 
         showStatus(getString(R.string.status_connecting))
 
-        val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(
-                MIN_BUFFER_MS,
-                MAX_BUFFER_MS,
-                BUFFER_FOR_PLAYBACK_MS,
-                BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
-            )
-            .build()
+        val loadControl = if (lowLatencyMode) {
+            DefaultLoadControl.Builder()
+                .setBufferDurationsMs(
+                    LOW_LATENCY_MIN_BUFFER_MS,
+                    LOW_LATENCY_MAX_BUFFER_MS,
+                    LOW_LATENCY_BUFFER_FOR_PLAYBACK_MS,
+                    LOW_LATENCY_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+                )
+                .build()
+        } else {
+            DefaultLoadControl.Builder()
+                .setBufferDurationsMs(
+                    STABLE_MIN_BUFFER_MS,
+                    STABLE_MAX_BUFFER_MS,
+                    STABLE_BUFFER_FOR_PLAYBACK_MS,
+                    STABLE_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+                )
+                .build()
+        }
 
         val exoPlayer = ExoPlayer.Builder(this)
             .setLoadControl(loadControl)
@@ -178,15 +191,24 @@ class PlayerActivity : Activity() {
         const val EXTRA_IP = "extra_ip"
         const val EXTRA_PORT = "extra_port"
         const val EXTRA_PATH = "extra_path"
+        const val EXTRA_LOW_LATENCY = "extra_low_latency"
 
         private const val INITIAL_RETRY_DELAY_MS = 2000L
         private const val MAX_RETRY_DELAY_MS = 15000L
 
-        // Buffers generosos para absorber cortes/jitter típicos de WiFi doméstico
-        // sin que se note como congelamiento constante.
-        private const val MIN_BUFFER_MS = 5000
-        private const val MAX_BUFFER_MS = 30000
-        private const val BUFFER_FOR_PLAYBACK_MS = 2500
-        private const val BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS = 5000
+        // Modo llamadas: casi tiempo real. Con WiFi inestable puede notarse más
+        // el tartamudeo antes de recuperar, pero es lo que se necesita para hablar
+        // por videollamada sin sentir retraso.
+        private const val LOW_LATENCY_MIN_BUFFER_MS = 300
+        private const val LOW_LATENCY_MAX_BUFFER_MS = 1000
+        private const val LOW_LATENCY_BUFFER_FOR_PLAYBACK_MS = 150
+        private const val LOW_LATENCY_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS = 300
+
+        // Modo película: buffers generosos para absorber cortes/jitter típicos de
+        // WiFi doméstico a costa de 2-5s de retraso respecto al PC.
+        private const val STABLE_MIN_BUFFER_MS = 5000
+        private const val STABLE_MAX_BUFFER_MS = 30000
+        private const val STABLE_BUFFER_FOR_PLAYBACK_MS = 2500
+        private const val STABLE_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS = 5000
     }
 }
