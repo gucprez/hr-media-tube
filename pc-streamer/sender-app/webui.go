@@ -61,6 +61,7 @@ const pageHTML = `<!DOCTYPE html>
   <button id="btnStart" onclick="start()">Iniciar transmisión</button>
   <button id="btnStop" onclick="stop()">Detener</button>
   <button id="btnExit" onclick="exitApp()">Salir</button>
+  <br><small>Cerrar esta pestaña <b>no</b> apaga el programa — sigue transmitiendo. Para apagarlo del todo usa <b>Salir</b>.</small>
 
   <div id="status">Cargando estado...</div>
   <footer><small>Versión {{VERSION}}</small></footer>

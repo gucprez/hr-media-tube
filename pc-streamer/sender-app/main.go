@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -11,6 +12,21 @@ import (
 const listenAddr = "127.0.0.1:5757"
 
 func main() {
+	// Bind first, before anything else. A failure here usually means a copy
+	// of the program is already running in the background (closing the
+	// browser tab doesn't stop it — only "Salir" does), OR — right after a
+	// self-update — the old copy is a few hundred ms away from releasing the
+	// port. Retry for a few seconds before giving up, so a self-update
+	// relaunch succeeds instead of racing the old process's exit and dying.
+	listener := bindWithRetry(5 * time.Second)
+	if listener == nil {
+		// Still busy after retrying: a copy is genuinely already running.
+		// Rather than fail silently and look like "the program won't open",
+		// just bring that existing copy's page back up.
+		openBrowser("http://" + listenAddr)
+		return
+	}
+
 	cleanupOldExe()
 
 	// Kick off the one-time download in the background as soon as we start,
@@ -32,13 +48,28 @@ func main() {
 	http.HandleFunc("/update/check", handleUpdateCheck)
 	http.HandleFunc("/update/apply", handleUpdateApply)
 
-	go openBrowser("http://" + listenAddr)
+	// The listener is already bound and accepting at this point, so there's
+	// no race to open the browser immediately instead of guessing a delay.
+	openBrowser("http://" + listenAddr)
 
-	_ = http.ListenAndServe(listenAddr, nil)
+	_ = http.Serve(listener, nil)
+}
+
+func bindWithRetry(timeout time.Duration) net.Listener {
+	deadline := time.Now().Add(timeout)
+	for {
+		listener, err := net.Listen("tcp", listenAddr)
+		if err == nil {
+			return listener
+		}
+		if time.Now().After(deadline) {
+			return nil
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
 }
 
 func openBrowser(url string) {
-	time.Sleep(500 * time.Millisecond)
 	cmd := exec.Command("cmd", "/c", "start", url)
 	hidden(cmd)
 	_ = cmd.Start()
