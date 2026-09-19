@@ -1,0 +1,17 @@
+# Configuración mínima de MediaMTX (servidor RTSP) para retransmitir el video
+# del PC a varios televisores Android TV en la misma red WiFi.
+#
+# ffmpeg publica UNA sola vez en esta ruta ("pc") y MediaMTX se encarga de
+# reenviar el mismo stream a cada TV que se conecte, sin volver a codificar.
+
+# Puerto RTSP donde ffmpeg publica y donde las TV se conectan.
+rtspAddress: :8554
+
+# Forzamos TCP: en WiFi doméstico es más resistente a pérdida de paquetes
+# que UDP (evita macrobloques/verde y cortes por microcortes de señal).
+protocols: [tcp]
+
+paths:
+  pc:
+    # Solo aceptamos publicación desde el propio PC (127.0.0.1) por seguridad.
+    source: publisher

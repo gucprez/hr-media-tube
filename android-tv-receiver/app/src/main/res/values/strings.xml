@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HR Media Tube TV</string>
+
+    <string name="setup_title">Configurar receptor de video</string>
+    <string name="setup_subtitle">Introduce la IP de tu PC o espera a que se detecte automáticamente en la misma red WiFi.</string>
+    <string name="label_ip">IP del PC (ej: 192.168.1.50)</string>
+    <string name="label_port">Puerto RTSP</string>
+    <string name="label_path">Nombre del stream</string>
+    <string name="button_connect">Conectar</string>
+    <string name="searching_server">Buscando PC en la red…</string>
+    <string name="server_found">Servidor encontrado: %1$s — pulsa Conectar</string>
+
+    <string name="status_connecting">Conectando con el PC…</string>
+    <string name="status_reconnecting">Señal perdida. Reintentando conexión…</string>
+    <string name="status_buffering">Cargando video…</string>
+    <string name="hint_menu_key">Mantén pulsado MENÚ para cambiar de servidor</string>
+</resources>
