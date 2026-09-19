@@ -32,7 +32,7 @@ func ensureFirewallRule(port int) error {
 		"action=allow",
 		"protocol=TCP",
 		"localport="+portStr,
-		"profile=private,public",
+		"profile=any", // domain, private AND public — covers however Windows classifies this network
 	)
 	hidden(cmd)
 	return cmd.Run()

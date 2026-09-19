@@ -53,6 +53,10 @@ func StartStreaming(mode, windowTitle, bitrate string) error {
 	mediamtxCmd := exec.Command(mediamtxPath(), yamlPath)
 	mediamtxCmd.Dir = binDir()
 	hidden(mediamtxCmd)
+	if mtxLog, err := os.Create(filepath.Join(binDir(), "mediamtx.log")); err == nil {
+		mediamtxCmd.Stdout = mtxLog
+		mediamtxCmd.Stderr = mtxLog
+	}
 	if err := mediamtxCmd.Start(); err != nil {
 		return fmt.Errorf("no se pudo iniciar MediaMTX: %w", err)
 	}

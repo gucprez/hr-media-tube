@@ -4,7 +4,7 @@ import "fmt"
 
 // Bump appVersion (and releases/version.txt in the repo, to the same value)
 // every time a new build is published, so running copies can detect it.
-const appVersion = "1"
+const appVersion = "2"
 
 const (
 	updateOwner  = "gucprez"
