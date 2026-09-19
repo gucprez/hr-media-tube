@@ -27,6 +27,7 @@ const pageHTML = `<!DOCTYPE html>
 <body>
 <div class="card">
   <h1>HR Media Tube — Transmisor de PC</h1>
+  <small>Para que las TV puedan conectarse, abre este programa haciendo clic derecho &gt; <b>"Ejecutar como administrador"</b> (así puede abrir el puerto en el Firewall de Windows automáticamente).</small>
 
   <label>Qué compartir con las TV</label>
   <select id="window">
@@ -112,6 +113,11 @@ async function poll() {
     let html = '<span class="ok">Transmitiendo</span><br>';
     html += 'IP para configurar en las TV: <b>' + s.ip + '</b><br>';
     html += 'Puerto: <b>8554</b> &nbsp; Stream: <b>pc</b><br>';
+    if (s.firewallTried) {
+      html += 'Firewall: ' + (s.firewallOK
+        ? '<span class="ok">puerto abierto automáticamente</span>'
+        : '<span class="err">no se pudo abrir el puerto (cierra el programa y ábrelo como Administrador)</span>') + '<br>';
+    }
     html += '<small>Las TV con autodescubrimiento activado deberían encontrar esta IP solas.</small>';
     el.innerHTML = html;
     startBtn.style.display = 'none';

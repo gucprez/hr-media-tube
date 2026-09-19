@@ -10,11 +10,13 @@ type AppState struct {
 	mu sync.Mutex
 
 	// Streaming state
-	running     bool
-	mode        string // "lowlatency" | "stable"
-	windowTitle string // "" means whole desktop
-	bitrate     string
-	lastError   string
+	running       bool
+	mode          string // "lowlatency" | "stable"
+	windowTitle   string // "" means whole desktop
+	bitrate       string
+	lastError     string
+	firewallOK    bool
+	firewallTried bool
 
 	ffmpegCmd     *exec.Cmd
 	mediamtxCmd   *exec.Cmd
@@ -39,6 +41,8 @@ func (s *AppState) snapshot() map[string]interface{} {
 		"windowTitle":    s.windowTitle,
 		"bitrate":        s.bitrate,
 		"lastError":      s.lastError,
+		"firewallOK":     s.firewallOK,
+		"firewallTried":  s.firewallTried,
 		"preparing":      s.preparing,
 		"prepareMessage": s.prepareMessage,
 	}

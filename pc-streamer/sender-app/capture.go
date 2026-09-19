@@ -62,6 +62,16 @@ func StartStreaming(mode, windowTitle, bitrate string) error {
 		return fmt.Errorf("MediaMTX no arrancó a tiempo")
 	}
 
+	// Best-effort: open the RTSP port to the LAN in Windows Firewall. Without
+	// this, MediaMTX listens fine locally but other devices (the TVs) on the
+	// network get silently blocked. Needs admin rights; if it fails we still
+	// continue streaming (it might already be allowed) but flag it in the UI.
+	firewallErr := ensureFirewallRule(rtspPort)
+	state.mu.Lock()
+	state.firewallTried = true
+	state.firewallOK = firewallErr == nil
+	state.mu.Unlock()
+
 	fps := 30
 	var preset string
 	var gop int

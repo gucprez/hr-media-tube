@@ -8,8 +8,10 @@ Dos piezas (independientes del servicio FastAPI existente en este repo):
 
 ## Uso rápido (Windows, sin instalar nada manualmente)
 
-1. Abre `HRMediaTubeSender.exe` (te lo entregué aparte). Se abre una página
-   en tu navegador con un botón.
+1. Abre `HRMediaTubeSender.exe` con **clic derecho > "Ejecutar como
+   administrador"** (así puede abrir el puerto en el Firewall de Windows
+   él solo — ver sección de problemas más abajo si no lo haces así). Se
+   abre una página en tu navegador con un botón.
    - **La primera vez** descarga solo (ffmpeg + el servidor de video) —
      necesita internet unos minutos. Después de eso queda guardado en la
      carpeta `bin/` junto al `.exe` y no se vuelve a descargar; puedes
@@ -101,6 +103,37 @@ Ambos deben coincidir entre el programa del PC y la app de la TV.
   domésticas a 1080p30. Si notas cortes, bájalo a 3-4 Mbps en el programa.
 - Reserva la IP del PC en el router (DHCP reservation) para que no cambie.
 - Si el router tiene **QoS**, prioriza el tráfico del PC y de las TV.
+
+## La TV se queda en "Señal perdida. Reintentando conexión..." sin parar
+
+Esto casi siempre significa que la TV nunca llegó a alcanzar el stream del
+PC. Revisa en este orden:
+
+1. **¿El programa del PC realmente está transmitiendo?** Mira la página del
+   navegador — debe decir "Transmitiendo" con una IP, no "Detenido".
+2. **Firewall de Windows (la causa más común).** MediaMTX escucha bien en
+   el propio PC, pero Windows bloquea por defecto las conexiones que
+   llegan desde otros equipos (como la TV) a menos que exista una regla
+   que lo permita. Soluciones:
+   - Cierra el programa y ábrelo de nuevo con clic derecho > **"Ejecutar
+     como administrador"** — así puede crear la regla de firewall él
+     solo (lo verás como "Firewall: puerto abierto automáticamente" en la
+     página).
+   - Si sigue sin funcionar, agrégala a mano: abre PowerShell como
+     Administrador y corre:
+     ```powershell
+     netsh advfirewall firewall add rule name="HRMediaTube RTSP" dir=in action=allow protocol=TCP localport=8554
+     ```
+3. **Misma red WiFi.** El PC y ambas TV deben estar en la misma red (no
+   una en 5GHz "invitados" y otra en la red normal, por ejemplo).
+4. **IP correcta.** Si tu PC tiene varias conexiones activas (WiFi +
+   Ethernet, o una VPN), la IP que detecta el programa puede no ser la de
+   tu red WiFi normal. Confirma con `ipconfig` en el PC cuál es la IP de
+   tu adaptador WiFi/Ethernet real y escríbela a mano en la TV si no
+   coincide con la que muestra el programa.
+5. **Antivirus de terceros** (no solo el Firewall de Windows) a veces
+   bloquea `ffmpeg.exe`/`mediamtx.exe` igual — si tienes uno instalado,
+   revisa que no los esté bloqueando.
 
 ## Alternativa avanzada (Linux, o control manual en Windows)
 
