@@ -27,6 +27,18 @@ Dos piezas (independientes del servicio FastAPI existente en este repo):
 Eso es todo — no hace falta instalar ffmpeg, Python, ni ningún driver de
 monitor virtual por separado; el programa ya trae todo lo que necesita.
 
+## Actualizaciones
+
+`HRMediaTubeSender.exe` revisa solo, cada vez que lo abres (y cada 30
+minutos mientras está abierto), si hay una versión más nueva publicada en
+este repositorio. Si la hay, aparece un aviso arriba de la página con un
+botón **"Actualizar ahora"** — lo descarga, se reinicia solo con la nueva
+versión, y listo, sin que tengas que volver a bajar el archivo a mano.
+
+Esto funciona **a partir de esta versión**: si ya tienes una copia anterior
+sin esta función, esa una vez sí necesitas volver a descargarla manualmente
+— después de eso, las siguientes ya se instalan solas.
+
 > Nota sobre "compartir una ventana": si eliges una ventana específica en
 > vez de todo el escritorio, ten en cuenta que si esa ventana cambia de
 > título (algunas apps de videollamada agregan el nombre del contacto,

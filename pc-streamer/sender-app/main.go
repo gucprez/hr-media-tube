@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"os/exec"
+	"strings"
 	"time"
 )
 
 const listenAddr = "127.0.0.1:5757"
 
 func main() {
+	cleanupOldExe()
+
 	// Kick off the one-time download in the background as soon as we start,
 	// so it's ready (or already in progress, visible in the UI) immediately.
 	go func() {
@@ -26,6 +29,8 @@ func main() {
 	http.HandleFunc("/start", handleStart)
 	http.HandleFunc("/stop", handleStop)
 	http.HandleFunc("/exit", handleExit)
+	http.HandleFunc("/update/check", handleUpdateCheck)
+	http.HandleFunc("/update/apply", handleUpdateApply)
 
 	go openBrowser("http://" + listenAddr)
 
@@ -41,7 +46,8 @@ func openBrowser(url string) {
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(pageHTML))
+	html := strings.ReplaceAll(pageHTML, "{{VERSION}}", appVersion)
+	_, _ = w.Write([]byte(html))
 }
 
 func handleWindows(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +88,26 @@ func handleExit(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(300 * time.Millisecond)
 		exitProcess()
 	}()
+}
+
+func handleUpdateCheck(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, checkForUpdate())
+}
+
+func handleUpdateApply(w http.ResponseWriter, r *http.Request) {
+	state.mu.Lock()
+	running := state.running
+	state.mu.Unlock()
+	if running {
+		writeJSON(w, map[string]interface{}{"ok": false, "error": "Detén la transmisión antes de actualizar."})
+		return
+	}
+
+	if err := applyUpdate(); err != nil {
+		writeJSON(w, map[string]interface{}{"ok": false, "error": err.Error()})
+		return
+	}
+	writeJSON(w, map[string]interface{}{"ok": true})
 }
 
 func writeJSON(w http.ResponseWriter, v interface{}) {

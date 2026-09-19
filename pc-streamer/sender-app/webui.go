@@ -17,7 +17,10 @@ const pageHTML = `<!DOCTYPE html>
   #btnStart { background:#3B82F6; color:#fff; }
   #btnStop { background:#EF4444; color:#fff; display:none; }
   #btnExit { background:#374151; color:#fff; margin-left:8px; }
+  #btnUpdate { background:#34D399; color:#0B0F19; margin-top:0; margin-left:12px; padding:6px 14px; font-size:13px; }
+  #updateBanner { display:none; background:#1F2937; border:1px solid #3B82F6; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-size:14px; }
   #status { margin-top:20px; padding:16px; background:#1F2937; border-radius:8px; font-size:14px; line-height:1.6; }
+  footer { margin-top:16px; text-align:right; }
   .ok { color:#34D399; }
   .warn { color:#FBBF24; }
   .err { color:#F87171; }
@@ -26,6 +29,7 @@ const pageHTML = `<!DOCTYPE html>
 </head>
 <body>
 <div class="card">
+  <div id="updateBanner"></div>
   <h1>HR Media Tube — Transmisor de PC</h1>
   <small>Para que las TV puedan conectarse, abre este programa haciendo clic derecho &gt; <b>"Ejecutar como administrador"</b> (así puede abrir el puerto en el Firewall de Windows automáticamente).</small>
 
@@ -59,6 +63,7 @@ const pageHTML = `<!DOCTYPE html>
   <button id="btnExit" onclick="exitApp()">Salir</button>
 
   <div id="status">Cargando estado...</div>
+  <footer><small>Versión {{VERSION}}</small></footer>
 </div>
 
 <script>
@@ -131,9 +136,34 @@ async function poll() {
   }
 }
 
+async function checkUpdate() {
+  try {
+    const res = await fetch('/update/check');
+    const data = await res.json();
+    const banner = document.getElementById('updateBanner');
+    if (data.available) {
+      banner.style.display = 'block';
+      banner.innerHTML = 'Hay una versión nueva disponible (v' + data.remoteVersion + ', tienes v' + data.currentVersion + ').' +
+        '<button id="btnUpdate" onclick="applyUpdate()">Actualizar ahora</button>';
+    } else {
+      banner.style.display = 'none';
+    }
+  } catch (e) {
+    // Sin internet o el repositorio no responde: no es grave, seguimos igual.
+  }
+}
+async function applyUpdate() {
+  const res = await fetch('/update/apply', { method: 'POST' });
+  const data = await res.json();
+  if (!data.ok) { alert(data.error); return; }
+  document.body.innerHTML = '<div class="card"><h1>Actualizando…</h1><p>El programa se está reiniciando con la nueva versión. Espera unos segundos y recarga esta página (F5).</p></div>';
+}
+
 refreshWindows();
 poll();
+checkUpdate();
 setInterval(poll, 2000);
+setInterval(checkUpdate, 30 * 60 * 1000);
 </script>
 </body>
 </html>`
