@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sparkfront</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Pantalla de lobby: crear o unirse a una sala -->
+  <div id="lobby-screen" class="screen">
+    <div class="panel">
+      <h1>⚡ Sparkfront</h1>
+      <p class="subtitle">Haz crecer tu Núcleo Spark, produce unidades de energía y apaga a tus rivales.</p>
+
+      <div class="field">
+        <label for="name-input">Tu nombre</label>
+        <input id="name-input" maxlength="16" placeholder="Piloto Spark" />
+      </div>
+
+      <div class="lobby-actions">
+        <button id="create-room-btn" class="btn btn-primary">Crear sala</button>
+        <div class="join-row">
+          <input id="code-input" maxlength="6" placeholder="CÓDIGO" />
+          <button id="join-room-btn" class="btn">Unirse</button>
+        </div>
+      </div>
+
+      <p id="lobby-error" class="error-text"></p>
+    </div>
+  </div>
+
+  <!-- Pantalla de sala de espera -->
+  <div id="waiting-screen" class="screen hidden">
+    <div class="panel">
+      <h2>Sala <span id="room-code-label">------</span></h2>
+      <p class="subtitle">Comparte este código con tus amigos (2 a 4 jugadores)</p>
+      <ul id="player-list" class="player-list"></ul>
+      <button id="start-game-btn" class="btn btn-primary hidden">Empezar partida</button>
+      <p id="waiting-hint" class="subtitle">Esperando al anfitrión...</p>
+    </div>
+  </div>
+
+  <!-- Pantalla de juego -->
+  <div id="game-screen" class="screen hidden">
+    <div id="phaser-container"></div>
+
+    <div id="hud">
+      <div id="hud-top">
+        <div id="energy-display">⚡ <span id="energy-value">0</span></div>
+        <div id="timer-display">⏱ <span id="timer-value">15:00</span></div>
+      </div>
+
+      <div id="selection-info"></div>
+
+      <div id="build-bar">
+        <div class="bar-label">Construir</div>
+        <div id="build-buttons" class="button-row"></div>
+        <div class="bar-label">Producir</div>
+        <div id="produce-buttons" class="button-row"></div>
+      </div>
+
+      <div id="minimap-wrap">
+        <canvas id="minimap-canvas" width="180" height="135"></canvas>
+      </div>
+
+      <div id="chat-box">
+        <div id="chat-log"></div>
+        <input id="chat-input" placeholder="Pulsa Enter para chatear..." maxlength="140" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Pantalla de fin de partida -->
+  <div id="gameover-screen" class="screen hidden">
+    <div class="panel">
+      <h2 id="gameover-title">¡Partida terminada!</h2>
+      <p id="gameover-subtitle"></p>
+      <button id="back-to-lobby-btn" class="btn btn-primary">Volver al lobby</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+
+  <script src="js/network.js"></script>
+  <script src="js/entities/Player.js"></script>
+  <script src="js/entities/Building.js"></script>
+  <script src="js/entities/Unit.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
