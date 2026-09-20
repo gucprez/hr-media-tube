@@ -1,0 +1,87 @@
+#inspector {
+  width: 260px;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border-color);
+  padding: 12px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+#inspector h2 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.inspector-empty {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.inspector-section {
+  margin-bottom: 14px;
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  padding: 10px;
+}
+
+.inspector-section h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.field-row:last-child {
+  margin-bottom: 0;
+}
+
+.field-row input[type="number"],
+.field-row input[type="text"],
+.field-row select {
+  width: 110px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-primary);
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+.field-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+.field-row.readonly .field-value {
+  color: var(--text-primary);
+  font-family: Consolas, monospace;
+  font-size: 11px;
+}
+
+.inspector-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.inspector-actions .btn {
+  flex: 1;
+}

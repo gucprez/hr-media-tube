@@ -1,0 +1,146 @@
+[
+  {
+    "id": "tree_large_01",
+    "category": "trees",
+    "file": "trees/tree_large_01.png",
+    "defaultScale": 1,
+    "anchor": "bottom-center",
+    "dimensions": { "width": 160, "height": 220 },
+    "metadata": { "description": "Large mature battlefield tree" }
+  },
+  {
+    "id": "tree_small_01",
+    "category": "trees",
+    "file": "trees/tree_small_01.png",
+    "defaultScale": 1,
+    "anchor": "bottom-center",
+    "dimensions": { "width": 90, "height": 130 },
+    "metadata": { "description": "Small battlefield tree" }
+  },
+  {
+    "id": "rock_large_01",
+    "category": "rocks",
+    "file": "rocks/rock_large_01.png",
+    "defaultScale": 1,
+    "anchor": "bottom-center",
+    "dimensions": { "width": 120, "height": 90 },
+    "metadata": { "description": "Large resource rock" }
+  },
+  {
+    "id": "rock_small_01",
+    "category": "rocks",
+    "file": "rocks/rock_small_01.png",
+    "defaultScale": 1,
+    "anchor": "bottom-center",
+    "dimensions": { "width": 60, "height": 50 },
+    "metadata": { "description": "Small decorative rock" }
+  },
+  {
+    "id": "bush_01",
+    "category": "vegetation",
+    "file": "vegetation/bush_01.png",
+    "defaultScale": 1,
+    "anchor": "bottom-center",
+    "dimensions": { "width": 70, "height": 55 },
+    "metadata": { "description": "Battlefield bush" }
+  },
+  {
+    "id": "grass_cluster_01",
+    "category": "vegetation",
+    "file": "vegetation/grass_cluster_01.png",
+    "defaultScale": 1,
+    "anchor": "bottom-center",
+    "dimensions": { "width": 50, "height": 35 },
+    "metadata": { "description": "Battlefield grass cluster" }
+  },
+  {
+    "id": "log_fallen_01",
+    "category": "decoration",
+    "file": "terrain/log_fallen_01.png",
+    "defaultScale": 1,
+    "anchor": "bottom-center",
+    "dimensions": { "width": 140, "height": 50 },
+    "metadata": { "description": "Fallen battlefield log" }
+  },
+  {
+    "id": "barricade_01",
+    "category": "barricades",
+    "file": "barricades/barricade_01.png",
+    "defaultScale": 1,
+    "anchor": "bottom-center",
+    "dimensions": { "width": 110, "height": 70 },
+    "metadata": { "description": "Reinforced battlefield barricade" }
+  },
+  {
+    "id": "fence_segment_01",
+    "category": "fences",
+    "file": "fences/fence_segment_01.png",
+    "defaultScale": 1,
+    "anchor": "bottom-center",
+    "dimensions": { "width": 100, "height": 70 },
+    "metadata": { "description": "Modular reinforced battlefield fence segment" }
+  },
+  {
+    "id": "path_straight_01",
+    "category": "paths",
+    "file": "paths/path_straight_01.png",
+    "defaultScale": 1,
+    "anchor": "center",
+    "dimensions": { "width": 200, "height": 200 },
+    "metadata": { "description": "Straight dirt path tile (reserved for a future tile-based path renderer)" }
+  },
+  {
+    "id": "path_curve_01",
+    "category": "paths",
+    "file": "paths/path_curve_01.png",
+    "defaultScale": 1,
+    "anchor": "center",
+    "dimensions": { "width": 200, "height": 200 },
+    "metadata": { "description": "Curved dirt path tile (reserved for a future tile-based path renderer)" }
+  },
+  {
+    "id": "path_intersection_01",
+    "category": "paths",
+    "file": "paths/path_intersection_01.png",
+    "defaultScale": 1,
+    "anchor": "center",
+    "dimensions": { "width": 200, "height": 200 },
+    "metadata": { "description": "Four-way dirt path intersection tile (reserved for a future tile-based path renderer)" }
+  },
+  {
+    "id": "riverbank_01",
+    "category": "water",
+    "file": "terrain/riverbank_01.png",
+    "defaultScale": 1,
+    "anchor": "center",
+    "dimensions": { "width": 300, "height": 150 },
+    "metadata": { "description": "Riverbank (reserved for a future textured water renderer)" }
+  },
+  {
+    "id": "bridge_wood_01",
+    "category": "bridges",
+    "file": "bridges/bridge_wood_01.png",
+    "defaultScale": 1,
+    "anchor": "center",
+    "dimensions": { "width": 320, "height": 160 },
+    "metadata": { "description": "Modular military wooden bridge" }
+  },
+  {
+    "id": "base_player_marker",
+    "category": "bases",
+    "file": "bases/base_player_marker.png",
+    "defaultScale": 1,
+    "anchor": "bottom-center",
+    "dimensions": { "width": 140, "height": 170 },
+    "metadata": { "description": "Player base marker" }
+  },
+  {
+    "id": "base_enemy_marker",
+    "category": "bases",
+    "file": "bases/base_enemy_marker.png",
+    "defaultScale": 1,
+    "anchor": "bottom-center",
+    "dimensions": { "width": 140, "height": 170 },
+    "metadata": { "description": "Enemy base marker" }
+  }
+]

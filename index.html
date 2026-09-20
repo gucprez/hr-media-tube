@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>David: Rise of the Ninja — World Builder</title>
+<link rel="stylesheet" href="css/main.css" />
+<link rel="stylesheet" href="css/editor.css" />
+<link rel="stylesheet" href="css/panels.css" />
+</head>
+<body>
+<div id="app">
+
+  <header id="topbar">
+    <div class="topbar-group">
+      <span class="brand">DAVID: RISE OF THE NINJA <em>World Builder</em></span>
+    </div>
+    <div class="topbar-group">
+      <button id="btn-new" class="btn" title="New Map">New</button>
+      <button id="btn-open" class="btn" title="Open Map">Open</button>
+      <input type="file" id="file-open" accept="application/json,.json" hidden />
+      <button id="btn-save" class="btn" title="Save Map">Save</button>
+      <button id="btn-save-as" class="btn" title="Save Map As">Save As</button>
+    </div>
+    <div class="topbar-group">
+      <button id="btn-undo" class="btn" title="Undo (Ctrl+Z)">Undo</button>
+      <button id="btn-redo" class="btn" title="Redo (Ctrl+Y)">Redo</button>
+    </div>
+    <div class="topbar-group">
+      <label class="toggle"><input type="checkbox" id="grid-toggle" /> Grid</label>
+      <label class="toggle"><input type="checkbox" id="snap-toggle" /> Snap</label>
+      <label class="toggle">Size <input type="number" id="grid-size-input" min="1" step="1" class="grid-size-input" /></label>
+    </div>
+    <div class="topbar-group">
+      <button id="btn-zoom-out" class="btn" title="Zoom Out">−</button>
+      <button id="btn-zoom-in" class="btn" title="Zoom In">+</button>
+      <button id="btn-debug-toggle" class="btn" title="Toggle Debug Overlay">Debug</button>
+    </div>
+  </header>
+
+  <div id="main">
+    <aside id="toolbar">
+      <div id="tool-buttons">
+        <button class="tool-btn" data-tool="select" title="Select">Select</button>
+        <button class="tool-btn" data-tool="move" title="Move">Move</button>
+        <button class="tool-btn" data-tool="terrain" title="Terrain">Terrain</button>
+        <button class="tool-btn" data-tool="path" title="Path">Path</button>
+        <button class="tool-btn" data-tool="tree" title="Tree">Tree</button>
+        <button class="tool-btn" data-tool="rock" title="Rock">Rock</button>
+        <button class="tool-btn" data-tool="bush" title="Bush">Bush</button>
+        <button class="tool-btn" data-tool="grass" title="Grass">Grass</button>
+        <button class="tool-btn" data-tool="fence" title="Fence">Fence</button>
+        <button class="tool-btn" data-tool="barricade" title="Barricade">Barricade</button>
+        <button class="tool-btn" data-tool="bridge" title="Bridge">Bridge</button>
+        <button class="tool-btn" data-tool="water" title="Water">Water</button>
+        <button class="tool-btn" data-tool="playerBase" title="Player Base">Player Base</button>
+        <button class="tool-btn" data-tool="enemyBase" title="Enemy Base">Enemy Base</button>
+        <button class="tool-btn" data-tool="buildSlot" title="Build Slot">Build Slot</button>
+        <button class="tool-btn" data-tool="delete" title="Delete">Delete</button>
+      </div>
+
+      <div id="asset-palette" class="side-panel hidden"></div>
+
+      <div id="terrain-controls" class="side-panel hidden">
+        <label>Terrain Type
+          <select id="terrain-type-select">
+            <option value="grass">grass</option>
+            <option value="dirt">dirt</option>
+            <option value="mud">mud</option>
+            <option value="stone">stone</option>
+          </select>
+        </label>
+        <p class="hint">Drag on the map to paint a terrain patch.</p>
+      </div>
+
+      <div id="water-controls" class="side-panel hidden">
+        <label>Water Type
+          <select id="water-type-select">
+            <option value="river">river</option>
+            <option value="shallow">shallow</option>
+            <option value="deep">deep</option>
+            <option value="riverbank">riverbank</option>
+          </select>
+        </label>
+        <p class="hint">Drag on the map to paint a water body.</p>
+      </div>
+
+      <div id="path-controls" class="side-panel hidden">
+        <button id="btn-new-path" class="btn">New Path</button>
+        <p class="hint">Click the map to append points. Click + drag an existing point to move it. Select a point and press Delete to remove it.</p>
+      </div>
+    </aside>
+
+    <div id="viewport">
+      <canvas id="world-canvas"></canvas>
+      <div id="debug-overlay" class="hidden"></div>
+      <div id="status-bar"></div>
+    </div>
+
+    <aside id="inspector">
+      <h2>Inspector</h2>
+      <div id="inspector-content"></div>
+    </aside>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
