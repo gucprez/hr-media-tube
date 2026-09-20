@@ -13,12 +13,14 @@ function startPhaserGame(payload) {
     },
   });
   phaserGame.scene.add('GameScene', GameScene, true, payload);
+  window.phaserGame = phaserGame; // util para depuracion/tests desde consola
 }
 
 function destroyPhaserGame() {
   if (phaserGame) {
     phaserGame.destroy(true);
     phaserGame = null;
+    window.phaserGame = null;
   }
 }
 
