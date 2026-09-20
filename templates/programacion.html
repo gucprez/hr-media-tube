@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero" style="padding:56px 0">
+  <div class="container">
+    <span class="eyebrow">Programación</span>
+    <h1>Programación semanal</h1>
+    <p class="hero__tagline">Un encuentro con Dios para cada día de la semana. Consulta los horarios y planifica tu semana espiritual.</p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="schedule-grid">
+      {% for item in schedule %}
+      <div class="schedule-card">
+        <span class="schedule-card__time">{{ item.time }}</span>
+        <span class="schedule-card__day">{{ item.day }}</span>
+        <h3>{{ item.title }}</h3>
+        <p>{{ item.description }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section-alt">
+  <div class="container text-center">
+    <h2>No te pierdas ninguna transmisión</h2>
+    <p>Activa las notificaciones de nuestras redes sociales o únete a nuestra comunidad de WhatsApp para recibir avisos antes de cada transmisión en vivo.</p>
+    <button class="btn btn--gold" id="programacion-listen-btn" type="button">▶ Escuchar en vivo ahora</button>
+  </div>
+</section>
+
+{% endblock %}

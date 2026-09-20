@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero" style="padding:56px 0">
+  <div class="container">
+    <span class="eyebrow">Quiénes somos</span>
+    <h1>Nuestra historia, misión y visión</h1>
+    <p class="hero__tagline">{{ site_tagline }}, llevando esperanza a cada corazón.</p>
+  </div>
+</section>
+
+<section>
+  <div class="container card-grid">
+    <div class="info-card">
+      <h3>🎯 Misión</h3>
+      <p>Llevar el mensaje de esperanza y salvación de Jesucristo a cada hogar a través de la radio, la enseñanza bíblica y una comunidad que acompaña en cada etapa de la vida.</p>
+    </div>
+    <div class="info-card">
+      <h3>👁️ Visión</h3>
+      <p>Ser un faro de luz que alcance a más familias, generación tras generación, con una programación fiel a la Palabra de Dios.</p>
+    </div>
+    <div class="info-card">
+      <h3>❤️ Valores</h3>
+      <p>Fe, servicio, comunidad y excelencia en todo lo que hacemos para la gloria de Dios.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section-alt" id="testimonio">
+  <div class="container">
+    <div class="section-head">
+      <h2>Comparte tu testimonio</h2>
+      <p>Tu historia puede animar a otros. Cuéntanos cómo Dios ha obrado en tu vida.</p>
+    </div>
+    <div class="form-card" style="max-width:560px;margin:0 auto">
+      <form data-testimony-form>
+        <div class="form-field">
+          <label for="nombre">Tu nombre</label>
+          <input type="text" id="nombre" name="nombre" required maxlength="80">
+        </div>
+        <div class="form-field">
+          <label for="mensaje">Tu testimonio</label>
+          <textarea id="mensaje" name="mensaje" required maxlength="1000"></textarea>
+        </div>
+        <button class="btn btn--gold btn--wide" type="submit">Enviar testimonio</button>
+        <p class="form-feedback" data-testimony-feedback role="status"></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

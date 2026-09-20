@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero">
+  <div class="container hero__inner">
+    <div>
+      <span class="eyebrow">Radio cristiana online · 24/7</span>
+      <h1>Iluminando vidas a través de la Palabra de Dios</h1>
+      <p class="hero__tagline">Faro de Luz Radio lleva esperanza a cada corazón con alabanza, prédicas y programación en vivo, dondequiera que estés.</p>
+      <div class="hero__actions">
+        <button class="btn btn--gold" id="hero-listen-btn" type="button">▶ Escuchar en vivo</button>
+        <a class="btn btn--outline" href="/programacion">Ver programación</a>
+      </div>
+    </div>
+    <div class="beacon">
+      <img src="/static/img/logo.svg" alt="Faro de Luz Radio" width="220" height="220">
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="verse-card">
+      <div class="verse-card__icon">📖</div>
+      <div>
+        <span class="badge">Versículo del día</span>
+        <blockquote>&ldquo;{{ verse.text }}&rdquo;</blockquote>
+        <cite>{{ verse.ref }}</cite>
+        <div class="verse-card__actions" data-share-text="{{ verse.text }} — {{ verse.ref }} · Faro de Luz Radio">
+          <a class="share-btn" data-share="whatsapp" aria-label="Compartir en WhatsApp" href="#">🟢</a>
+          <a class="share-btn" data-share="facebook" aria-label="Compartir en Facebook" href="#">f</a>
+          <a class="share-btn" data-share="x" aria-label="Compartir en X" href="#">𝕏</a>
+          <button class="share-btn" data-share="native" aria-label="Compartir" type="button">⤴</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-alt">
+  <div class="container">
+    <div class="section-head">
+      <h2>Programación semanal</h2>
+      <p>Un espacio para cada día de tu semana espiritual.</p>
+    </div>
+    <div class="schedule-grid">
+      {% for item in schedule %}
+      <div class="schedule-card">
+        <span class="schedule-card__time">{{ item.time }}</span>
+        <span class="schedule-card__day">{{ item.day }}</span>
+        <h3>{{ item.title }}</h3>
+        <p>{{ item.description }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="text-center mt-lg"><a class="btn btn--navy" href="/programacion">Ver programación completa</a></p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-head">
+      <h2>¿Por qué escuchar Faro de Luz Radio?</h2>
+    </div>
+    <div class="card-grid">
+      <div class="info-card">
+        <h3>🎙️ Prédicas que edifican</h3>
+        <p>Mensajes bíblicos y prédicas del pastor pensados para fortalecer tu fe cada semana.</p>
+      </div>
+      <div class="info-card">
+        <h3>📻 En vivo, todo el día</h3>
+        <p>Alabanza, adoración y programación cristiana ininterrumpida para acompañarte donde estés.</p>
+      </div>
+      <div class="info-card">
+        <h3>🤝 Una comunidad que crece</h3>
+        <p>Actividades para niños, jóvenes, adultos y nuevos creyentes: hay un espacio para toda tu familia.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-alt">
+  <div class="container">
+    <div class="cta-band">
+      <div>
+        <h2>Comparte tu testimonio</h2>
+        <p>Cuéntanos cómo Dios ha obrado en tu vida y anima a otros con tu historia.</p>
+      </div>
+      <a class="btn btn--navy" href="/quienes-somos#testimonio">Compartir mi testimonio</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

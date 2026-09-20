@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero" style="padding:56px 0">
+  <div class="container">
+    <span class="eyebrow">La Biblia</span>
+    <h1>La Palabra que ilumina cada día</h1>
+    <p class="hero__tagline">Lee, medita y comparte el versículo del día con quienes más quieres.</p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="verse-card">
+      <div class="verse-card__icon">📖</div>
+      <div>
+        <span class="badge">Versículo del día</span>
+        <blockquote>&ldquo;{{ verse.text }}&rdquo;</blockquote>
+        <cite>{{ verse.ref }}</cite>
+        <div class="verse-card__actions" data-share-text="{{ verse.text }} — {{ verse.ref }} · Faro de Luz Radio">
+          <a class="share-btn" data-share="whatsapp" aria-label="Compartir en WhatsApp" href="#">🟢</a>
+          <a class="share-btn" data-share="facebook" aria-label="Compartir en Facebook" href="#">f</a>
+          <a class="share-btn" data-share="x" aria-label="Compartir en X" href="#">𝕏</a>
+          <button class="share-btn" data-share="native" aria-label="Compartir" type="button">⤴</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-alt">
+  <div class="container">
+    <div class="section-head">
+      <h2>¿Por qué estudiar la Biblia es importante?</h2>
+    </div>
+    <div class="card-grid">
+      <div class="info-card">
+        <h3>💛 Nos acerca al corazón de Dios</h3>
+        <p>Fortalece nuestra fe y nos guía en cada decisión de la vida.</p>
+      </div>
+      <div class="info-card">
+        <h3>🕊️ Trae consuelo</h3>
+        <p>En ella encontramos consuelo en los momentos difíciles y sabiduría para vivir correctamente.</p>
+      </div>
+      <div class="info-card">
+        <h3>🌅 Ilumina el camino</h3>
+        <p>La Palabra de Dios es luz que ilumina nuestro camino y alimento para nuestra alma.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

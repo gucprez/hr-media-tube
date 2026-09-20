@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero" style="padding:56px 0">
+  <div class="container">
+    <span class="eyebrow">Contacto</span>
+    <h1>Hablemos</h1>
+    <p class="hero__tagline">Estamos para servirte. Escríbenos por cualquiera de estos medios.</p>
+  </div>
+</section>
+
+<section>
+  <div class="container card-grid">
+    <div class="info-card">
+      <h3>📞 Teléfono</h3>
+      <p>{{ contact.phone or 'Próximamente' }}</p>
+    </div>
+    <div class="info-card">
+      <h3>💬 WhatsApp</h3>
+      <p>{{ contact.whatsapp or 'Próximamente' }}</p>
+    </div>
+    <div class="info-card">
+      <h3>✉️ Correo</h3>
+      <p>{{ contact.email or 'Próximamente' }}</p>
+    </div>
+    <div class="info-card">
+      <h3>📍 Dirección</h3>
+      <p>{{ contact.address or 'Próximamente' }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="section-alt">
+  <div class="container text-center">
+    <h2>Invita a alguien a conocer Faro de Luz Radio</h2>
+    <p>Comparte nuestro sitio con tu familia y amigos.</p>
+    <div class="verse-card__actions" style="justify-content:center" data-share-text="Escucha Faro de Luz Radio — Iluminando vidas a través de la Palabra de Dios">
+      <a class="share-btn" style="background:var(--gray-100);color:var(--navy-800)" data-share="whatsapp" aria-label="Compartir en WhatsApp" href="#">🟢</a>
+      <a class="share-btn" style="background:var(--gray-100);color:var(--navy-800)" data-share="facebook" aria-label="Compartir en Facebook" href="#">f</a>
+      <a class="share-btn" style="background:var(--gray-100);color:var(--navy-800)" data-share="x" aria-label="Compartir en X" href="#">𝕏</a>
+      <button class="share-btn" style="background:var(--gray-100);color:var(--navy-800)" data-share="native" aria-label="Compartir" type="button">⤴</button>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

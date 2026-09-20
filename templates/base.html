@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ title }}</title>
+<meta name="description" content="{{ description }}">
+<link rel="canonical" href="{{ canonical or site_url }}">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0B1F3A">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ site_name }}">
+<meta property="og:title" content="{{ title }}">
+<meta property="og:description" content="{{ description }}">
+<meta property="og:url" content="{{ canonical or site_url }}">
+<meta property="og:image" content="{{ site_url }}{{ og_image or '/static/img/og-image.svg' }}">
+<meta property="og:locale" content="es_ES">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ title }}">
+<meta name="twitter:description" content="{{ description }}">
+<meta name="twitter:image" content="{{ site_url }}{{ og_image or '/static/img/og-image.svg' }}">
+
+<link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "RadioStation",
+  "name": "{{ site_name }}",
+  "url": "{{ site_url }}",
+  "logo": "{{ site_url }}/static/img/logo.svg",
+  "description": "{{ site_description }}",
+  "sameAs": [{% for url in social_urls %}"{{ url }}"{{ "," if not loop.last }}{% endfor %}]
+}
+</script>
+</head>
+<body>
+<a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+<div class="listen-bar" id="listen-bar">
+  <div class="listen-bar__inner">
+    <span class="listen-bar__live"><span class="dot"></span> EN VIVO</span>
+    <span class="listen-bar__text">Faro de Luz Radio — escúchanos ahora</span>
+    <button class="btn btn--gold btn--sm" id="listen-bar-btn" type="button">▶ Escuchar</button>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="container site-header__inner">
+    <a href="/" class="brand" aria-label="{{ site_name }} — Inicio">
+      <img src="/static/img/logo.svg" alt="{{ site_name }}" class="brand__logo" width="44" height="44">
+      <span class="brand__name">Faro de Luz<span class="brand__radio">Radio</span></span>
+    </a>
+
+    <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="main-nav" aria-label="Abrir menú">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="main-nav" id="main-nav">
+      <a href="/" class="{{ 'is-active' if path == '/' }}">Inicio</a>
+      <a href="/programacion" class="{{ 'is-active' if path == '/programacion' }}">Programación</a>
+      <a href="/mensajes" class="{{ 'is-active' if path == '/mensajes' }}">Mensajes</a>
+      <a href="/la-biblia" class="{{ 'is-active' if path == '/la-biblia' }}">La Biblia</a>
+      <a href="/noticias" class="{{ 'is-active' if path == '/noticias' }}">Noticias</a>
+      <a href="/quienes-somos" class="{{ 'is-active' if path == '/quienes-somos' }}">Quiénes Somos</a>
+      <a href="/contacto" class="{{ 'is-active' if path == '/contacto' }}">Contacto</a>
+      <a href="#" class="btn btn--gold btn--sm nav-cta" id="nav-listen-btn">▶ Escuchar en vivo</a>
+    </nav>
+  </div>
+</header>
+
+<main id="contenido">
+{% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div>
+      <a href="/" class="brand brand--footer">
+        <img src="/static/img/logo.svg" alt="{{ site_name }}" width="40" height="40">
+        <span class="brand__name">Faro de Luz<span class="brand__radio">Radio</span></span>
+      </a>
+      <p class="footer-tagline">{{ site_tagline }}, llevando esperanza a cada corazón.</p>
+      <div class="social-row" aria-label="Redes sociales">
+        <a href="{{ social.facebook or '#' }}" aria-label="Facebook" class="social-icon">f</a>
+        <a href="{{ social.instagram or '#' }}" aria-label="Instagram" class="social-icon">ig</a>
+        <a href="{{ social.youtube or '#' }}" aria-label="YouTube" class="social-icon">yt</a>
+        <a href="{{ social.tiktok or '#' }}" aria-label="TikTok" class="social-icon">tk</a>
+        <a href="{{ social.whatsapp or '#' }}" aria-label="WhatsApp" class="social-icon">wa</a>
+      </div>
+    </div>
+
+    <div>
+      <h3 class="footer-heading">Explorar</h3>
+      <a href="/programacion">Programación</a>
+      <a href="/mensajes">Mensajes</a>
+      <a href="/la-biblia">La Biblia</a>
+      <a href="/noticias">Noticias</a>
+    </div>
+
+    <div>
+      <h3 class="footer-heading">Iglesia</h3>
+      <a href="/quienes-somos">Quiénes Somos</a>
+      <a href="/contacto">Contacto</a>
+    </div>
+
+    <div>
+      <h3 class="footer-heading">Únete a la comunidad</h3>
+      <p class="footer-note">Recibe versículos, novedades de programación y avisos de transmisiones en vivo.</p>
+      <form class="newsletter-form newsletter-form--footer" data-newsletter-form>
+        <input type="email" name="email" placeholder="Tu correo electrónico" required aria-label="Correo electrónico">
+        <button type="submit" class="btn btn--gold btn--sm">Unirme</button>
+      </form>
+      <p class="form-feedback" data-newsletter-feedback role="status"></p>
+    </div>
+  </div>
+
+  <div class="container footer-bottom">
+    <p>© {{ current_year }} {{ site_name }}. Todos los derechos reservados.</p>
+  </div>
+</footer>
+
+<div class="player-modal" id="player-modal" hidden>
+  <div class="player-modal__backdrop" data-close-player></div>
+  <div class="player-modal__panel">
+    <button class="player-modal__close" data-close-player aria-label="Cerrar reproductor">✕</button>
+    <h2>Faro de Luz Radio — En Vivo</h2>
+    {% if stream_embed_url %}
+    <iframe src="{{ stream_embed_url }}" width="100%" height="420" frameborder="0" scrolling="no" title="Reproductor en vivo de Faro de Luz Radio"></iframe>
+    {% else %}
+    <p>Muy pronto podrás escucharnos aquí en vivo.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>

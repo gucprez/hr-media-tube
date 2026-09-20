@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero" style="padding:56px 0">
+  <div class="container">
+    <span class="eyebrow">Mensajes</span>
+    <h1>Mensajes y Prédicas</h1>
+    <p class="hero__tagline">Escucha, comparte y vuelve a los mensajes que han edificado a nuestra comunidad.</p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    {% if messages %}
+    <div class="card-grid">
+      {% for m in messages %}
+      <article class="info-card">
+        {% if m.youtube_id %}
+        <div style="aspect-ratio:16/9;border-radius:12px;overflow:hidden;margin-bottom:14px">
+          <iframe width="100%" height="100%" src="https://www.youtube.com/embed/{{ m.youtube_id }}" title="{{ m.title }}" frameborder="0" allowfullscreen loading="lazy"></iframe>
+        </div>
+        {% endif %}
+        <h3>{{ m.title }}</h3>
+        <p>{{ m.summary }}</p>
+        <p class="footer-note">{{ m.preacher }} · {{ m.date }}</p>
+        <div class="share-row" data-share-text="{{ m.title }} — Faro de Luz Radio">
+          <a class="share-btn" data-share="whatsapp" aria-label="Compartir en WhatsApp" href="#">🟢</a>
+          <a class="share-btn" data-share="facebook" aria-label="Compartir en Facebook" href="#">f</a>
+          <button class="share-btn" data-share="native" aria-label="Compartir" type="button">⤴</button>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="cta-band">
+      <div>
+        <h2>Muy pronto, nuestros mensajes aquí</h2>
+        <p>Estamos preparando esta sección con las prédicas y mensajes bíblicos del pastor. Mientras tanto, síguenos en nuestras redes o escúchanos en vivo.</p>
+      </div>
+      <button class="btn btn--navy" id="mensajes-listen-btn" type="button">▶ Escuchar en vivo</button>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% endblock %}
