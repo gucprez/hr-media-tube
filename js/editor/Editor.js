@@ -384,8 +384,9 @@ export class Editor {
   _placeBase(type, world) {
     const pos = this.grid.snap(world.x, world.y);
     const asset = type === 'playerBase' ? 'base_player_marker' : 'base_enemy_marker';
+    const scale = this.manifest.get(asset)?.defaultScale ?? 1;
     this._insertObjectCommand(
-      { id: nextId('base'), type, asset, x: pos.x, y: pos.y, rotation: 0, layer: 'bases' },
+      { id: nextId('base'), type, asset, x: pos.x, y: pos.y, rotation: 0, scaleX: scale, scaleY: scale, layer: 'bases' },
       () => this.world.bases.items
     );
   }
@@ -397,14 +398,21 @@ export class Editor {
       console.error(`[Editor] No assets available for tool "${tool}".`);
       return;
     }
+    const scale = this.manifest.get(asset)?.defaultScale ?? 1;
 
     if (tool === TOOLS.BRIDGE) {
-      this._insertObjectCommand({ id: nextId('bridge'), type: 'bridge', asset, x: pos.x, y: pos.y, rotation: 0, layer: 'objects' }, () => this.world.bridges.items);
+      this._insertObjectCommand(
+        { id: nextId('bridge'), type: 'bridge', asset, x: pos.x, y: pos.y, rotation: 0, scaleX: scale, scaleY: scale, layer: 'objects' },
+        () => this.world.bridges.items
+      );
       return;
     }
 
     const meta = TOOL_OBJECT_META[tool];
-    this._insertObjectCommand({ id: nextId('obj'), type: meta.type, asset, x: pos.x, y: pos.y, rotation: 0, layer: meta.layer }, () => this.world.objects);
+    this._insertObjectCommand(
+      { id: nextId('obj'), type: meta.type, asset, x: pos.x, y: pos.y, rotation: 0, scaleX: scale, scaleY: scale, layer: meta.layer },
+      () => this.world.objects
+    );
   }
 
   _insertObjectCommand(data, getArray) {

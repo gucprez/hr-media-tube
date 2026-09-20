@@ -39,18 +39,18 @@
     "id": "bush_01",
     "category": "vegetation",
     "file": "vegetation/bush_01.png",
-    "defaultScale": 1,
+    "defaultScale": 0.0824,
     "anchor": "bottom-center",
-    "dimensions": { "width": 70, "height": 55 },
+    "dimensions": { "width": 850, "height": 691 },
     "metadata": { "description": "Battlefield bush" }
   },
   {
     "id": "grass_cluster_01",
     "category": "vegetation",
     "file": "vegetation/grass_cluster_01.png",
-    "defaultScale": 1,
+    "defaultScale": 0.0583,
     "anchor": "bottom-center",
-    "dimensions": { "width": 50, "height": 35 },
+    "dimensions": { "width": 858, "height": 555 },
     "metadata": { "description": "Battlefield grass cluster" }
   },
   {
@@ -75,27 +75,27 @@
     "id": "fence_segment_01",
     "category": "fences",
     "file": "fences/fence_segment_01.png",
-    "defaultScale": 1,
+    "defaultScale": 0.0787,
     "anchor": "bottom-center",
-    "dimensions": { "width": 100, "height": 70 },
+    "dimensions": { "width": 1271, "height": 590 },
     "metadata": { "description": "Modular reinforced battlefield fence segment" }
   },
   {
     "id": "path_straight_01",
     "category": "paths",
     "file": "paths/path_straight_01.png",
-    "defaultScale": 1,
+    "defaultScale": 0.2224,
     "anchor": "center",
-    "dimensions": { "width": 200, "height": 200 },
+    "dimensions": { "width": 1349, "height": 330 },
     "metadata": { "description": "Straight dirt path tile (reserved for a future tile-based path renderer)" }
   },
   {
     "id": "path_curve_01",
     "category": "paths",
     "file": "paths/path_curve_01.png",
-    "defaultScale": 1,
+    "defaultScale": 0.2364,
     "anchor": "center",
-    "dimensions": { "width": 200, "height": 200 },
+    "dimensions": { "width": 1269, "height": 609 },
     "metadata": { "description": "Curved dirt path tile (reserved for a future tile-based path renderer)" }
   },
   {
