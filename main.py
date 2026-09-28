@@ -4,7 +4,12 @@ from datetime import date, datetime
 from pathlib import Path
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import (
+    FileResponse,
+    JSONResponse,
+    PlainTextResponse,
+    RedirectResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -12,6 +17,8 @@ from data.schedule import SCHEDULE
 from data.verses import verse_of_day
 from data.messages import MESSAGES
 from data.news import NEWS
+from data.activities import ACTIVITIES
+from data.icons import ICONS
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_STORE_DIR = BASE_DIR / "data" / "store"
@@ -21,14 +28,16 @@ TESTIMONIES_FILE = DATA_STORE_DIR / "testimonios.json"
 
 SITE_NAME = "Faro de Luz Radio"
 SITE_URL = "https://farodeluzradio.com"
-SITE_TAGLINE = "Iluminando vidas a través de la Palabra de Dios"
+SITE_TAGLINE = "Radio que ilumina tu camino"
 SITE_DESCRIPTION = (
-    "Faro de Luz Radio es la radio online de nuestra iglesia: escucha en vivo "
-    "predicaciones, alabanza y programación cristiana las 24 horas, y "
-    "encuentra la programación semanal, mensajes y recursos bíblicos."
+    "Faro de Luz Radio es la radio cristiana de nuestra iglesia en Puerto "
+    "Plata: música, palabra, adoración y esperanza en vivo, además de "
+    "programación semanal, transmisiones y actividades."
 )
 
-# TODO: reemplazar por los enlaces reales de redes sociales de la iglesia
+# TODO: reemplazar por los enlaces reales de redes sociales de la iglesia.
+# Se buscaron cuentas públicas y no fue posible confirmar con certeza
+# cuáles pertenecen a esta iglesia (hay varias "Faro de Luz" distintas).
 SOCIAL_LINKS = {
     "facebook": "",
     "instagram": "",
@@ -37,18 +46,24 @@ SOCIAL_LINKS = {
     "whatsapp": "",
 }
 
-# Stream real detectado en el sitio actual (Shoutcast). Confirmar con la
-# iglesia si sigue vigente o si hay una nueva URL de transmisión.
-STREAM_EMBED_URL = "https://radio.farodeluzradio.com/Shoutcast/index.php"
-STREAM_AUDIO_URL = ""  # TODO: URL directa .mp3/.aac del stream si está disponible
+# El stream detectado en el sitio actual (Shoutcast) responde 404 — no hay
+# una transmisión en vivo funcional en este momento. Actualiza esta URL con
+# el stream real (.mp3/.aac o servidor Icecast/Shoutcast vigente) en cuanto
+# la iglesia lo confirme.
+STREAM_AUDIO_URL = ""
+STREAM_IS_LIVE = bool(STREAM_AUDIO_URL)
 
-# TODO: confirmar datos reales de contacto de la iglesia
+# TODO: confirmar teléfono, WhatsApp y correo reales de la iglesia.
+# La dirección sí fue provista y se usa tal cual.
 CONTACT = {
     "phone": "",
     "whatsapp": "",
     "email": "",
-    "address": "",
+    "address": "Calle Principal #9, Padre Granero, Puerto Plata, República Dominicana",
 }
+
+# TODO: enlace real al canal/transmisión de YouTube de la iglesia.
+YOUTUBE_LIVE_URL = ""
 
 app = FastAPI(title=SITE_NAME)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
@@ -64,11 +79,13 @@ def base_context(request: Request, **extra) -> dict:
         "site_description": SITE_DESCRIPTION,
         "social": SOCIAL_LINKS,
         "social_urls": [v for v in SOCIAL_LINKS.values() if v],
-        "stream_embed_url": STREAM_EMBED_URL,
         "stream_audio_url": STREAM_AUDIO_URL,
+        "stream_is_live": STREAM_IS_LIVE,
+        "youtube_live_url": YOUTUBE_LIVE_URL,
         "contact": CONTACT,
         "current_year": datetime.now().year,
         "path": request.url.path,
+        "icons": ICONS,
     }
     context.update(extra)
     return context
@@ -82,12 +99,48 @@ def home(request: Request):
         "index.html",
         base_context(
             request,
-            title=f"{SITE_NAME} — {SITE_TAGLINE}",
+            title=f"{SITE_NAME} | Radio Cristiana en Puerto Plata",
             description=SITE_DESCRIPTION,
             og_image="/static/img/og-image.svg",
-            schedule=SCHEDULE,
+            schedule=SCHEDULE[:3],
             verse=verse,
+            activities=ACTIVITIES[:3],
             canonical=f"{SITE_URL}/",
+        ),
+    )
+
+
+@app.get("/radio")
+def radio(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "radio.html",
+        base_context(
+            request,
+            title=f"Radio en vivo — {SITE_NAME}",
+            description=(
+                "Escucha Faro de Luz Radio en vivo: música, palabra, "
+                "adoración y esperanza para cada hogar."
+            ),
+            canonical=f"{SITE_URL}/radio",
+        ),
+    )
+
+
+@app.get("/en-vivo")
+def en_vivo(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "en-vivo.html",
+        base_context(
+            request,
+            title=f"Transmisiones en vivo — {SITE_NAME}",
+            description=(
+                "Sigue las transmisiones en vivo de cultos y eventos "
+                "especiales de Faro de Luz, y escucha la radio en vivo."
+            ),
+            canonical=f"{SITE_URL}/en-vivo",
+            messages=MESSAGES,
         ),
     )
 
@@ -163,21 +216,38 @@ def noticias(request: Request):
     )
 
 
-@app.get("/quienes-somos")
-def quienes_somos(request: Request):
+@app.get("/actividades")
+def actividades(request: Request):
     return templates.TemplateResponse(
         request,
-        "quienes-somos.html",
+        "actividades.html",
         base_context(
             request,
-            title=f"Quiénes Somos — {SITE_NAME}",
-            description=(
-                "Conoce la historia, misión y visión de Faro de Luz Radio, "
-                "la radio online de nuestra iglesia."
-            ),
-            canonical=f"{SITE_URL}/quienes-somos",
+            title=f"Actividades — {SITE_NAME}",
+            description="Actividades y eventos de Faro de Luz: jóvenes, damas, estudios bíblicos y más.",
+            canonical=f"{SITE_URL}/actividades",
+            activities=ACTIVITIES,
         ),
     )
+
+
+@app.get("/iglesia")
+def iglesia(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "iglesia.html",
+        base_context(
+            request,
+            title=f"Nuestra Iglesia — {SITE_NAME}",
+            description="Conoce Faro de Luz, la iglesia detrás de la radio en Puerto Plata.",
+            canonical=f"{SITE_URL}/iglesia",
+        ),
+    )
+
+
+@app.get("/quienes-somos")
+def quienes_somos_redirect():
+    return RedirectResponse(url="/iglesia", status_code=301)
 
 
 @app.get("/contacto")
@@ -188,7 +258,7 @@ def contacto(request: Request):
         base_context(
             request,
             title=f"Contacto — {SITE_NAME}",
-            description="Ponte en contacto con Faro de Luz Radio: teléfono, correo, dirección y redes sociales.",
+            description="Ponte en contacto con Faro de Luz Radio: dirección, correo y redes sociales.",
             canonical=f"{SITE_URL}/contacto",
         ),
     )
@@ -245,8 +315,8 @@ def robots_txt():
 @app.get("/sitemap.xml")
 def sitemap_xml():
     pages = [
-        "", "programacion", "mensajes", "la-biblia", "noticias",
-        "quienes-somos", "contacto",
+        "", "radio", "en-vivo", "programacion", "mensajes", "la-biblia",
+        "noticias", "actividades", "iglesia", "contacto",
     ]
     urls = "".join(
         f"<url><loc>{SITE_URL}/{p}</loc><changefreq>weekly</changefreq></url>"

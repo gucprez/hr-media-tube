@@ -1,22 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
 
-<section class="hero" style="padding:56px 0">
-  <div class="container">
+<section class="hero" style="padding-top:56px">
+  <div class="hero__stage"></div>
+  <div class="container reveal is-in" style="padding:56px 0 64px">
     <span class="eyebrow">Mensajes</span>
-    <h1>Mensajes y Prédicas</h1>
+    <h1 class="hero__kicker" style="font-size:clamp(2.4rem,6vw,4rem)">Mensajes y <span style="color:var(--gold)">Prédicas</span></h1>
     <p class="hero__tagline">Escucha, comparte y vuelve a los mensajes que han edificado a nuestra comunidad.</p>
   </div>
 </section>
 
-<section>
+<section class="section-tight">
   <div class="container">
     {% if messages %}
-    <div class="card-grid">
+    <div class="card-grid reveal">
       {% for m in messages %}
       <article class="info-card">
         {% if m.youtube_id %}
-        <div style="aspect-ratio:16/9;border-radius:12px;overflow:hidden;margin-bottom:14px">
+        <div style="aspect-ratio:16/9;border-radius:12px;overflow:hidden;margin-bottom:16px">
           <iframe width="100%" height="100%" src="https://www.youtube.com/embed/{{ m.youtube_id }}" title="{{ m.title }}" frameborder="0" allowfullscreen loading="lazy"></iframe>
         </div>
         {% endif %}
@@ -24,20 +25,18 @@
         <p>{{ m.summary }}</p>
         <p class="footer-note">{{ m.preacher }} · {{ m.date }}</p>
         <div class="share-row" data-share-text="{{ m.title }} — Faro de Luz Radio">
-          <a class="share-btn" data-share="whatsapp" aria-label="Compartir en WhatsApp" href="#">🟢</a>
-          <a class="share-btn" data-share="facebook" aria-label="Compartir en Facebook" href="#">f</a>
-          <button class="share-btn" data-share="native" aria-label="Compartir" type="button">⤴</button>
+          <a class="share-btn" data-share="whatsapp" aria-label="Compartir en WhatsApp" href="#">{{ icons.whatsapp|safe }}</a>
+          <a class="share-btn" data-share="facebook" aria-label="Compartir en Facebook" href="#">{{ icons.facebook|safe }}</a>
+          <button class="share-btn" data-share="native" aria-label="Compartir" type="button">{{ icons.share|safe }}</button>
         </div>
       </article>
       {% endfor %}
     </div>
     {% else %}
-    <div class="cta-band">
-      <div>
-        <h2>Muy pronto, nuestros mensajes aquí</h2>
-        <p>Estamos preparando esta sección con las prédicas y mensajes bíblicos del pastor. Mientras tanto, síguenos en nuestras redes o escúchanos en vivo.</p>
-      </div>
-      <button class="btn btn--navy" id="mensajes-listen-btn" type="button">▶ Escuchar en vivo</button>
+    <div class="empty-state reveal">
+      <h3>Nuestros mensajes, aquí pronto</h3>
+      <p>Estamos preparando esta sección con las prédicas y mensajes bíblicos del pastor. Mientras tanto, síguenos en nuestras redes o escúchanos en vivo.</p>
+      <button class="btn btn--gold" type="button" data-player-toggle>{{ icons.play|safe }} Escuchar en vivo</button>
     </div>
     {% endif %}
   </div>

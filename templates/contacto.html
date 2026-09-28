@@ -1,44 +1,44 @@
 {% extends "base.html" %}
 {% block content %}
 
-<section class="hero" style="padding:56px 0">
-  <div class="container">
+<section class="hero" style="padding-top:56px">
+  <div class="hero__stage"></div>
+  <div class="container reveal is-in" style="padding:56px 0 64px">
     <span class="eyebrow">Contacto</span>
-    <h1>Hablemos</h1>
-    <p class="hero__tagline">Estamos para servirte. Escríbenos por cualquiera de estos medios.</p>
+    <h1 class="hero__kicker" style="font-size:clamp(2.4rem,6vw,4rem)">Hablemos</h1>
+    <p class="hero__tagline">Estamos para servirte.</p>
   </div>
 </section>
 
-<section>
+<section class="section-tight">
   <div class="container card-grid">
     <div class="info-card">
-      <h3>📞 Teléfono</h3>
-      <p>{{ contact.phone or 'Próximamente' }}</p>
+      <div class="info-card__icon">{{ icons.pin|safe }}</div>
+      <h3>Dirección</h3>
+      <p>{{ contact.address or "Próximamente" }}</p>
     </div>
     <div class="info-card">
-      <h3>💬 WhatsApp</h3>
-      <p>{{ contact.whatsapp or 'Próximamente' }}</p>
+      <div class="info-card__icon">{{ icons.mail|safe }}</div>
+      <h3>Correo</h3>
+      <p>{{ contact.email or "Próximamente" }}</p>
     </div>
     <div class="info-card">
-      <h3>✉️ Correo</h3>
-      <p>{{ contact.email or 'Próximamente' }}</p>
-    </div>
-    <div class="info-card">
-      <h3>📍 Dirección</h3>
-      <p>{{ contact.address or 'Próximamente' }}</p>
+      <div class="info-card__icon">{{ icons.whatsapp|safe }}</div>
+      <h3>WhatsApp</h3>
+      <p>{{ contact.whatsapp or "Próximamente" }}</p>
     </div>
   </div>
 </section>
 
 <section class="section-alt">
-  <div class="container text-center">
+  <div class="container text-center reveal">
     <h2>Invita a alguien a conocer Faro de Luz Radio</h2>
     <p>Comparte nuestro sitio con tu familia y amigos.</p>
-    <div class="verse-card__actions" style="justify-content:center" data-share-text="Escucha Faro de Luz Radio — Iluminando vidas a través de la Palabra de Dios">
-      <a class="share-btn" style="background:var(--gray-100);color:var(--navy-800)" data-share="whatsapp" aria-label="Compartir en WhatsApp" href="#">🟢</a>
-      <a class="share-btn" style="background:var(--gray-100);color:var(--navy-800)" data-share="facebook" aria-label="Compartir en Facebook" href="#">f</a>
-      <a class="share-btn" style="background:var(--gray-100);color:var(--navy-800)" data-share="x" aria-label="Compartir en X" href="#">𝕏</a>
-      <button class="share-btn" style="background:var(--gray-100);color:var(--navy-800)" data-share="native" aria-label="Compartir" type="button">⤴</button>
+    <div class="verse-panel__actions" style="justify-content:center" data-share-text="Escucha Faro de Luz Radio — Radio que ilumina tu camino">
+      <a class="share-btn" data-share="whatsapp" aria-label="Compartir en WhatsApp" href="#">{{ icons.whatsapp|safe }}</a>
+      <a class="share-btn" data-share="facebook" aria-label="Compartir en Facebook" href="#">{{ icons.facebook|safe }}</a>
+      <a class="share-btn" data-share="x" aria-label="Compartir en X" href="#">{{ icons.x|safe }}</a>
+      <button class="share-btn" data-share="native" aria-label="Compartir" type="button">{{ icons.share|safe }}</button>
     </div>
   </div>
 </section>

@@ -1,23 +1,26 @@
 {% extends "base.html" %}
 {% block content %}
 
-<section class="hero" style="padding:56px 0">
-  <div class="container">
+<section class="hero" style="padding-top:56px">
+  <div class="hero__stage"></div>
+  <div class="container reveal is-in" style="padding:56px 0 64px">
     <span class="eyebrow">Programación</span>
-    <h1>Programación semanal</h1>
-    <p class="hero__tagline">Un encuentro con Dios para cada día de la semana. Consulta los horarios y planifica tu semana espiritual.</p>
+    <h1 class="hero__kicker" style="font-size:clamp(2.4rem,6vw,4rem)">Programación <span style="color:var(--gold)">semanal</span></h1>
+    <p class="hero__tagline">Un encuentro con Dios para cada día de la semana.</p>
   </div>
 </section>
 
-<section>
+<section class="section-tight">
   <div class="container">
-    <div class="schedule-grid">
+    <div class="schedule-list reveal">
       {% for item in schedule %}
-      <div class="schedule-card">
-        <span class="schedule-card__time">{{ item.time }}</span>
-        <span class="schedule-card__day">{{ item.day }}</span>
-        <h3>{{ item.title }}</h3>
-        <p>{{ item.description }}</p>
+      <div class="schedule-row">
+        <span class="schedule-row__day">{{ item.day }}</span>
+        <div>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.description }}</p>
+        </div>
+        <span class="schedule-row__time">{{ item.time }}</span>
       </div>
       {% endfor %}
     </div>
@@ -25,10 +28,11 @@
 </section>
 
 <section class="section-alt">
-  <div class="container text-center">
+  <div class="container text-center reveal">
+    <span class="eyebrow">No te lo pierdas</span>
     <h2>No te pierdas ninguna transmisión</h2>
-    <p>Activa las notificaciones de nuestras redes sociales o únete a nuestra comunidad de WhatsApp para recibir avisos antes de cada transmisión en vivo.</p>
-    <button class="btn btn--gold" id="programacion-listen-btn" type="button">▶ Escuchar en vivo ahora</button>
+    <p style="max-width:520px;margin:0 auto 28px">Activa las notificaciones de nuestras redes sociales para recibir avisos antes de cada transmisión en vivo.</p>
+    <button class="btn btn--gold" type="button" data-player-toggle>{{ icons.play|safe }} Escuchar en vivo ahora</button>
   </div>
 </section>
 

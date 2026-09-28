@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero" style="padding-top:56px">
+  <div class="hero__stage"></div>
+  <div class="container reveal is-in" style="padding:56px 0 64px">
+    <span class="eyebrow">Nuestra iglesia</span>
+    <h1 class="hero__kicker" style="font-size:clamp(2.4rem,6vw,4rem)">Más que una <span style="color:var(--gold)">radio</span></h1>
+    <p class="hero__tagline">{{ site_tagline }}.</p>
+  </div>
+</section>
+
+<section class="section-tight">
+  <div class="container">
+    <div class="church-split">
+      <div class="reveal">
+        <span class="eyebrow">Faro de Luz</span>
+        <h2>Una iglesia en Puerto Plata</h2>
+        <p>Detrás de cada transmisión hay una congregación real que camina junto a su comunidad, con cultos, estudios bíblicos y actividades durante toda la semana.</p>
+        <p style="font-size:.9rem;color:var(--faint)">Esta sección está en construcción — muy pronto compartiremos aquí nuestra historia completa.</p>
+        <div class="church-actions">
+          <a class="btn btn--outline" href="/programacion">Ver programación</a>
+          <a class="btn btn--outline" href="/contacto">Visítanos</a>
+        </div>
+      </div>
+      <div class="church-visual reveal">
+        <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
+          <rect width="400" height="300" fill="#0D1322"/>
+          <path d="M200 30 L320 150 L80 150 Z" fill="#D9A94E" opacity="0.12"/>
+          <path d="M170 260 L182 150 H218 L230 260 Z" fill="#D9A94E" opacity="0.5"/>
+          <circle cx="200" cy="90" r="3" fill="#D9A94E"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-alt" id="testimonio">
+  <div class="container">
+    <div class="section-head text-center reveal">
+      <span class="eyebrow">Tu historia importa</span>
+      <h2>Comparte tu testimonio</h2>
+      <p>Tu historia puede animar a otros. Cuéntanos cómo Dios ha obrado en tu vida.</p>
+    </div>
+    <div class="form-card panel reveal" style="max-width:560px;margin:0 auto">
+      <form data-testimony-form>
+        <div class="form-field">
+          <label for="nombre">Tu nombre</label>
+          <input type="text" id="nombre" name="nombre" required maxlength="80">
+        </div>
+        <div class="form-field">
+          <label for="mensaje">Tu testimonio</label>
+          <textarea id="mensaje" name="mensaje" required maxlength="1000"></textarea>
+        </div>
+        <button class="btn btn--gold btn--wide" type="submit">Enviar testimonio</button>
+        <p class="form-feedback" data-testimony-feedback role="status"></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

@@ -2,36 +2,61 @@
 {% block content %}
 
 <section class="hero">
+  <div class="hero__stage"></div>
+  <svg class="hero__rings" viewBox="0 0 640 640" aria-hidden="true">
+    <circle class="beam" cx="560" cy="320" r="60"/>
+    <circle cx="560" cy="320" r="140"/>
+    <circle cx="560" cy="320" r="220"/>
+    <circle cx="560" cy="320" r="300"/>
+  </svg>
   <div class="container hero__inner">
-    <div>
-      <span class="eyebrow">Radio cristiana online · 24/7</span>
-      <h1>Iluminando vidas a través de la Palabra de Dios</h1>
-      <p class="hero__tagline">Faro de Luz Radio lleva esperanza a cada corazón con alabanza, prédicas y programación en vivo, dondequiera que estés.</p>
+    <div class="reveal is-in">
+      <span class="eyebrow">Radio cristiana · Puerto Plata · En vivo 24/7</span>
+      <h1 class="hero__kicker">FARO DE LUZ</h1>
+      <p class="hero__tagline">Radio que ilumina <span class="accent" style="color:var(--gold)">tu camino</span></p>
+      <p class="hero__sub"><span>Música</span> · <span>Palabra</span> · <span>Adoración</span> · <span>Esperanza</span></p>
       <div class="hero__actions">
-        <button class="btn btn--gold" id="hero-listen-btn" type="button">▶ Escuchar en vivo</button>
-        <a class="btn btn--outline" href="/programacion">Ver programación</a>
+        <button class="btn btn--live" type="button" data-player-toggle>
+          <span class="dot-live" style="background:#fff;box-shadow:none"></span> Escuchar en vivo
+        </button>
+        <a class="btn btn--outline" href="/en-vivo">{{ icons.youtube|safe }} Ver transmisión</a>
       </div>
-    </div>
-    <div class="beacon">
-      <img src="/static/img/logo.svg" alt="Faro de Luz Radio" width="220" height="220">
+
+      <div class="hero__meta reveal is-in">
+        <div><strong>24/7</strong><span>En el aire</span></div>
+        <div><strong>7 días</strong><span>Programación semanal</span></div>
+        <div><strong>Puerto Plata, RD</strong><span>Nuestra casa</span></div>
+      </div>
     </div>
   </div>
 </section>
 
-<section>
+<section class="section-tight">
   <div class="container">
-    <div class="verse-card">
-      <div class="verse-card__icon">📖</div>
-      <div>
-        <span class="badge">Versículo del día</span>
-        <blockquote>&ldquo;{{ verse.text }}&rdquo;</blockquote>
-        <cite>{{ verse.ref }}</cite>
-        <div class="verse-card__actions" data-share-text="{{ verse.text }} — {{ verse.ref }} · Faro de Luz Radio">
-          <a class="share-btn" data-share="whatsapp" aria-label="Compartir en WhatsApp" href="#">🟢</a>
-          <a class="share-btn" data-share="facebook" aria-label="Compartir en Facebook" href="#">f</a>
-          <a class="share-btn" data-share="x" aria-label="Compartir en X" href="#">𝕏</a>
-          <button class="share-btn" data-share="native" aria-label="Compartir" type="button">⤴</button>
-        </div>
+    <div class="section-head reveal">
+      <span class="eyebrow">Ahora en Faro de Luz</span>
+      <h2>Lo que está pasando ahora mismo</h2>
+    </div>
+    <div class="now-grid reveal">
+      <div class="now-panel">
+        <span class="badge-live {{ '' if stream_is_live else 'is-off' }}">
+          <span class="dot-live" style="{{ '' if stream_is_live else 'background:var(--faint);box-shadow:none' }}"></span>
+          {{ "En vivo ahora" if stream_is_live else "Fuera del aire" }}
+        </span>
+        <h3>Estás escuchando Faro de Luz Radio</h3>
+        <p>{{ site_tagline }}. Música, palabra y adoración las 24 horas.</p>
+        <div class="waveform is-paused" style="margin:18px 0" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <button class="btn btn--gold" type="button" data-player-toggle>{{ icons.play|safe }} Escuchar ahora</button>
+      </div>
+      <div class="now-panel now-panel--accent">
+        <span class="badge-live is-off">{{ icons.youtube|safe }} ¿Quieres verlo?</span>
+        <h3>Transmisión en vivo</h3>
+        <p>Sigue los cultos y eventos especiales de Faro de Luz por YouTube cuando haya una transmisión activa.</p>
+        {% if youtube_live_url %}
+        <a class="btn btn--outline" href="{{ youtube_live_url }}" target="_blank" rel="noopener">Ver en YouTube {{ icons.arrow|safe }}</a>
+        {% else %}
+        <a class="btn btn--outline" href="/en-vivo">Ver transmisiones {{ icons.arrow|safe }}</a>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -39,41 +64,73 @@
 
 <section class="section-alt">
   <div class="container">
-    <div class="section-head">
-      <h2>Programación semanal</h2>
-      <p>Un espacio para cada día de tu semana espiritual.</p>
+    <div class="panel radio-block reveal">
+      <div class="radio-block__icon">{{ icons.play|safe }}</div>
+      <div>
+        <h3 style="margin-bottom:6px">Faro de Luz Radio</h3>
+        <p style="margin:0">Una radio creada para llevar música, palabra, adoración y esperanza a cada hogar.</p>
+      </div>
+      <a class="btn btn--gold" href="/radio">{{ icons.play|safe }} Escuchar radio</a>
     </div>
-    <div class="schedule-grid">
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-top reveal">
+      <div class="section-head">
+        <span class="eyebrow">Cada día un espacio</span>
+        <h2>Programación semanal</h2>
+      </div>
+      <a class="link-arrow" href="/programacion">Ver programación completa {{ icons.arrow|safe }}</a>
+    </div>
+    <div class="schedule-list reveal">
       {% for item in schedule %}
-      <div class="schedule-card">
-        <span class="schedule-card__time">{{ item.time }}</span>
-        <span class="schedule-card__day">{{ item.day }}</span>
-        <h3>{{ item.title }}</h3>
-        <p>{{ item.description }}</p>
+      <div class="schedule-row">
+        <span class="schedule-row__day">{{ item.day }}</span>
+        <div>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.description }}</p>
+        </div>
+        <span class="schedule-row__time">{{ item.time }}</span>
       </div>
       {% endfor %}
     </div>
-    <p class="text-center mt-lg"><a class="btn btn--navy" href="/programacion">Ver programación completa</a></p>
+  </div>
+</section>
+
+<section class="section-alt">
+  <div class="container">
+    <div class="stream-feature reveal">
+      <div class="stream-feature__inner">
+        <span class="badge">{{ icons.youtube|safe }} Transmisiones</span>
+        <h2>Cultos y eventos, en vivo</h2>
+        <p>Cuando hay una transmisión activa, la vemos juntos: cultos, Santa Cena, estudios y eventos especiales de Faro de Luz.</p>
+        <a class="btn btn--gold" href="/en-vivo">Ver transmisiones {{ icons.arrow|safe }}</a>
+      </div>
+    </div>
   </div>
 </section>
 
 <section>
   <div class="container">
-    <div class="section-head">
-      <h2>¿Por qué escuchar Faro de Luz Radio?</h2>
-    </div>
-    <div class="card-grid">
-      <div class="info-card">
-        <h3>🎙️ Prédicas que edifican</h3>
-        <p>Mensajes bíblicos y prédicas del pastor pensados para fortalecer tu fe cada semana.</p>
+    <div class="church-split">
+      <div class="reveal">
+        <span class="eyebrow">Más que una radio</span>
+        <h2>Faro de Luz</h2>
+        <p>{{ site_tagline }}. Detrás de cada transmisión hay una iglesia en Puerto Plata que camina junto a su comunidad.</p>
+        <div class="church-actions">
+          <a class="btn btn--outline" href="/iglesia">Conoce nuestra iglesia</a>
+          <a class="btn btn--outline" href="/contacto">Contáctanos</a>
+        </div>
       </div>
-      <div class="info-card">
-        <h3>📻 En vivo, todo el día</h3>
-        <p>Alabanza, adoración y programación cristiana ininterrumpida para acompañarte donde estés.</p>
-      </div>
-      <div class="info-card">
-        <h3>🤝 Una comunidad que crece</h3>
-        <p>Actividades para niños, jóvenes, adultos y nuevos creyentes: hay un espacio para toda tu familia.</p>
+      <div class="church-visual reveal">
+        <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
+          <rect width="400" height="300" fill="#0D1322"/>
+          <path d="M200 30 L320 150 L80 150 Z" fill="#D9A94E" opacity="0.12"/>
+          <path d="M170 260 L182 150 H218 L230 260 Z" fill="#D9A94E" opacity="0.5"/>
+          <circle cx="200" cy="90" r="3" fill="#D9A94E"/>
+        </svg>
       </div>
     </div>
   </div>
@@ -81,12 +138,100 @@
 
 <section class="section-alt">
   <div class="container">
-    <div class="cta-band">
-      <div>
-        <h2>Comparte tu testimonio</h2>
-        <p>Cuéntanos cómo Dios ha obrado en tu vida y anima a otros con tu historia.</p>
+    <div class="section-head text-center reveal">
+      <span class="eyebrow">Quédate un momento</span>
+      <h2>Tal vez hoy necesitabas escuchar esto</h2>
+    </div>
+    <div class="moment-grid reveal">
+      <a class="moment" href="/en-vivo">
+        <div class="moment__icon">{{ icons.prayer|safe }}</div>
+        <h3>Oración</h3>
+        <p>Un espacio para detenerte y orar, donde estés.</p>
+      </a>
+      <a class="moment" href="/la-biblia">
+        <div class="moment__icon">{{ icons.reflection|safe }}</div>
+        <h3>Reflexión</h3>
+        <p>La Palabra de Dios para meditar hoy.</p>
+      </a>
+      <a class="moment" href="/radio">
+        <div class="moment__icon">{{ icons.worship|safe }}</div>
+        <h3>Adoración</h3>
+        <p>Música que eleva tu corazón a Dios.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="panel verse-panel reveal">
+      <div class="verse-panel__mark">&ldquo;</div>
+      <span class="badge">{{ icons.book|safe }} Una palabra para hoy</span>
+      <blockquote>{{ verse.text }}</blockquote>
+      <cite>{{ verse.ref }}</cite>
+      <div class="verse-panel__actions" data-share-text="{{ verse.text }} — {{ verse.ref }} · Faro de Luz Radio">
+        <a class="share-btn" data-share="whatsapp" aria-label="Compartir en WhatsApp" href="#">{{ icons.whatsapp|safe }}</a>
+        <a class="share-btn" data-share="facebook" aria-label="Compartir en Facebook" href="#">{{ icons.facebook|safe }}</a>
+        <a class="share-btn" data-share="x" aria-label="Compartir en X" href="#">{{ icons.x|safe }}</a>
+        <button class="share-btn" data-share="native" aria-label="Compartir" type="button">{{ icons.share|safe }}</button>
       </div>
-      <a class="btn btn--navy" href="/quienes-somos#testimonio">Compartir mi testimonio</a>
+    </div>
+  </div>
+</section>
+
+<section class="section-alt">
+  <div class="container">
+    <div class="section-top reveal">
+      <div class="section-head">
+        <span class="eyebrow">Actividades</span>
+        <h2>Lo próximo en Faro de Luz</h2>
+      </div>
+      <a class="link-arrow" href="/actividades">Ver todas {{ icons.arrow|safe }}</a>
+    </div>
+    {% if activities %}
+    <div class="activity-grid reveal">
+      {% for a in activities %}
+      <div class="activity-card">
+        <div class="activity-card__date">{{ a.date }} · {{ a.time }}</div>
+        <h3>{{ a.title }}</h3>
+        <p>{{ a.description }}</p>
+        <a class="link-arrow" href="/actividades">Ver detalles {{ icons.arrow|safe }}</a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state reveal">
+      <h3>Muy pronto, nuestras actividades aquí</h3>
+      <p>Estamos preparando el calendario de actividades de Faro de Luz: jóvenes, damas, estudios bíblicos y eventos especiales.</p>
+      <a class="btn btn--outline" href="/contacto">Contáctanos para más información</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-head text-center reveal">
+      <span class="eyebrow">Sigue a Faro de Luz</span>
+      <h2>Únete a la comunidad</h2>
+    </div>
+    <div class="social-strip reveal">
+      <a class="social-tile" href="{{ social.youtube or '#' }}">
+        <div class="social-tile__icon">{{ icons.youtube|safe }}</div>
+        <strong>YouTube</strong>
+      </a>
+      <a class="social-tile" href="{{ social.facebook or '#' }}">
+        <div class="social-tile__icon">{{ icons.facebook|safe }}</div>
+        <strong>Facebook</strong>
+      </a>
+      <a class="social-tile" href="{{ social.instagram or '#' }}">
+        <div class="social-tile__icon">{{ icons.instagram|safe }}</div>
+        <strong>Instagram</strong>
+      </a>
+      <a class="social-tile" href="{{ social.whatsapp or '#' }}">
+        <div class="social-tile__icon">{{ icons.whatsapp|safe }}</div>
+        <strong>WhatsApp</strong>
+      </a>
     </div>
   </div>
 </section>

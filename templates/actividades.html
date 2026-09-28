@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero" style="padding-top:56px">
+  <div class="hero__stage"></div>
+  <div class="container reveal is-in" style="padding:56px 0 64px">
+    <span class="eyebrow">Actividades</span>
+    <h1 class="hero__kicker" style="font-size:clamp(2.4rem,6vw,4rem)">Vida en <span style="color:var(--gold)">comunidad</span></h1>
+    <p class="hero__tagline">Jóvenes, damas, estudios bíblicos y eventos especiales de Faro de Luz.</p>
+  </div>
+</section>
+
+<section class="section-tight">
+  <div class="container">
+    {% if activities %}
+    <div class="activity-grid reveal">
+      {% for a in activities %}
+      <div class="activity-card">
+        <div class="activity-card__date">{{ icons.calendar|safe }} {{ a.date }} · {{ a.time }}</div>
+        <h3>{{ a.title }}</h3>
+        <p>{{ a.description }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state reveal">
+      <h3>Muy pronto, nuestro calendario de actividades</h3>
+      <p>Estamos organizando el calendario de actividades de Faro de Luz. Síguenos en redes o contáctanos para conocer los próximos eventos.</p>
+      <a class="btn btn--outline" href="/contacto">Contáctanos</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% endblock %}

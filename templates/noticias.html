@@ -1,26 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
 
-<section class="hero" style="padding:56px 0">
-  <div class="container">
+<section class="hero" style="padding-top:56px">
+  <div class="hero__stage"></div>
+  <div class="container reveal is-in" style="padding:56px 0 64px">
     <span class="eyebrow">Noticias</span>
-    <h1>Noticias y anuncios</h1>
+    <h1 class="hero__kicker" style="font-size:clamp(2.4rem,6vw,4rem)">Noticias y <span style="color:var(--gold)">anuncios</span></h1>
     <p class="hero__tagline">Novedades de nuestra iglesia y de Faro de Luz Radio.</p>
   </div>
 </section>
 
-<section>
+<section class="section-tight">
   <div class="container">
-    <div class="card-grid">
+    <div class="card-grid reveal">
       {% for n in news %}
       <article class="info-card">
         <p class="footer-note">{{ n.date }}</p>
         <h3>{{ n.title }}</h3>
         <p>{{ n.excerpt }}</p>
         <div class="share-row" data-share-text="{{ n.title }} · Faro de Luz Radio">
-          <a class="share-btn" data-share="whatsapp" aria-label="Compartir en WhatsApp" href="#">🟢</a>
-          <a class="share-btn" data-share="facebook" aria-label="Compartir en Facebook" href="#">f</a>
-          <button class="share-btn" data-share="native" aria-label="Compartir" type="button">⤴</button>
+          <a class="share-btn" data-share="whatsapp" aria-label="Compartir en WhatsApp" href="#">{{ icons.whatsapp|safe }}</a>
+          <a class="share-btn" data-share="facebook" aria-label="Compartir en Facebook" href="#">{{ icons.facebook|safe }}</a>
+          <button class="share-btn" data-share="native" aria-label="Compartir" type="button">{{ icons.share|safe }}</button>
         </div>
       </article>
       {% endfor %}

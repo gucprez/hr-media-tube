@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero" style="padding-top:56px">
+  <div class="hero__stage"></div>
+  <div class="container reveal is-in" style="padding:56px 0 64px">
+    <span class="eyebrow">Radio</span>
+    <h1 class="hero__kicker" style="font-size:clamp(2.4rem,6vw,4rem)">Faro de Luz <span style="color:var(--gold)">Radio</span></h1>
+    <p class="hero__tagline">Una radio creada para llevar música, palabra, adoración y esperanza a cada hogar.</p>
+  </div>
+</section>
+
+<section class="section-tight">
+  <div class="container">
+    <div class="panel panel--pad reveal" style="text-align:center">
+      <span class="badge-live {{ '' if stream_is_live else 'is-off' }}" style="justify-content:center">
+        <span class="dot-live" style="{{ '' if stream_is_live else 'background:var(--faint);box-shadow:none' }}"></span>
+        {{ "En vivo ahora" if stream_is_live else "Fuera del aire por el momento" }}
+      </span>
+      <div class="waveform is-paused" style="justify-content:center;margin:22px auto" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <button class="btn btn--gold" type="button" data-player-toggle style="margin-top:6px">{{ icons.play|safe }} Escuchar en vivo</button>
+      {% if not stream_is_live %}
+      <p style="margin-top:18px;font-size:.85rem;color:var(--faint)">Estamos actualizando nuestra transmisión en vivo. Vuelve pronto.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="section-alt">
+  <div class="container card-grid reveal">
+    <div class="info-card">
+      <div class="info-card__icon">{{ icons.worship|safe }}</div>
+      <h3>Música que edifica</h3>
+      <p>Alabanza y adoración que llevan tu corazón a la presencia de Dios.</p>
+    </div>
+    <div class="info-card">
+      <div class="info-card__icon">{{ icons.book|safe }}</div>
+      <h3>Palabra que transforma</h3>
+      <p>Enseñanza bíblica y mensajes que fortalecen tu fe cada día.</p>
+    </div>
+    <div class="info-card">
+      <div class="info-card__icon">{{ icons.prayer|safe }}</div>
+      <h3>Esperanza en todo momento</h3>
+      <p>Un acompañante espiritual disponible las 24 horas, todos los días.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="cta-band reveal">
+      <div>
+        <span class="badge">{{ icons.calendar|safe }} No te lo pierdas</span>
+        <h2>Consulta la programación semanal</h2>
+        <p>Cada día tiene su propio espacio: vigilias, estudios bíblicos, cultos y más.</p>
+      </div>
+      <a class="btn btn--gold" href="/programacion">Ver programación {{ icons.arrow|safe }}</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
