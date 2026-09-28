@@ -44,6 +44,10 @@
       <button class="player-showcase__play" type="button" data-player-toggle aria-label="Reproducir">{{ icons.play|safe }}</button>
     </div>
     <div class="waveform is-paused" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+
+    <p style="margin-top:28px;font-size:.85rem;color:var(--fg-faint)">
+      {{ icons.worship|safe }} Ahora suena: la información de la canción no está disponible en este momento.
+    </p>
   </div>
 </section>
 
@@ -109,6 +113,35 @@
   </div>
 </section>
 
+<section class="sec-light">
+  <div class="container">
+    <div class="section-top reveal">
+      <div class="section-head">
+        <span class="eyebrow">Nuestra comunidad</span>
+        <h2>Las voces de Faro de Luz</h2>
+      </div>
+      {% if hosts %}<a class="link-arrow" href="/radio#voces">Ver todo el equipo {{ icons.arrow|safe }}</a>{% endif %}
+    </div>
+    {% if hosts %}
+    <div class="card-grid reveal">
+      {% for h in hosts %}
+      <div class="info-card" style="text-align:center">
+        {% if h.photo %}<img src="{{ h.photo }}" alt="{{ h.name }}" style="width:84px;height:84px;border-radius:50%;object-fit:cover;margin:0 auto 16px">{% endif %}
+        <h3>{{ h.name }}</h3>
+        <p style="margin:0">{{ h.program }}</p>
+        <p class="footer-note">{{ h.schedule }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state reveal">
+      <h3>Muy pronto, las voces detrás de cada programa</h3>
+      <p>Estamos preparando los perfiles de los locutores y colaboradores de Faro de Luz.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
 <section class="photo-feature">
   <div class="photo-feature__bg"><img src="/static/img/stock/church-window.jpg" alt="Luz entrando por una ventana de la iglesia"></div>
   <div class="photo-feature__scrim"></div>
@@ -128,7 +161,7 @@
 <section class="sec-light">
   <div class="container">
     <div class="section-head text-center reveal">
-      <span class="eyebrow">Quédate un momento</span>
+      <span class="eyebrow">Contenido que edifica</span>
       <h2>Tal vez hoy necesitabas escuchar esto</h2>
     </div>
     <div class="moment-grid reveal">
@@ -147,6 +180,37 @@
         <h3>Adoración</h3>
         <p>Música que eleva tu corazón a Dios.</p>
       </a>
+    </div>
+  </div>
+</section>
+
+<section class="sec-mid" id="oracion">
+  <div class="container">
+    <div class="section-top reveal" style="align-items:flex-start">
+      <div class="section-head" style="margin-bottom:0">
+        <span class="eyebrow">Estamos para ti</span>
+        <h2 style="color:#fff">¿Necesitas oración?</h2>
+        <p>Queremos escucharte. Cuéntanos tu petición y oraremos por ti.</p>
+      </div>
+    </div>
+    <div class="panel form-card reveal" style="max-width:560px">
+      <form data-prayer-form>
+        <div class="form-field">
+          <label for="p-nombre">Tu nombre</label>
+          <input type="text" id="p-nombre" name="nombre" required maxlength="80">
+        </div>
+        <div class="form-field">
+          <label for="p-correo">Tu correo (opcional)</label>
+          <input type="email" id="p-correo" name="correo" maxlength="120">
+        </div>
+        <div class="form-field">
+          <label for="p-mensaje">Tu petición de oración</label>
+          <textarea id="p-mensaje" name="mensaje" required maxlength="1000"></textarea>
+        </div>
+        <input type="text" name="sitio_web" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="btn btn--gold btn--wide" type="submit">Enviar petición</button>
+        <p class="form-feedback" data-prayer-feedback role="status"></p>
+      </form>
     </div>
   </div>
 </section>

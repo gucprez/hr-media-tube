@@ -203,4 +203,9 @@
   if (testimonyForm) {
     bindForm(testimonyForm, "/testimonio", testimonyForm.querySelector("[data-testimony-feedback]"));
   }
+
+  var prayerForm = document.querySelector("[data-prayer-form]");
+  if (prayerForm) {
+    bindForm(prayerForm, "/oracion", prayerForm.querySelector("[data-prayer-feedback]"));
+  }
 })();

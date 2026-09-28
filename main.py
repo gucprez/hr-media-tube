@@ -18,6 +18,7 @@ from data.verses import verse_of_day
 from data.messages import MESSAGES
 from data.news import NEWS
 from data.activities import ACTIVITIES
+from data.hosts import HOSTS
 from data.icons import ICONS
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -25,6 +26,7 @@ DATA_STORE_DIR = BASE_DIR / "data" / "store"
 DATA_STORE_DIR.mkdir(parents=True, exist_ok=True)
 SUBSCRIBERS_FILE = DATA_STORE_DIR / "subscribers.json"
 TESTIMONIES_FILE = DATA_STORE_DIR / "testimonios.json"
+PRAYER_REQUESTS_FILE = DATA_STORE_DIR / "oraciones.json"
 
 SITE_NAME = "Faro de Luz Radio"
 SITE_URL = "https://farodeluzradio.com"
@@ -105,6 +107,7 @@ def home(request: Request):
             schedule=SCHEDULE[:3],
             verse=verse,
             activities=ACTIVITIES[:3],
+            hosts=HOSTS[:6],
             canonical=f"{SITE_URL}/",
         ),
     )
@@ -301,6 +304,32 @@ def testimonio(nombre: str = Form(...), mensaje: str = Form(...)):
         {"nombre": nombre, "mensaje": mensaje, "fecha": datetime.now().isoformat()},
     )
     return JSONResponse({"ok": True, "mensaje": "¡Gracias por compartir tu testimonio! Será revisado antes de publicarse."})
+
+
+@app.post("/oracion")
+def oracion(
+    nombre: str = Form(...),
+    mensaje: str = Form(...),
+    correo: str = Form(""),
+    sitio_web: str = Form(""),
+):
+    # Campo honeypot: los bots suelen rellenarlo, las personas nunca lo ven.
+    if sitio_web.strip():
+        return JSONResponse({"ok": True, "mensaje": "Gracias, oraremos por ti."})
+
+    nombre = nombre.strip()[:80]
+    mensaje = mensaje.strip()[:1000]
+    correo = correo.strip()[:120]
+    if not nombre or not mensaje:
+        return JSONResponse({"ok": False, "mensaje": "Completa tu nombre y tu petición."}, status_code=400)
+    if correo and not EMAIL_RE.match(correo):
+        return JSONResponse({"ok": False, "mensaje": "Correo inválido."}, status_code=400)
+
+    _append_json_line(
+        PRAYER_REQUESTS_FILE,
+        {"nombre": nombre, "correo": correo, "mensaje": mensaje, "fecha": datetime.now().isoformat()},
+    )
+    return JSONResponse({"ok": True, "mensaje": "Gracias por confiarnos tu petición. Oraremos por ti."})
 
 
 @app.get("/robots.txt", response_class=PlainTextResponse)

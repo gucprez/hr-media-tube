@@ -33,11 +33,20 @@
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "RadioStation",
+  "@type": ["RadioStation", "ReligiousOrganization"],
   "name": "{{ site_name }}",
   "url": "{{ site_url }}",
   "logo": "{{ site_url }}/static/img/logo.svg",
   "description": "{{ site_description }}",
+  {% if contact.address %}
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "{{ contact.address }}",
+    "addressLocality": "Puerto Plata",
+    "addressCountry": "DO"
+  },
+  {% endif %}
+  "areaServed": "Puerto Plata, República Dominicana",
   "sameAs": [{% for url in social_urls %}"{{ url }}"{{ "," if not loop.last }}{% endfor %}]
 }
 </script>

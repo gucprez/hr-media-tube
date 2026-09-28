@@ -345,6 +345,7 @@ section{position:relative;padding:88px 0}
 }
 .form-field input:focus,.form-field textarea:focus{outline:none;border-color:var(--gold)}
 .form-field textarea{min-height:130px;resize:vertical}
+.hp-field{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 
 /* Footer */
 .site-footer{background:var(--navy-deep);color:#B9C3D6;padding:72px 0 0}
