@@ -1,23 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
 
-<section class="hero">
-  <div class="hero__stage"></div>
-  <svg class="hero__rings" viewBox="0 0 640 640" aria-hidden="true">
-    <circle class="beam" cx="560" cy="320" r="60"/>
-    <circle cx="560" cy="320" r="140"/>
-    <circle cx="560" cy="320" r="220"/>
-    <circle cx="560" cy="320" r="300"/>
-  </svg>
+<section class="hero sec-dark">
   <div class="container hero__inner">
     <div class="reveal is-in">
       <span class="eyebrow">Radio cristiana · Puerto Plata · En vivo 24/7</span>
-      <h1 class="hero__kicker">FARO DE LUZ</h1>
-      <p class="hero__tagline">Radio que ilumina <span class="accent" style="color:var(--gold)">tu camino</span></p>
+      <h1 class="hero__kicker">FARO DE LUZ<br><span class="accent">RADIO</span></h1>
+      <p class="hero__tagline">Radio que ilumina tu camino</p>
       <p class="hero__sub"><span>Música</span> · <span>Palabra</span> · <span>Adoración</span> · <span>Esperanza</span></p>
       <div class="hero__actions">
-        <button class="btn btn--live" type="button" data-player-toggle>
-          <span class="dot-live" style="background:#fff;box-shadow:none"></span> Escuchar en vivo
+        <button class="btn btn--gold" type="button" data-player-toggle>
+          <span class="dot-live"></span> Escuchar en vivo
         </button>
         <a class="btn btn--outline" href="/en-vivo">{{ icons.youtube|safe }} Ver transmisión</a>
       </div>
@@ -28,41 +21,58 @@
         <div><strong>Puerto Plata, RD</strong><span>Nuestra casa</span></div>
       </div>
     </div>
+
+    <div class="hero-photo-wrap reveal is-in">
+      <div class="hero-photo">
+        <img src="/static/img/stock/lighthouse.jpg" alt="Faro iluminando la costa al atardecer">
+        <div class="hero-photo__caption">Un faro que sigue guiando, cada noche.</div>
+      </div>
+    </div>
   </div>
 </section>
 
-<section class="section-tight">
+<section class="sec-mid player-showcase">
+  <div class="container">
+    <span class="badge-live {{ '' if stream_is_live else 'is-off' }}">
+      <span class="dot-live" style="{{ '' if stream_is_live else 'background:var(--fg-faint);box-shadow:none' }}"></span>
+      {{ "En vivo ahora" if stream_is_live else "Fuera del aire por el momento" }}
+    </span>
+    <h2>Estás escuchando<br>Faro de Luz Radio</h2>
+    <p style="max-width:420px;margin:0 auto">{{ site_tagline }}.</p>
+
+    <div class="player-showcase__ring">
+      <button class="player-showcase__play" type="button" data-player-toggle aria-label="Reproducir">{{ icons.play|safe }}</button>
+    </div>
+    <div class="waveform is-paused" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+  </div>
+</section>
+
+<section class="sec-soft section-tight">
   <div class="container">
     <div class="section-head reveal">
-      <span class="eyebrow">Ahora en Faro de Luz</span>
-      <h2>Lo que está pasando ahora mismo</h2>
+      <span class="eyebrow">Ahora mismo</span>
+      <h2>Lo que está pasando en Faro de Luz</h2>
     </div>
-    <div class="now-grid reveal">
-      <div class="now-panel">
-        <span class="badge-live {{ '' if stream_is_live else 'is-off' }}">
-          <span class="dot-live" style="{{ '' if stream_is_live else 'background:var(--faint);box-shadow:none' }}"></span>
-          {{ "En vivo ahora" if stream_is_live else "Fuera del aire" }}
-        </span>
-        <h3>Estás escuchando Faro de Luz Radio</h3>
-        <p>{{ site_tagline }}. Música, palabra y adoración las 24 horas.</p>
-        <div class="waveform is-paused" style="margin:18px 0" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <button class="btn btn--gold" type="button" data-player-toggle>{{ icons.play|safe }} Escuchar ahora</button>
+    <div class="stream-card reveal" style="margin-bottom:1px">
+      <div class="stream-card__thumb">
+        <img src="/static/img/stock/radio-mic.jpg" alt="Estudio de radio">
+        <div class="stream-card__play">{{ icons.youtube|safe }}</div>
       </div>
-      <div class="now-panel now-panel--accent">
-        <span class="badge-live is-off">{{ icons.youtube|safe }} ¿Quieres verlo?</span>
-        <h3>Transmisión en vivo</h3>
+      <div class="stream-card__body">
+        <span class="badge">{{ icons.youtube|safe }} ¿Quieres verlo?</span>
+        <h3 style="font-size:1.4rem">Transmisión en vivo</h3>
         <p>Sigue los cultos y eventos especiales de Faro de Luz por YouTube cuando haya una transmisión activa.</p>
         {% if youtube_live_url %}
-        <a class="btn btn--outline" href="{{ youtube_live_url }}" target="_blank" rel="noopener">Ver en YouTube {{ icons.arrow|safe }}</a>
+        <a class="btn btn--gold" href="{{ youtube_live_url }}" target="_blank" rel="noopener" style="align-self:flex-start">Ver en YouTube {{ icons.arrow|safe }}</a>
         {% else %}
-        <a class="btn btn--outline" href="/en-vivo">Ver transmisiones {{ icons.arrow|safe }}</a>
+        <a class="btn btn--outline" href="/en-vivo" style="align-self:flex-start">Ver transmisiones {{ icons.arrow|safe }}</a>
         {% endif %}
       </div>
     </div>
   </div>
 </section>
 
-<section class="section-alt">
+<section class="sec-light">
   <div class="container">
     <div class="panel radio-block reveal">
       <div class="radio-block__icon">{{ icons.play|safe }}</div>
@@ -75,7 +85,7 @@
   </div>
 </section>
 
-<section>
+<section class="sec-soft">
   <div class="container">
     <div class="section-top reveal">
       <div class="section-head">
@@ -99,44 +109,23 @@
   </div>
 </section>
 
-<section class="section-alt">
+<section class="photo-feature">
+  <div class="photo-feature__bg"><img src="/static/img/stock/church-window.jpg" alt="Luz entrando por una ventana de la iglesia"></div>
+  <div class="photo-feature__scrim"></div>
   <div class="container">
-    <div class="stream-feature reveal">
-      <div class="stream-feature__inner">
-        <span class="badge">{{ icons.youtube|safe }} Transmisiones</span>
-        <h2>Cultos y eventos, en vivo</h2>
-        <p>Cuando hay una transmisión activa, la vemos juntos: cultos, Santa Cena, estudios y eventos especiales de Faro de Luz.</p>
-        <a class="btn btn--gold" href="/en-vivo">Ver transmisiones {{ icons.arrow|safe }}</a>
+    <div class="photo-feature__content reveal">
+      <span class="eyebrow">Más que una radio</span>
+      <h2>Faro de Luz</h2>
+      <p>Una iglesia, una familia, una misión. Detrás de cada transmisión hay una congregación real en Puerto Plata que camina junto a su comunidad.</p>
+      <div class="church-actions" style="display:flex;gap:14px;flex-wrap:wrap">
+        <a class="btn btn--gold" href="/iglesia">Conoce nuestra iglesia</a>
+        <a class="btn btn--outline" href="/contacto" style="border-color:rgba(255,255,255,.4);color:#fff">Contáctanos</a>
       </div>
     </div>
   </div>
 </section>
 
-<section>
-  <div class="container">
-    <div class="church-split">
-      <div class="reveal">
-        <span class="eyebrow">Más que una radio</span>
-        <h2>Faro de Luz</h2>
-        <p>{{ site_tagline }}. Detrás de cada transmisión hay una iglesia en Puerto Plata que camina junto a su comunidad.</p>
-        <div class="church-actions">
-          <a class="btn btn--outline" href="/iglesia">Conoce nuestra iglesia</a>
-          <a class="btn btn--outline" href="/contacto">Contáctanos</a>
-        </div>
-      </div>
-      <div class="church-visual reveal">
-        <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
-          <rect width="400" height="300" fill="#0D1322"/>
-          <path d="M200 30 L320 150 L80 150 Z" fill="#D9A94E" opacity="0.12"/>
-          <path d="M170 260 L182 150 H218 L230 260 Z" fill="#D9A94E" opacity="0.5"/>
-          <circle cx="200" cy="90" r="3" fill="#D9A94E"/>
-        </svg>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section-alt">
+<section class="sec-light">
   <div class="container">
     <div class="section-head text-center reveal">
       <span class="eyebrow">Quédate un momento</span>
@@ -162,9 +151,10 @@
   </div>
 </section>
 
-<section>
+<section class="sec-warm">
   <div class="container">
     <div class="panel verse-panel reveal">
+      <div class="verse-panel__texture"><img src="/static/img/stock/golden-sky.jpg" alt=""></div>
       <div class="verse-panel__mark">&ldquo;</div>
       <span class="badge">{{ icons.book|safe }} Una palabra para hoy</span>
       <blockquote>{{ verse.text }}</blockquote>
@@ -179,7 +169,7 @@
   </div>
 </section>
 
-<section class="section-alt">
+<section class="sec-soft">
   <div class="container">
     <div class="section-top reveal">
       <div class="section-head">
@@ -192,10 +182,13 @@
     <div class="activity-grid reveal">
       {% for a in activities %}
       <div class="activity-card">
-        <div class="activity-card__date">{{ a.date }} · {{ a.time }}</div>
-        <h3>{{ a.title }}</h3>
-        <p>{{ a.description }}</p>
-        <a class="link-arrow" href="/actividades">Ver detalles {{ icons.arrow|safe }}</a>
+        {% if a.image %}<div class="activity-card__thumb"><img src="{{ a.image }}" alt=""></div>{% endif %}
+        <div class="activity-card__body">
+          <div class="activity-card__date">{{ a.date }} · {{ a.time }}</div>
+          <h3>{{ a.title }}</h3>
+          <p>{{ a.description }}</p>
+          <a class="link-arrow" href="/actividades">Ver detalles {{ icons.arrow|safe }}</a>
+        </div>
       </div>
       {% endfor %}
     </div>
@@ -209,7 +202,7 @@
   </div>
 </section>
 
-<section>
+<section class="sec-light">
   <div class="container">
     <div class="section-head text-center reveal">
       <span class="eyebrow">Sigue a Faro de Luz</span>

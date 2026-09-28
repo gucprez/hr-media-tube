@@ -1,27 +1,30 @@
 {% extends "base.html" %}
 {% block content %}
 
-<section class="hero" style="padding-top:56px">
-  <div class="hero__stage"></div>
-  <div class="container reveal is-in" style="padding:56px 0 64px">
+<section class="sec-dark section-tight">
+  <div class="container reveal is-in">
     <span class="eyebrow">{{ icons.youtube|safe }} Transmisiones en vivo</span>
-    <h1 class="hero__kicker" style="font-size:clamp(2.4rem,6vw,4rem)">En <span style="color:var(--gold)">Vivo</span></h1>
-    <p class="hero__tagline">Cultos, Santa Cena, estudios y eventos especiales de Faro de Luz.</p>
+    <h1 style="font-size:clamp(2.4rem,6vw,3.6rem);color:#fff;margin-top:16px">En <span style="color:var(--gold)">Vivo</span></h1>
+    <p style="color:var(--fg-dim)">Cultos, Santa Cena, estudios y eventos especiales de Faro de Luz.</p>
   </div>
 </section>
 
-<section class="section-tight">
+<section class="sec-soft section-tight">
   <div class="container">
-    <div class="stream-feature reveal">
-      <div class="stream-feature__inner">
+    <div class="stream-card reveal">
+      <div class="stream-card__thumb">
+        <img src="/static/img/stock/radio-mic.jpg" alt="Transmisión de Faro de Luz">
+        <div class="stream-card__play">{{ icons.youtube|safe }}</div>
+      </div>
+      <div class="stream-card__body">
         <span class="badge">{{ icons.youtube|safe }} Culto en vivo</span>
-        <h2>Faro de Luz</h2>
+        <h2 style="font-size:1.5rem">Faro de Luz</h2>
         {% if youtube_live_url %}
         <p>Sigue la transmisión en vivo de nuestro culto ahora mismo.</p>
-        <a class="btn btn--gold" href="{{ youtube_live_url }}" target="_blank" rel="noopener">{{ icons.youtube|safe }} Ver transmisión</a>
+        <a class="btn btn--gold" href="{{ youtube_live_url }}" target="_blank" rel="noopener" style="align-self:flex-start">{{ icons.youtube|safe }} Ver transmisión</a>
         {% else %}
         <p>Ahora mismo no hay una transmisión activa. Cuando la iglesia esté en vivo, la verás aquí — mientras tanto, sigue escuchando la radio.</p>
-        <button class="btn btn--gold" type="button" data-player-toggle>{{ icons.play|safe }} Escuchar radio</button>
+        <button class="btn btn--gold" type="button" data-player-toggle style="align-self:flex-start">{{ icons.play|safe }} Escuchar radio</button>
         {% endif %}
       </div>
     </div>
@@ -29,7 +32,7 @@
 </section>
 
 {% if messages %}
-<section class="section-alt">
+<section class="sec-light">
   <div class="container">
     <div class="section-head reveal">
       <span class="eyebrow">Mensajes</span>
@@ -52,7 +55,7 @@
   </div>
 </section>
 {% else %}
-<section class="section-alt">
+<section class="sec-light">
   <div class="container">
     <div class="empty-state reveal">
       <h3>Nuestras transmisiones pasadas, aquí pronto</h3>

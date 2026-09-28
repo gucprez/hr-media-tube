@@ -1,41 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
 
-<section class="hero" style="padding-top:56px">
-  <div class="hero__stage"></div>
-  <div class="container reveal is-in" style="padding:56px 0 64px">
-    <span class="eyebrow">Nuestra iglesia</span>
-    <h1 class="hero__kicker" style="font-size:clamp(2.4rem,6vw,4rem)">Más que una <span style="color:var(--gold)">radio</span></h1>
-    <p class="hero__tagline">{{ site_tagline }}.</p>
+<section class="photo-feature">
+  <div class="photo-feature__bg"><img src="/static/img/stock/church-window.jpg" alt="Luz entrando por una ventana de la iglesia"></div>
+  <div class="photo-feature__scrim"></div>
+  <div class="container">
+    <div class="photo-feature__content reveal is-in">
+      <span class="eyebrow">Nuestra iglesia</span>
+      <h1 style="font-size:clamp(2.4rem,6vw,3.6rem);color:#fff">Más que una <span style="color:var(--gold)">radio</span></h1>
+      <p>Una iglesia, una familia, una misión. {{ site_tagline }}.</p>
+    </div>
   </div>
 </section>
 
-<section class="section-tight">
+<section class="sec-light section-tight">
   <div class="container">
-    <div class="church-split">
-      <div class="reveal">
-        <span class="eyebrow">Faro de Luz</span>
-        <h2>Una iglesia en Puerto Plata</h2>
-        <p>Detrás de cada transmisión hay una congregación real que camina junto a su comunidad, con cultos, estudios bíblicos y actividades durante toda la semana.</p>
-        <p style="font-size:.9rem;color:var(--faint)">Esta sección está en construcción — muy pronto compartiremos aquí nuestra historia completa.</p>
-        <div class="church-actions">
-          <a class="btn btn--outline" href="/programacion">Ver programación</a>
-          <a class="btn btn--outline" href="/contacto">Visítanos</a>
-        </div>
-      </div>
-      <div class="church-visual reveal">
-        <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
-          <rect width="400" height="300" fill="#0D1322"/>
-          <path d="M200 30 L320 150 L80 150 Z" fill="#D9A94E" opacity="0.12"/>
-          <path d="M170 260 L182 150 H218 L230 260 Z" fill="#D9A94E" opacity="0.5"/>
-          <circle cx="200" cy="90" r="3" fill="#D9A94E"/>
-        </svg>
+    <div class="section-head reveal">
+      <span class="eyebrow">Faro de Luz</span>
+      <h2>Una iglesia en Puerto Plata</h2>
+      <p>Detrás de cada transmisión hay una congregación real que camina junto a su comunidad, con cultos, estudios bíblicos y actividades durante toda la semana.</p>
+      <p style="font-size:.9rem;color:var(--fg-faint)">Esta sección está en construcción — muy pronto compartiremos aquí nuestra historia completa.</p>
+      <div style="display:flex;gap:14px;margin-top:20px;flex-wrap:wrap">
+        <a class="btn btn--outline" href="/programacion">Ver programación</a>
+        <a class="btn btn--outline" href="/contacto">Visítanos</a>
       </div>
     </div>
   </div>
 </section>
 
-<section class="section-alt" id="testimonio">
+<section class="sec-soft" id="testimonio">
   <div class="container">
     <div class="section-head text-center reveal">
       <span class="eyebrow">Tu historia importa</span>
@@ -53,7 +46,7 @@
           <textarea id="mensaje" name="mensaje" required maxlength="1000"></textarea>
         </div>
         <button class="btn btn--gold btn--wide" type="submit">Enviar testimonio</button>
-        <p class="form-feedback" data-testimony-feedback role="status"></p>
+        <p class="form-feedback" data-testimony-feedback role="status" style="color:var(--gold-deep)"></p>
       </form>
     </div>
   </div>
