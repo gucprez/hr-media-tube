@@ -30,6 +30,37 @@
     });
   }
 
+  // Schedule carousel
+  document.querySelectorAll("[data-carousel]").forEach(function (carousel) {
+    var track = carousel.querySelector("[data-carousel-track]");
+    var counter = carousel.querySelector("[data-carousel-counter]");
+    var cards = track ? Array.from(track.children) : [];
+    if (!track || !cards.length) return;
+
+    function currentIndex() {
+      var cardWidth = cards[0].getBoundingClientRect().width + 16;
+      return Math.round(track.scrollLeft / cardWidth);
+    }
+    function updateCounter() {
+      if (counter) counter.textContent = "Día " + (currentIndex() + 1) + " de " + cards.length;
+    }
+    carousel.querySelectorAll("[data-carousel-prev]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        track.scrollBy({ left: -(cards[0].getBoundingClientRect().width + 16), behavior: "smooth" });
+      });
+    });
+    carousel.querySelectorAll("[data-carousel-next]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        track.scrollBy({ left: cards[0].getBoundingClientRect().width + 16, behavior: "smooth" });
+      });
+    });
+    track.addEventListener("scroll", function () {
+      window.clearTimeout(track._t);
+      track._t = window.setTimeout(updateCounter, 100);
+    });
+    updateCounter();
+  });
+
   // Scroll reveal
   var revealEls = document.querySelectorAll(".reveal");
   if ("IntersectionObserver" in window && revealEls.length) {

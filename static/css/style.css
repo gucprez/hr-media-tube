@@ -211,23 +211,32 @@ section{position:relative;padding:88px 0}
 .sec-dark .radio-block__icon,.sec-mid .radio-block__icon{color:var(--gold)}
 .radio-block__icon svg{width:26px;height:26px}
 
-/* Schedule strip */
-.schedule-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;background:var(--surface-strong)}
-.schedule-row{
-  display:grid;grid-template-columns:120px 1fr auto;gap:20px;align-items:center;
-  padding:24px 32px;border-bottom:1px solid var(--line);transition:background .2s;
-}
-.schedule-row:last-child{border-bottom:none}
-.schedule-row:hover{background:var(--surface)}
-.schedule-row__day{font-family:var(--font-head);font-weight:600;color:var(--gold-deep);font-size:.85rem;letter-spacing:.1em;text-transform:uppercase}
+/* Schedule day/time labels (used inside schedule carousel cards) */
+.schedule-row__day{font-family:var(--font-head);font-weight:600;color:var(--gold-deep);font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:12px}
 .sec-dark .schedule-row__day,.sec-mid .schedule-row__day{color:var(--gold)}
-.schedule-row h3{font-size:1.05rem;margin:0 0 4px}
-.schedule-row p{margin:0;font-size:.9rem}
 .schedule-row__time{font-family:var(--font-head);font-size:.9rem;color:var(--fg-faint);white-space:nowrap}
-@media (max-width:640px){
-  .schedule-row{grid-template-columns:1fr;gap:6px;padding:20px}
-  .schedule-row__time{order:-1}
+
+/* Schedule carousel */
+.schedule-carousel__track{
+  display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;
+  padding-bottom:4px;scrollbar-width:none;-ms-overflow-style:none;
 }
+.schedule-carousel__track::-webkit-scrollbar{display:none}
+.schedule-carousel__card{
+  flex:0 0 min(300px,80vw);scroll-snap-align:start;border:1px solid var(--line);
+  border-radius:var(--radius-md);padding:26px;background:var(--surface-strong);
+}
+.schedule-carousel__card .schedule-row__day{display:block;margin-bottom:14px}
+.schedule-carousel__card h3{font-size:1.05rem;margin:0 0 8px}
+.schedule-carousel__card p{margin:0 0 14px;font-size:.9rem}
+.schedule-carousel__foot{display:flex;align-items:center;gap:12px;margin-top:20px}
+.schedule-carousel__counter{font-size:.82rem;color:var(--fg-faint);margin-right:auto}
+.schedule-carousel__btn{
+  width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface-strong);
+  color:var(--fg);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .2s;
+}
+.schedule-carousel__btn:hover{border-color:var(--gold)}
+.schedule-carousel__btn svg{width:16px;height:16px}
 
 /* Full-bleed photo feature (Iglesia / Transmisiones) */
 .photo-feature{position:relative;min-height:520px;display:flex;align-items:center;overflow:hidden}

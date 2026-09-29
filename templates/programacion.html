@@ -11,17 +11,21 @@
 
 <section class="sec-soft section-tight">
   <div class="container">
-    <div class="schedule-list reveal">
-      {% for item in schedule %}
-      <div class="schedule-row">
-        <span class="schedule-row__day">{{ item.day }}</span>
-        <div>
+    <div class="reveal" data-carousel>
+      <div class="schedule-carousel__track" data-carousel-track>
+        {% for item in schedule %}
+        <div class="schedule-carousel__card">
+          <span class="schedule-row__day">{{ item.day }} · {{ item.time }}</span>
           <h3>{{ item.title }}</h3>
           <p>{{ item.description }}</p>
         </div>
-        <span class="schedule-row__time">{{ item.time }}</span>
+        {% endfor %}
       </div>
-      {% endfor %}
+      <div class="schedule-carousel__foot">
+        <span class="schedule-carousel__counter" data-carousel-counter></span>
+        <button class="schedule-carousel__btn" type="button" data-carousel-prev aria-label="Anterior">{{ icons["arrow-left"]|safe }}</button>
+        <button class="schedule-carousel__btn" type="button" data-carousel-next aria-label="Siguiente">{{ icons.arrow|safe }}</button>
+      </div>
     </div>
   </div>
 </section>
