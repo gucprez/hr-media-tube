@@ -33,7 +33,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Archivos de empresa: JAMÁS se exponen por URL; solo vía FileController (permiso + empresa).
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

@@ -178,7 +178,7 @@ class SettingsController extends Controller
     public function numbering()
     {
         foreach (DocumentNumbering::KEYS as $key => $label) {
-            DocumentSequence::firstOrCreate(['key' => $key], ['prefix' => '', 'next_number' => 1, 'padding' => 4]);
+            DocumentSequence::firstOrCreate(['key' => $key], ['next_number' => 1] + DocumentNumbering::defaults($key));
         }
 
         return view('admin.settings.numbering', [

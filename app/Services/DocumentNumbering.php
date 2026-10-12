@@ -13,8 +13,22 @@ class DocumentNumbering
         'ticket_materials' => 'Tickets de materiales',
         'ticket_fuel' => 'Tickets de gasoil',
         'fuel_receipt' => 'Recepciones de gasoil',
-        'movement' => 'Movimientos de inventario',
+        'entry' => 'Entradas de almacén',
+        'exit' => 'Salidas de almacén',
+        'adjustment' => 'Ajustes de inventario',
     ];
+
+    /** Prefijo y relleno por defecto de cada documento. */
+    public const DEFAULTS = [
+        'entry' => ['prefix' => 'ENT-', 'padding' => 6],
+        'exit' => ['prefix' => 'SAL-', 'padding' => 6],
+        'adjustment' => ['prefix' => 'AJU-', 'padding' => 6],
+    ];
+
+    public static function defaults(string $key): array
+    {
+        return self::DEFAULTS[$key] ?? ['prefix' => '', 'padding' => 4];
+    }
 
     public function next(string $key, ?int $companyId = null): string
     {
@@ -25,9 +39,9 @@ class DocumentNumbering
                 ->where('company_id', $companyId)->where('key', $key)->lockForUpdate()->first();
 
             if (! $seq) {
-                $seq = DocumentSequence::withoutGlobalScopes()->create([
-                    'company_id' => $companyId, 'key' => $key, 'prefix' => '', 'next_number' => 1, 'padding' => 4,
-                ]);
+                $seq = DocumentSequence::withoutGlobalScopes()->create(
+                    ['company_id' => $companyId, 'key' => $key, 'next_number' => 1] + self::defaults($key)
+                );
             }
 
             $number = $seq->next_number;

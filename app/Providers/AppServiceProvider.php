@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Support\CurrentCompany;
+use App\Support\Search\CategorySearch;
+use App\Support\Search\GlobalSearch;
+use App\Support\Search\ProductSearch;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +21,12 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(CurrentCompany::class);
+
+        // Búsqueda global: cada módulo registra su proveedor (Fase 3+: furgones, vehículos, tickets).
+        $this->app->singleton(GlobalSearch::class, fn () => tap(new GlobalSearch, function (GlobalSearch $search) {
+            $search->register(new ProductSearch);
+            $search->register(new CategorySearch);
+        }));
     }
 
     public function boot(): void
@@ -44,11 +53,21 @@ class AppServiceProvider extends ServiceProvider
                         return $user?->is_super_admin;
                     }
                     if (! empty($item['can'])) {
-                        return $user?->hasPermission($item['can']);
+                        return collect((array) $item['can'])->contains(fn ($p) => $user?->hasPermission($p));
                     }
 
                     return true;
-                })->map(fn ($i) => $i + ['active' => request()->routeIs($i['route'], \Illuminate\Support\Str::beforeLast($i['route'], '.').'.*')]);
+                })->map(function ($i) {
+                    $params = $i['params'] ?? [];
+                    // Ítem con parámetros (secciones de reportes): activo solo si coincide la sección.
+                    $active = isset($i['match'])
+                        ? request()->routeIs(...$i['match'])
+                        : ($params
+                        ? request()->routeIs($i['route']) && collect($params)->every(fn ($v, $k) => request()->route($k) === $v)
+                        : request()->routeIs($i['route'], \Illuminate\Support\Str::beforeLast($i['route'], '.').'.*'));
+
+                    return $i + ['active' => $active, 'url' => route($i['route'], $params)];
+                });
 
                 return ['label' => $section['label'], 'items' => $items];
             })->filter(fn ($s) => $s['items']->isNotEmpty());

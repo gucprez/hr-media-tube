@@ -44,4 +44,33 @@ abstract class TestCase extends BaseTestCase
 
         return $user;
     }
+
+    /** Activa la empresa en el contexto (para usar servicios/modelos fuera de una petición HTTP). */
+    protected function actAs(Company $company): void
+    {
+        app(CurrentCompany::class)->set($company);
+        app(CurrentCompany::class)->enforce();
+    }
+
+    protected function makeProduct(Company $company, array $attrs = []): \App\Models\Product
+    {
+        $previous = app(CurrentCompany::class)->get();
+        $this->actAs($company);
+        $unit = \App\Models\Unit::where('name', $attrs['unit'] ?? 'Rollo')->first();
+        unset($attrs['unit']);
+
+        $product = \App\Models\Product::create($attrs + [
+            'sku' => 'P'.uniqid(), 'name' => 'Tape Transparente', 'handling_mode' => 'both', 'box_label' => 'caja',
+            'units_per_box' => 36, 'unit_id' => $unit?->id, 'alert_unit' => 'boxes', 'min_quantity' => 1, 'min_stock_base' => 36,
+            'is_active' => true,
+        ]);
+        $previous ? $this->actAs($previous) : app(CurrentCompany::class)->clear();
+
+        return $product;
+    }
+
+    protected function defaultWarehouse(Company $company): \App\Models\Warehouse
+    {
+        return \App\Models\Warehouse::withoutGlobalScopes()->where('company_id', $company->id)->where('is_default', true)->firstOrFail();
+    }
 }

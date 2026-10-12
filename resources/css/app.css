@@ -54,3 +54,27 @@
     .badge-blue { @apply badge bg-blue-100 text-blue-800; }
     .badge-gray { @apply badge bg-slate-100 text-slate-700; }
 }
+
+/* ---- Impresión: reportes y documentos ------------------------------------ */
+@media print {
+    @page { size: letter; margin: 12mm; }
+    html, body { background: #fff !important; }
+    .no-print, aside, header.sticky, [role='alert'] { display: none !important; }
+    .lg\:pl-64 { padding-left: 0 !important; }
+    main { max-width: none !important; padding: 0 !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    .table thead th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .table { font-size: 9.5px; table-layout: auto; }
+    .table th, .table td { padding: 3px 4px !important; word-break: break-word; }
+    .table td, .table th { font-size: 9.5px !important; }
+    .table .font-mono { font-size: 8.5px !important; }
+    .table .whitespace-nowrap { white-space: normal !important; }
+    .table-wrap { overflow: visible !important; }
+    .table img, .table .h-10, .table .w-10, .table .h-12, .table .w-12 { height: 26px !important; width: 26px !important; }
+    .table .badge, .table [class*='badge-'] { padding: 1px 6px; font-size: 9px; white-space: nowrap; }
+    .table thead { display: table-header-group; }
+    .table tbody tr { break-inside: avoid; }
+    .badge, .badge-green, .badge-yellow, .badge-orange, .badge-red, .badge-blue, .badge-gray { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .print-only { display: block !important; }
+}
+.print-only { display: none; }

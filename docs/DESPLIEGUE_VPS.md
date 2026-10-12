@@ -41,14 +41,17 @@ Límites de subida: `client_max_body_size 20M;` y `upload_max_filesize = 20M` / 
 Si usa colas (`QUEUE_CONNECTION=database`), ejecute `php artisan queue:work` con Supervisor/systemd.
 
 ## 6. Respaldos
-`deploy/backup.sh` genera dump de BD + `storage/app/public` comprimidos con rotación (14 días). Cron: `0 2 * * * /var/www/hrmedia/deploy/backup.sh`. Copie los respaldos fuera del servidor (rclone/rsync).
+`deploy/backup.sh` genera dump de BD + `storage/app/public` (logos) y `storage/app/private` (fotos y documentos) comprimidos con rotación (14 días). Cron: `0 2 * * * /var/www/hrmedia/deploy/backup.sh`. Copie los respaldos fuera del servidor (rclone/rsync).
+
+## 6b. Integridad del inventario
+El scheduler ejecuta `inventory:verify` cada día a las 02:30 (salida en `storage/logs/inventory-verify.log`). Cualquier línea con «≠ libro» indica que alguien modificó el stock fuera de la aplicación. Tras instalar en el VPS puede validar el bloqueo de concurrencia con `php artisan inventory:concurrency-check --workers=10` (crea y borra una empresa temporal).
 
 ## 7. Actualizar
 ```bash
 git pull && composer install --no-dev -o && npm ci && npm run build
 php artisan migrate --force && php artisan permissions:sync && php artisan optimize
 ```
-`permissions:sync` agrega permisos nuevos al catálogo; los roles existentes no se sobrescriben salvo `--reset-roles`.
+`permissions:sync` agrega permisos nuevos al catálogo y los asigna a los roles base que los incluyen; las personalizaciones de roles no se sobrescriben salvo `--reset-roles`. (Fase 2: el rol «Solo consulta»/«Auditor» ahora incluye `search.use`; en empresas ya creadas, actívelo desde *Roles y permisos* o use `--reset-roles`.)
 
 ## 8. Nueva empresa cliente
 Super administrador → **Plataforma → Empresas → Nueva empresa**. Se crean roles, sucursal, almacén y numeraciones. No requiere reprogramar.

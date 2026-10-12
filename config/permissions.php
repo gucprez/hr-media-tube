@@ -63,7 +63,15 @@ return [
             'returnables.manage' => 'Gestionar retornables',
         ],
         'Reportes' => [
-            'reports.view' => 'Ver reportes',
+            'reports.view' => 'Acceder al centro de reportes',
+            'reports.inventory.view' => 'Reportes de almacén',
+            'reports.fuel.view' => 'Reportes de gasoil',
+            'reports.containers.view' => 'Reportes de furgones',
+            'reports.vehicles.view' => 'Reportes de vehículos',
+            'reports.maintenance.view' => 'Reportes de mecánica / mantenimiento',
+            'reports.tires.view' => 'Reportes de gomas',
+            'reports.returnables.view' => 'Reportes de retornables',
+            'reports.audit.view' => 'Reportes de auditoría',
             'reports.export' => 'Exportar reportes (Excel / PDF)',
         ],
         'Administración' => [
@@ -111,25 +119,25 @@ return [
         'fuel' => [
             'name' => 'Combustible',
             'description' => 'Recepción y despacho de gasoil.',
-            'permissions' => ['dashboard.view', 'search.use', 'fuel.*', 'vehicles.view', 'tickets.view', 'tickets.print', 'reports.view'],
+            'permissions' => ['dashboard.view', 'search.use', 'fuel.*', 'vehicles.view', 'tickets.view', 'tickets.print', 'reports.view', 'reports.fuel.view'],
         ],
         'maintenance' => [
             'name' => 'Mantenimiento',
             'description' => 'Inspecciones, averías, mantenimientos y gomas.',
             'permissions' => [
                 'dashboard.view', 'search.use', 'products.view', 'inventory.view', 'inventory.dispatch', 'vehicles.*', 'incidents.*',
-                'maintenance.*', 'tires.*', 'returnables.*', 'reports.view',
+                'maintenance.*', 'tires.*', 'returnables.*', 'reports.view', 'reports.vehicles.view', 'reports.maintenance.view', 'reports.tires.view', 'reports.returnables.view', 'reports.inventory.view',
             ],
         ],
         'auditor' => [
             'name' => 'Auditor',
             'description' => 'Consulta, reportes, exportación y auditoría.',
-            'permissions' => ['view', 'reports.export', 'audit.view'],
+            'permissions' => ['view', 'search.use', 'reports.export', 'audit.view', 'reports.audit.view'],
         ],
         'read_only' => [
             'name' => 'Solo consulta',
             'description' => 'Ve inventario y reportes. No crea, edita ni elimina.',
-            'permissions' => ['view'],
+            'permissions' => ['view', 'search.use'],
         ],
     ],
 ];

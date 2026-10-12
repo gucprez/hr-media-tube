@@ -14,7 +14,7 @@
 
 ## 2. Roles y permisos
 
-* Catálogo único en `config/permissions.php` (`products.view`, `inventory.dispatch`, …) → tabla `permissions` (`php artisan permissions:sync`).
+* Catálogo único en `config/permissions.php` (`products.view`, `inventory.dispatch`, …) → tabla `permissions` (`php artisan permissions:sync`). Los permisos *sensibles* (`inventory.negative`, `reports.audit.view`) nunca se otorgan por comodín.
 * Los **roles** pertenecen a la empresa (copias de plantillas editables). El acceso real se evalúa **por permiso**: `User::hasPermission()`.
 * **Overrides por usuario** (`permission_user.granted`): otorgar o denegar sobre lo que da el rol.
 * `Gate::before` → `@can('products.edit')`, `$user->can()`, `Gate::allows()` funcionan con cualquier permiso con punto.
@@ -22,7 +22,7 @@
 * Anti-escalada: un administrador solo puede delegar permisos que él mismo posee.
 * Rol **Solo consulta**: todos los `*.view` + reportes; ninguna escritura.
 
-## 3. Inventario (Fase 2+, esquema ya creado)
+## 3. Inventario (implementado en Fase 2 — detalle en `docs/FASE2.md`)
 
 * Unidad base interna por producto (`quantity_base`, decimal 14,3). `units_per_box` convierte cajas↔unidades:
   `5 cajas + 8 rollos` (36/caja) = `188` base. La UI muestra `5 cajas + 8 unidades`.

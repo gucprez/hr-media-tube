@@ -7,8 +7,9 @@
     <div x-show="open" x-cloak x-transition.opacity @click="open = false" class="fixed inset-0 z-30 bg-slate-900/60 lg:hidden"></div>
 
     {{-- Sidebar --}}
-    <aside :class="open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-           class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-sidebar text-slate-300 transition-transform duration-200">
+    {{-- En móvil nace oculto (sin parpadeo antes de que cargue Alpine); `open` lo desliza a la vista. --}}
+    <aside :class="open ? 'max-lg:translate-x-0!' : ''"
+           class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-sidebar text-slate-300 transition-transform duration-200 max-lg:-translate-x-full">
         <div class="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-4">
             @if(!empty($currentCompany?->logo_url))
                 <img src="{{ $currentCompany->logo_url }}" alt="" class="h-9 w-9 rounded-lg bg-white object-contain p-0.5">
@@ -31,7 +32,7 @@
                     <ul class="space-y-0.5">
                         @foreach($section['items'] as $item)
                             <li>
-                                <a href="{{ route($item['route']) }}"
+                                <a href="{{ $item['url'] }}"
                                    class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition {{ $item['active'] ? 'bg-brand text-white shadow' : 'hover:bg-white/10 hover:text-white' }}">
                                     <x-icon :name="$item['icon']" class="h-5 w-5 shrink-0" />
                                     {{ $item['label'] }}
@@ -53,8 +54,34 @@
         <header class="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6">
             <button @click="open = true" class="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden" aria-label="Abrir menú"><x-icon name="menu" class="h-6 w-6" /></button>
 
-            @stack('topbar')
+            @can('search.use')
+            {{-- Búsqueda global --}}
+            <div x-data="globalSearch('{{ route('search') }}')" @click.outside="open = false" class="relative min-w-0 flex-1 sm:max-w-xl">
+                <form action="{{ route('search') }}" method="GET" role="search">
+                    <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input type="search" name="q" x-model="q" @input.debounce.250ms="run()" @focus="open = results.length > 0" autocomplete="off"
+                           placeholder="Buscar productos, código, categoría…" aria-label="Búsqueda global"
+                           class="input !min-h-10 !rounded-full !bg-slate-100 !pl-9 !shadow-none">
+                </form>
+                <div x-show="open" x-cloak class="absolute left-0 right-0 z-30 mt-2 max-h-[70vh] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+                    <template x-for="group in results" :key="group.label">
+                        <div>
+                            <p class="bg-slate-50 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500" x-text="group.label"></p>
+                            <template x-for="r in group.results" :key="r.url">
+                                <a :href="r.url" class="flex items-center gap-3 px-4 py-2 hover:bg-slate-50">
+                                    <img x-show="r.image" :src="r.image" class="h-9 w-9 rounded-md border border-slate-200 object-cover" alt="">
+                                    <span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium text-slate-800" x-text="r.title"></span><span class="block truncate text-xs text-slate-500" x-text="r.subtitle"></span></span>
+                                    <span x-show="r.badge" class="badge-gray" x-text="r.badge"></span>
+                                </a>
+                            </template>
+                        </div>
+                    </template>
+                    <a :href="'{{ route('search') }}?q=' + encodeURIComponent(q)" class="block border-t border-slate-100 px-4 py-2 text-center text-xs font-medium text-brand hover:bg-slate-50">Ver todos los resultados</a>
+                </div>
+            </div>
+            @else
             <div class="flex-1"></div>
+            @endcan
 
             @if($user->is_super_admin)
                 <form method="POST" action="{{ route('admin.companies.leave') }}">@csrf

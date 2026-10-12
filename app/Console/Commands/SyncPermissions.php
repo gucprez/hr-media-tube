@@ -14,11 +14,11 @@ class SyncPermissions extends Command
 
     public function handle(): int
     {
-        CompanyProvisioner::syncPermissions();
-        $this->info('Catálogo de permisos sincronizado.');
+        $new = CompanyProvisioner::syncPermissions();
+        $this->info('Catálogo de permisos sincronizado.'.($new ? ' Nuevos: '.implode(', ', $new) : ''));
 
         foreach (Company::all() as $company) {
-            CompanyProvisioner::syncRoles($company, (bool) $this->option('reset-roles'));
+            CompanyProvisioner::syncRoles($company, (bool) $this->option('reset-roles'), $new);
             $this->line("  · Roles de {$company->name} verificados");
         }
 
