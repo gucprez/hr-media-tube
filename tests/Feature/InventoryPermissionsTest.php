@@ -113,7 +113,7 @@ class InventoryPermissionsTest extends TestCase
 
         $this->actingAs($fuel)->get('/reportes')->assertOk()->assertSee('Reportes de Gasoil')->assertDontSee('Reportes de Almacén')->assertDontSee('Reportes de Auditoría');
         $this->get('/reportes/almacen')->assertForbidden();
-        $this->get('/reportes/fuel')->assertOk()->assertSee('Recepciones de gasoil')->assertSee('Fase 4');
+        $this->get('/reportes/fuel')->assertOk()->assertSee('Recepciones de gasoil')->assertSee('Disponible');
         $this->get('/reportes/audit')->assertNotFound();
 
         $this->actingAs($reader)->get('/reportes')->assertOk()->assertSee('Reportes de Almacén')->assertSee('Reportes de Gasoil')->assertDontSee('Reportes de Auditoría');

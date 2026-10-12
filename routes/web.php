@@ -245,6 +245,7 @@ Route::middleware('auth')->group(function () {
                 Route::get('inventario-actual', [InventoryReportController::class, 'current'])->name('reports.inventory');
                 Route::get('movimiento-inventario', [InventoryReportController::class, 'movement'])->name('reports.inventory-movement');
             });
+            Route::get('{section}/{key}', [\App\Http\Controllers\Reports\ReportRunController::class, 'run'])->middleware('throttle:60,1')->where('section', 'warehouse|fuel|containers|vehicles|maintenance|tires|returnables|audit')->name('reports.run');
             Route::get('{section}', [ReportCenterController::class, 'section'])->where('section', 'fuel|containers|vehicles|maintenance|tires|returnables|audit')->name('reports.section');
         });
 

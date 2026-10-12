@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Services\Reports\ReportRegistry;
 use Illuminate\Http\Request;
 
 class ReportCenterController extends Controller
@@ -37,7 +38,10 @@ class ReportCenterController extends Controller
             }
             $section['key'] = $key;
             $section['url'] = $key === 'warehouse' ? route('reports.warehouse') : route('reports.section', $key);
-            $section['reports'] = collect($section['reports'])->map(function ($r) use ($user, $section) {
+            $registry = collect(app(ReportRegistry::class)->forSection($key))->map(fn ($d) => [
+                'label' => $d['title'], 'description' => $d['description'], 'route' => 'reports.run', 'params' => [$key, $d['key']], 'registry' => true,
+            ])->values()->all();
+            $section['reports'] = collect(array_merge($section['reports'], $registry))->map(function ($r) use ($user, $section) {
                 $available = isset($r['route']) && \Illuminate\Support\Facades\Route::has($r['route']) && $user->hasPermission($r['permission'] ?? $section['permission']);
                 $r['url'] = $available ? route($r['route'], $r['params'] ?? []) : null;
                 $r['available'] = $available;

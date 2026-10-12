@@ -14,6 +14,11 @@ class MaintenancePart extends Model
 
     protected $casts = ['quantity_base' => 'float'];
 
+    public function record(): BelongsTo
+    {
+        return $this->belongsTo(MaintenanceRecord::class, 'maintenance_record_id');
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class)->withTrashed();

@@ -3,7 +3,13 @@
 @section('content')
 <div class="no-print mb-3 flex flex-wrap items-center justify-between gap-2">
     <a href="{{ route('reports.warehouse') }}" class="text-sm text-slate-500 hover:text-slate-800">← Reportes de almacén</a>
-    <button type="button" onclick="window.print()" class="btn-primary btn-sm"><x-icon name="printer" class="h-4 w-4" /> Imprimir</button>
+    <div class="flex gap-2">
+        @can('reports.export')
+            <a href="{{ route('reports.run', ['warehouse', 'inventory-movement'] + request()->only(['product', 'warehouse', 'category']) + ['range' => 'custom', 'from' => $from->toDateString(), 'to' => $to->toDateString()] + ['format' => 'xlsx']) }}" class="btn-secondary btn-sm">Excel</a>
+            <a href="{{ route('reports.run', ['warehouse', 'inventory-movement'] + request()->only(['product', 'warehouse', 'category']) + ['range' => 'custom', 'from' => $from->toDateString(), 'to' => $to->toDateString()] + ['format' => 'pdf']) }}" class="btn-secondary btn-sm">PDF</a>
+        @endcan
+        <button type="button" onclick="window.print()" class="btn-primary btn-sm"><x-icon name="printer" class="h-4 w-4" /> Imprimir</button>
+    </div>
 </div>
 
 <form method="GET" action="{{ route('reports.inventory-movement') }}" class="card card-body no-print mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1.2fr_1fr_1fr_auto]">
