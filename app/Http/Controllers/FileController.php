@@ -31,7 +31,13 @@ class FileController extends Controller
 
     public function attachment(Request $request, Attachment $attachment)
     {
-        abort_unless($request->user()->hasPermission('inventory.view'), 403);
+        // El permiso depende del tipo de registro al que pertenece el adjunto.
+        $needed = match ($attachment->attachable_type) {
+            (new \App\Models\FuelReceipt)->getMorphClass(), (new \App\Models\FuelDispatch)->getMorphClass() => 'fuel.view',
+            (new \App\Models\InventoryMovement)->getMorphClass() => 'inventory.view',
+            default => 'vehicles.view',
+        };
+        abort_unless($request->user()->hasPermission($needed), 403);
 
         return $this->serve($attachment->path, $attachment->original_name, $attachment->mime);
     }

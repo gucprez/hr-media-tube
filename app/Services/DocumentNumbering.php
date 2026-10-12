@@ -31,6 +31,7 @@ class DocumentNumbering
         'maintenance_move' => ['prefix' => 'MNT-', 'padding' => 6],
         'return' => ['prefix' => 'DEV-', 'padding' => 6],
         'void' => ['prefix' => 'ANU-', 'padding' => 6],
+        'fuel_receipt' => ['prefix' => 'REC-', 'padding' => 4],
     ];
 
     public static function defaults(string $key): array

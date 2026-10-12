@@ -58,6 +58,16 @@ class DashboardController extends Controller
             $data['recentContainers'] = \App\Models\Container::with('vehicle')->orderByDesc('date')->orderByDesc('id')->limit(6)->get();
         }
 
+        if ($user->hasPermission('fuel.view')) {
+            $tank = app(\App\Services\Fuel\FuelService::class)->tank();
+            $monthStart = now()->startOfMonth()->toDateString();
+            $data['fuel'] = [
+                'reserve' => (float) $tank->current_gallons, 'percent' => $tank->percent,
+                'month' => (float) \App\Models\FuelDispatch::whereNull('voided_at')->whereDate('dispatched_at', '>=', $monthStart)->sum('gallons'),
+            ];
+            $data['recentDispatches'] = \App\Models\FuelDispatch::with('vehicle')->whereNull('voided_at')->orderByDesc('dispatched_at')->orderByDesc('id')->limit(6)->get();
+        }
+
         $data['audit'] = $user->hasPermission('audit.view') ? AuditLog::with('user')->latest('created_at')->latest('id')->limit(6)->get() : collect();
 
         return view('dashboard', $data);

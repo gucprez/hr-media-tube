@@ -147,12 +147,14 @@ class DemoSeeder extends Seeder
             $drivers[] = \App\Models\Driver::create(['name' => $name, 'phone' => $phone, 'is_active' => true]);
         }
         $vehicles = [];
-        foreach ([['F1', 'ABC-1001', 'Freightliner', 'Cascadia', 2018, 415200.5], ['F2', 'ABC-1002', 'International', 'LT', 2017, 389100.0], ['F3', 'ABC-1003', 'Kenworth', 'T680', 2019, 415540.0]] as $i => [$ficha, $plate, $brand, $model, $year, $km]) {
+        foreach ([['F1', 'ABC-1001', 'Freightliner', 'Cascadia', 2018, 414000.0], ['F2', 'ABC-1002', 'International', 'LT', 2017, 388000.0], ['F3', 'ABC-1003', 'Kenworth', 'T680', 2019, 414800.0]] as $i => [$ficha, $plate, $brand, $model, $year, $km]) {
             $vehicles[] = \App\Models\Vehicle::create([
                 'ficha' => $ficha, 'plate' => $plate, 'brand' => $brand, 'model' => $model, 'year' => $year, 'odometer' => $km,
                 'vehicle_type_id' => $type?->id, 'usual_driver_id' => $drivers[$i]->id, 'status' => 'operational',
             ]);
         }
+
+        $this->seedFuel($vehicles, $actor);
 
         $wh = Warehouse::where('is_default', true)->first();
         $stock = app(StockService::class);
@@ -180,6 +182,12 @@ class DemoSeeder extends Seeder
                 ], $c->materials->map(fn ($m) => ['product_id' => $m->product_id, 'boxes' => $m->boxes, 'units' => $m->units])->all(), $actor);
                 $c->forceFill(['status' => 'closed', 'closed_at' => now()->subDays($daysAgo)->setTime(16, 0), 'closed_by' => $actor->id, 'movement_id' => $m->id])->save();
                 \App\Services\Audit::log('container.closed', "Furgón {$number} cerrado", $c);
+                if ($fuel > 0) {
+                    app(\App\Services\Fuel\FuelService::class)->dispatch([
+                        'dispatched_at' => now()->subDays($daysAgo)->toDateString(), 'vehicle_id' => $c->vehicle_id, 'container_id' => $c->id,
+                        'gallons' => $fuel, 'notes' => 'Gasoil del furgón '.$number, 'origin' => 'container',
+                    ], $actor);
+                }
             }
 
             return $c->fresh(['materials.product.unit', 'vehicle']);
@@ -208,6 +216,24 @@ class DemoSeeder extends Seeder
                 'phone' => $c->phone, 'dispatched_by' => $actor->name, 'received_by' => $c->driver_name, 'created_by' => $actor->id,
             ]);
             \App\Models\TicketItem::create(['ticket_id' => $f->id, 'description' => 'Gasoil', 'ficha' => $c->vehicle->ficha, 'odometer' => $c->vehicle->odometer, 'gallons' => $c->fuel_gallons]);
+        }
+    }
+
+    /** Reserva inicial 108.0 + recepción de 801.0 gal (metro 1,842,237 → 1,843,038) = 909.0, despacho F3 de 10.3 gal → 898.7 (ejemplo real del cliente). */
+    protected function seedFuel(array $vehicles, User $actor): void
+    {
+        $fuel = app(\App\Services\Fuel\FuelService::class);
+        $fuel->tank()->update(['capacity_gallons' => 2000]);
+        $fuel->adjust(108.0, 'Reserva inicial del sistema (medición física)', $actor, now()->subDays(45));
+        $fuel->receive(['received_at' => now()->subDays(20)->toDateString(), 'meter_start' => 1842237, 'meter_end' => 1843038, 'supplier' => 'Suplidora de Combustibles', 'truck_plate' => 'L-445566', 'receipt_number' => 'REC-0001'], $actor);
+
+        [$f1, $f2, $f3] = $vehicles;
+        $rows = [
+            [19, $f3, 123880.2, 123890.5, 415100.0], [15, $f1, 123890.5, 123936.0, 414650.0], [12, $f2, 123936.0, 123988.5, 388600.0],
+            [9, $f3, 123988.5, 124018.7, 415540.0], [6, $f1, 124018.7, 124042.7, 414950.0], [3, $f2, 124042.7, 124070.7, 389100.0], [1, $f1, 124070.7, 124089.4, 415200.5],
+        ];
+        foreach ($rows as [$ago, $vehicle, $start, $end, $km]) {
+            $fuel->dispatch(['dispatched_at' => now()->subDays($ago)->toDateString(), 'vehicle_id' => $vehicle->id, 'reading_start' => $start, 'reading_end' => $end, 'odometer' => $km], $actor);
         }
     }
 }

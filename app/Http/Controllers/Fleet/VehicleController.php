@@ -46,9 +46,14 @@ class VehicleController extends Controller
     {
         $vehicle->load(['type', 'usualDriver']);
 
+        $file = app(\App\Services\Fleet\VehicleFile::class);
+
         return view('fleet.vehicles.show', [
             'vehicle' => $vehicle,
             'containers' => $vehicle->containers()->orderByDesc('date')->orderByDesc('id')->limit(10)->get(),
+            'lastDispatch' => $file->lastDispatch($vehicle),
+            'fuel' => $file->fuelStats($vehicle),
+            'timeline' => $file->timeline($vehicle),
         ]);
     }
 

@@ -23,13 +23,23 @@
         </dl>
         @if($vehicle->notes)<p class="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">{{ $vehicle->notes }}</p>@endif
     </div>
-    <div class="card">
-        <h2 class="border-b border-slate-100 px-5 py-3 font-semibold text-slate-900">Últimos furgones</h2>
-        @forelse($containers as $c)
-            <a href="{{ route('containers.show', $c) }}" class="flex items-center justify-between border-b border-slate-100 px-5 py-3 last:border-0 hover:bg-slate-50"><span class="font-medium text-slate-800">Furgón #{{ $c->number }}</span><span class="text-xs text-slate-500">{{ $c->date->format('d/m/Y') }} · <span class="{{ $c->status_badge }}">{{ $c->status_label }}</span></span></a>
-        @empty
-            <p class="px-5 py-8 text-center text-sm text-slate-500">Sin furgones.</p>
-        @endforelse
+    <div class="space-y-6">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Último despacho de gasoil</p>
+                @if($lastDispatch)<p class="text-xl font-bold text-slate-900">{{ number_format($lastDispatch->gallons, 1) }} gal</p><p class="text-xs text-slate-500">{{ $lastDispatch->dispatched_at->format('d/m/Y') }}{{ $lastDispatch->odometer ? ' · '.number_format($lastDispatch->odometer, 1).' km' : '' }}</p>@else<p class="text-sm text-slate-400">Sin despachos</p>@endif</div>
+            <div class="card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Gasoil últimos 30 días</p><p class="text-xl font-bold text-slate-900">{{ number_format($fuel['gallons_30'], 1) }} gal</p><p class="text-xs text-slate-500">Total histórico {{ number_format($fuel['gallons_total'], 1) }} gal</p></div>
+            <div class="card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Rendimiento</p><p class="text-xl font-bold text-slate-900">{{ $fuel['km_per_gallon'] ? number_format($fuel['km_per_gallon'], 2).' km/gal' : '—' }}</p><p class="text-xs text-slate-500">Entre cargas con kilometraje</p></div>
+            <div class="card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Despachos registrados</p><p class="text-xl font-bold text-slate-900">{{ $fuel['dispatches'] }}</p><a href="{{ route('fuel.dispatches.index', ['vehicle' => $vehicle->id]) }}" class="text-xs text-brand hover:underline">Ver control de gasoil</a></div>
+        </div>
+        @include('fleet.vehicles._timeline')
+        <div class="card">
+            <h2 class="border-b border-slate-100 px-5 py-3 font-semibold text-slate-900">Últimos furgones</h2>
+            @forelse($containers as $c)
+                <a href="{{ route('containers.show', $c) }}" class="flex items-center justify-between border-b border-slate-100 px-5 py-3 last:border-0 hover:bg-slate-50"><span class="font-medium text-slate-800">Furgón #{{ $c->number }}</span><span class="text-xs text-slate-500">{{ $c->date->format('d/m/Y') }} · <span class="{{ $c->status_badge }}">{{ $c->status_label }}</span></span></a>
+            @empty
+                <p class="px-5 py-8 text-center text-sm text-slate-500">Sin furgones.</p>
+            @endforelse
+        </div>
     </div>
 </div>
 @endsection

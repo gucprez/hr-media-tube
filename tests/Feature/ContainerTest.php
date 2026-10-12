@@ -39,7 +39,7 @@ class ContainerTest extends TestCase
     {
         $this->actingAs($w['user'])->post('/operaciones/furgones', $extra + [
             'number' => '0111', 'date' => now()->toDateString(), 'warehouse_id' => $w['wh']->id, 'driver_id' => $w['driver']->id, 'vehicle_id' => $w['vehicle']->id,
-            'conduce' => 'CD-9', 'fuel_gallons' => 25, 'materials' => $materials,
+            'conduce' => 'CD-9', 'fuel_gallons' => 0, 'materials' => $materials,
         ])->assertRedirect()->assertSessionHasNoErrors();
         $this->actAs($w['company']);
 

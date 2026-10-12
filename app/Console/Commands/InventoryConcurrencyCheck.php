@@ -83,16 +83,6 @@ class InventoryConcurrencyCheck extends Command
 
     protected function cleanup(Company $company): void
     {
-        $id = $company->id;
-        foreach (['audit_logs', 'attachments', 'inventory_movement_items', 'inventory_movements', 'inventory_stocks', 'product_images', 'products', 'categories', 'units', 'document_sequences'] as $t) {
-            DB::table($t)->where('company_id', $id)->delete();
-        }
-        DB::table('permission_user')->whereIn('user_id', DB::table('users')->where('company_id', $id)->pluck('id'))->delete();
-        DB::table('users')->where('company_id', $id)->delete();
-        DB::table('permission_role')->whereIn('role_id', DB::table('roles')->where('company_id', $id)->pluck('id'))->delete();
-        DB::table('roles')->where('company_id', $id)->delete();
-        DB::table('warehouses')->where('company_id', $id)->delete();
-        DB::table('branches')->where('company_id', $id)->delete();
-        DB::table('companies')->where('id', $id)->delete();
+        \App\Support\PurgeCompany::run($company->id);
     }
 }

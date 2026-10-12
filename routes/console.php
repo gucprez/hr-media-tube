@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 // Integridad de inventario: el stock de cada producto debe coincidir con la suma de su libro de movimientos.
 Schedule::command('inventory:verify')->dailyAt('02:30')->appendOutputTo(storage_path('logs/inventory-verify.log'));
+Schedule::command('fuel:verify')->dailyAt('02:35')->appendOutputTo(storage_path('logs/fuel-verify.log'));

@@ -15,6 +15,13 @@
 </div>
 @endisset
 
+@isset($fuel)
+<div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <x-stat label="Gasoil disponible" :value="number_format($fuel['reserve'], 1).' gal'" icon="fuel" tone="{{ $fuel['percent'] !== null && $fuel['percent'] < 20 ? 'red' : 'green' }}" :hint="$fuel['percent'] !== null ? $fuel['percent'].'% de la capacidad' : null" :href="route('fuel.index')" />
+    <x-stat label="Consumo de gasoil del mes" :value="number_format($fuel['month'], 1).' gal'" icon="arrow-up" tone="blue" :href="route('fuel.dispatches.index', ['from' => now()->startOfMonth()->toDateString()])" />
+</div>
+@endisset
+
 @isset($inventory)
 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
     <x-stat label="Productos registrados" :value="$nf($inventory['products'])" icon="box" tone="blue" :href="route('products.index')" />
@@ -69,6 +76,17 @@
 </div>
 @endisset
 
+@isset($recentDispatches)
+@if($recentDispatches->isNotEmpty())
+<div class="card mt-6">
+    <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3"><h2 class="font-semibold text-slate-900">Consumo de gasoil reciente</h2><a href="{{ route('fuel.dispatches.index') }}" class="text-sm font-medium text-brand hover:underline">Ver control de gasoil</a></div>
+    @foreach($recentDispatches as $d)
+        <div class="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3 last:border-0"><div class="min-w-0"><p class="text-sm font-semibold text-slate-800">{{ $d->vehicle?->ficha ?? 'Sin vehículo' }}</p><p class="text-xs text-slate-500">{{ $d->dispatched_at->format('d/m/Y') }}{{ $d->odometer ? ' · '.number_format($d->odometer, 1).' km' : '' }}</p></div><p class="text-sm font-bold text-blue-700">{{ number_format($d->gallons, 1) }} gal</p></div>
+    @endforeach
+</div>
+@endif
+@endisset
+
 @isset($recentContainers)
 @if($recentContainers->isNotEmpty())
 <div class="card mt-6">
@@ -83,7 +101,7 @@
 {{-- Módulos futuros: sin cifras inventadas --}}
 <h2 class="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-slate-500">Próximos módulos</h2>
 <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-    @foreach([['Gasoil disponible', 'fuel', 'Fase 4'], ['Vehículos con averías', 'alert', 'Fase 5'], ['Mantenimientos pendientes', 'wrench', 'Fase 5']] as [$label, $icon, $phase])
+    @foreach([['Vehículos con averías', 'alert', 'Fase 5'], ['Mantenimientos pendientes', 'wrench', 'Fase 5']] as [$label, $icon, $phase])
         <div class="card flex items-center gap-3 border-dashed bg-slate-50/60 p-4 opacity-80">
             <x-icon :name="$icon" class="h-7 w-7 shrink-0 text-slate-400" />
             <div class="min-w-0"><p class="truncate text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $label }}</p><p class="text-sm font-medium text-slate-400">Próximamente · {{ $phase }}</p></div>

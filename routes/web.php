@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\Fleet\DriverController;
+use App\Http\Controllers\Fuel\FuelController;
 use App\Http\Controllers\Fleet\VehicleController;
 use App\Http\Controllers\Inventory\CategoryController;
 use App\Http\Controllers\Operations\ContainerController;
@@ -112,6 +113,34 @@ Route::middleware('auth')->group(function () {
                 Route::get('tickets/{ticket}/pdf', [TicketController::class, 'pdf'])->name('tickets.pdf');
             });
             Route::middleware('permission:tickets.void')->post('tickets/{ticket}/anular', [TicketController::class, 'void'])->name('tickets.void');
+        });
+
+        // ---- Combustible ----------------------------------------------------------------
+        Route::prefix('combustible')->group(function () {
+            Route::middleware('permission:fuel.view')->group(function () {
+                Route::get('/', [FuelController::class, 'index'])->name('fuel.index');
+                Route::get('libro', [FuelController::class, 'ledger'])->name('fuel.ledger');
+                Route::get('recepciones', [FuelController::class, 'receipts'])->name('fuel.receipts.index');
+                Route::get('despachos', [FuelController::class, 'dispatches'])->name('fuel.dispatches.index');
+            });
+            Route::middleware('permission:fuel.receive')->group(function () {
+                Route::get('recepciones/nueva', [FuelController::class, 'createReceipt'])->name('fuel.receipts.create');
+                Route::post('recepciones', [FuelController::class, 'storeReceipt'])->name('fuel.receipts.store');
+            });
+            Route::middleware('permission:fuel.view')->get('recepciones/{receipt}', [FuelController::class, 'showReceipt'])->name('fuel.receipts.show');
+            Route::middleware('permission:fuel.dispatch')->group(function () {
+                Route::get('despachos/nuevo', [FuelController::class, 'createDispatch'])->name('fuel.dispatches.create');
+                Route::post('despachos', [FuelController::class, 'storeDispatch'])->name('fuel.dispatches.store');
+            });
+            Route::middleware('permission:fuel.void')->group(function () {
+                Route::post('recepciones/{receipt}/anular', [FuelController::class, 'voidReceipt'])->name('fuel.receipts.void');
+                Route::post('despachos/{dispatch}/anular', [FuelController::class, 'voidDispatch'])->name('fuel.dispatches.void');
+            });
+            Route::middleware('permission:fuel.adjust')->group(function () {
+                Route::get('ajuste', [FuelController::class, 'adjustForm'])->name('fuel.adjust');
+                Route::post('ajuste', [FuelController::class, 'adjust'])->name('fuel.adjust.store');
+                Route::put('tanque', [FuelController::class, 'updateTank'])->name('fuel.tank.update');
+            });
         });
 
         // ---- Flotilla: vehículos y choferes ---------------------------------------
