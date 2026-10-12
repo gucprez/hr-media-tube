@@ -24,6 +24,7 @@ return [
     ['label' => 'Flotilla', 'items' => [
         ['label' => 'Gasoil', 'route' => 'fuel.index', 'icon' => 'fuel', 'can' => 'fuel.view'],
         ['label' => 'Vehículos', 'route' => 'vehicles.index', 'icon' => 'truck', 'can' => 'vehicles.view'],
+        ['label' => 'Choferes', 'route' => 'drivers.index', 'icon' => 'users', 'can' => 'vehicles.view'],
         ['label' => 'Inspecciones', 'route' => 'inspections.index', 'icon' => 'clipboard', 'can' => 'vehicles.view'],
         ['label' => 'Averías', 'route' => 'incidents.index', 'icon' => 'alert', 'can' => 'vehicles.view'],
         ['label' => 'Mantenimiento', 'route' => 'maintenance.index', 'icon' => 'wrench', 'can' => 'maintenance.view'],

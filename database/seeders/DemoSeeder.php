@@ -132,7 +132,82 @@ class DemoSeeder extends Seeder
         $stock->adjust(['warehouse_id' => $wh->id, 'occurred_at' => $at(2), 'reason' => 'Conteo físico', 'notes' => 'Conteo mensual: faltan 2 rollos de fleje'],
             [$L('FLEJE', 0, 53)], $actor);
 
+        $this->seedOperations($company, $actor, $products);
+
         auth()->logout();
         app(CurrentCompany::class)->clear();
+    }
+
+    /** Choferes, vehículos F1–F3, furgones (abierto y cerrados) y tickets de ejemplo. */
+    protected function seedOperations(Company $company, User $actor, array $products): void
+    {
+        $type = \App\Models\VehicleType::where('name', 'Camión')->first();
+        $drivers = [];
+        foreach ([['Pedro Martínez', '809-555-0101'], ['Luis Gómez', '809-555-0102'], ['José Rodríguez', '809-555-0103']] as [$name, $phone]) {
+            $drivers[] = \App\Models\Driver::create(['name' => $name, 'phone' => $phone, 'is_active' => true]);
+        }
+        $vehicles = [];
+        foreach ([['F1', 'ABC-1001', 'Freightliner', 'Cascadia', 2018, 415200.5], ['F2', 'ABC-1002', 'International', 'LT', 2017, 389100.0], ['F3', 'ABC-1003', 'Kenworth', 'T680', 2019, 415540.0]] as $i => [$ficha, $plate, $brand, $model, $year, $km]) {
+            $vehicles[] = \App\Models\Vehicle::create([
+                'ficha' => $ficha, 'plate' => $plate, 'brand' => $brand, 'model' => $model, 'year' => $year, 'odometer' => $km,
+                'vehicle_type_id' => $type?->id, 'usual_driver_id' => $drivers[$i]->id, 'status' => 'operational',
+            ]);
+        }
+
+        $wh = Warehouse::where('is_default', true)->first();
+        $stock = app(StockService::class);
+        $converter = app(QuantityConverter::class);
+        $lines = fn (array $spec) => collect($spec)->map(fn ($q, $sku) => ['product_id' => $products[$sku], 'boxes' => $q[0] ?? 0, 'units' => $q[1] ?? 0])->values()->all();
+
+        $make = function (string $number, int $daysAgo, int $v, array $spec, float $fuel, string $conduce, bool $close) use ($wh, $drivers, $vehicles, $actor, $lines, $converter, $stock) {
+            $c = \App\Models\Container::create([
+                'number' => $number, 'date' => now()->subDays($daysAgo)->toDateString(), 'warehouse_id' => $wh->id, 'driver_id' => $drivers[$v]->id,
+                'driver_name' => $drivers[$v]->name, 'phone' => $drivers[$v]->phone, 'vehicle_id' => $vehicles[$v]->id, 'conduce' => $conduce,
+                'fuel_gallons' => $fuel, 'responsible_id' => $actor->id, 'status' => 'open',
+            ]);
+            foreach ($lines($spec) as $l) {
+                $p = Product::with('unit')->find($l['product_id']);
+                $base = $converter->toBase($p, $l['boxes'], $l['units']);
+                [$b, $u] = $converter->split($p, $base);
+                \App\Models\ContainerMaterial::create(['container_id' => $c->id, 'product_id' => $p->id, 'product_sku' => $p->sku, 'product_name' => $p->name, 'boxes' => $b, 'units' => $u, 'quantity_base' => $base]);
+            }
+            \App\Services\Audit::log('container.created', "Furgón {$number} creado", $c);
+            if ($close) {
+                $m = $stock->consume([
+                    'warehouse_id' => $wh->id, 'container_id' => $c->id, 'vehicle_id' => $c->vehicle_id, 'destination' => 'Furgón '.$number, 'destination_type' => 'container',
+                    'employee_name' => $c->driver_name, 'document_no' => $conduce, 'reference' => 'Furgón '.$number, 'reason' => 'Consumo de furgón',
+                    'occurred_at' => now()->subDays($daysAgo)->setTime(16, 0), 'source_type' => $c->getMorphClass(), 'source_id' => $c->id,
+                ], $c->materials->map(fn ($m) => ['product_id' => $m->product_id, 'boxes' => $m->boxes, 'units' => $m->units])->all(), $actor);
+                $c->forceFill(['status' => 'closed', 'closed_at' => now()->subDays($daysAgo)->setTime(16, 0), 'closed_by' => $actor->id, 'movement_id' => $m->id])->save();
+                \App\Services\Audit::log('container.closed', "Furgón {$number} cerrado", $c);
+            }
+
+            return $c->fresh(['materials.product.unit', 'vehicle']);
+        };
+
+        $c101 = $make('0101', 20, 0, ['TAPE-TR' => [1, 0], 'PLAS-ST' => [0, 12], 'FLEJE' => [0, 2], 'FIL-ACEITE' => [0, 1]], 25, 'CD-5101', true);
+        $c110 = $make('0110', 11, 1, ['TAPE-TR' => [1, 6], 'PLAS-ST' => [1, 0], 'FLEJE' => [0, 3]], 30, 'CD-5110', true);
+        $c111 = $make('0111', 6, 2, ['TAPE-TR' => [1, 0], 'PLAS-ST' => [0, 6], 'FLEJE' => [0, 2], 'FIL-ACEITE' => [0, 1]], 25, 'CD-5111', true);
+        $make('0112', 0, 0, ['TAPE-TR' => [0, 18], 'FLEJE' => [0, 2]], 20, 'CD-5112', false);
+
+        // Tickets de ejemplo (emitidos con el servicio real de numeración)
+        $numbering = app(\App\Services\DocumentNumbering::class);
+        foreach ([$c101, $c111] as $c) {
+            $t = \App\Models\Ticket::create([
+                'container_id' => $c->id, 'vehicle_id' => $c->vehicle_id, 'type' => 'materials', 'number' => $numbering->next('ticket_materials'), 'status' => 'issued',
+                'issued_at' => $c->date, 'container_number' => $c->number, 'driver_name' => $c->driver_name, 'conduce' => $c->conduce, 'ficha' => $c->vehicle->ficha,
+                'phone' => $c->phone, 'dispatched_by' => $actor->name, 'received_by' => $c->driver_name, 'created_by' => $actor->id,
+            ]);
+            foreach ($c->materials as $m) {
+                \App\Models\TicketItem::create(['ticket_id' => $t->id, 'product_id' => $m->product_id, 'description' => $m->product_name, 'quantity_label' => $converter->format($m->product, $m->quantity_base),
+                    'total_units' => $m->quantity_base, 'unit_label' => $converter->unitLabel($m->product, $m->quantity_base)]);
+            }
+            $f = \App\Models\Ticket::create([
+                'container_id' => $c->id, 'vehicle_id' => $c->vehicle_id, 'type' => 'fuel', 'number' => $numbering->next('ticket_fuel'), 'status' => 'issued',
+                'issued_at' => $c->date, 'container_number' => $c->number, 'driver_name' => $c->driver_name, 'conduce' => $c->conduce, 'ficha' => $c->vehicle->ficha,
+                'phone' => $c->phone, 'dispatched_by' => $actor->name, 'received_by' => $c->driver_name, 'created_by' => $actor->id,
+            ]);
+            \App\Models\TicketItem::create(['ticket_id' => $f->id, 'description' => 'Gasoil', 'ficha' => $c->vehicle->ficha, 'odometer' => $c->vehicle->odometer, 'gallons' => $c->fuel_gallons]);
+        }
     }
 }

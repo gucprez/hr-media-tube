@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use App\Support\CurrentCompany;
 use App\Support\Search\CategorySearch;
+use App\Support\Search\ContainerSearch;
+use App\Support\Search\TicketSearch;
+use App\Support\Search\VehicleSearch;
 use App\Support\Search\GlobalSearch;
 use App\Support\Search\ProductSearch;
 use Illuminate\Support\Facades\Blade;
@@ -26,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(GlobalSearch::class, fn () => tap(new GlobalSearch, function (GlobalSearch $search) {
             $search->register(new ProductSearch);
             $search->register(new CategorySearch);
+            $search->register(new ContainerSearch);
+            $search->register(new TicketSearch);
+            $search->register(new VehicleSearch);
         }));
     }
 

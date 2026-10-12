@@ -16,6 +16,10 @@ class DocumentNumbering
         'entry' => 'Entradas de almacén',
         'exit' => 'Salidas de almacén',
         'adjustment' => 'Ajustes de inventario',
+        'container_move' => 'Consumos de furgón (inventario)',
+        'maintenance_move' => 'Salidas por mantenimiento',
+        'return' => 'Devoluciones al almacén',
+        'void' => 'Anulaciones de inventario',
     ];
 
     /** Prefijo y relleno por defecto de cada documento. */
@@ -23,6 +27,10 @@ class DocumentNumbering
         'entry' => ['prefix' => 'ENT-', 'padding' => 6],
         'exit' => ['prefix' => 'SAL-', 'padding' => 6],
         'adjustment' => ['prefix' => 'AJU-', 'padding' => 6],
+        'container_move' => ['prefix' => 'FUR-', 'padding' => 6],
+        'maintenance_move' => ['prefix' => 'MNT-', 'padding' => 6],
+        'return' => ['prefix' => 'DEV-', 'padding' => 6],
+        'void' => ['prefix' => 'ANU-', 'padding' => 6],
     ];
 
     public static function defaults(string $key): array

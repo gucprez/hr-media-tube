@@ -36,7 +36,7 @@ class InventoryReportsTest extends TestCase
 
         // empresa vacía: ceros reales y módulos futuros marcados "Próximamente"
         $this->actingAs($user)->get('/dashboard')->assertOk()->assertSee('Productos registrados')->assertSee('Aún no hay movimientos')
-            ->assertSee('Próximamente')->assertSee('Furgones del mes')->assertSee('Gasoil disponible')->assertDontSee('galones');
+            ->assertSee('Próximamente')->assertSee('Furgones este mes')->assertSee('Gasoil disponible')->assertDontSee('galones');
 
         $tape = $this->makeProduct($company);                                                                 // mínimo 36
         $bulb = $this->makeProduct($company, ['name' => 'Bombilla', 'handling_mode' => 'units', 'units_per_box' => 1, 'unit' => 'Unidad', 'alert_unit' => 'units', 'min_quantity' => 5]);

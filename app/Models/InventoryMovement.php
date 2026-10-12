@@ -17,10 +17,19 @@ class InventoryMovement extends Model
     public const TYPE_EXIT = 'exit';
     public const TYPE_ADJUSTMENT = 'adjustment';
 
+    public const TYPE_CONTAINER = 'container';     // consumo de furgón
+    public const TYPE_MAINTENANCE = 'maintenance'; // piezas/materiales de una reparación
+    public const TYPE_RETURN = 'return';           // devolución al almacén
+    public const TYPE_VOID = 'void';               // anulación (reverso de otro documento)
+
     public const TYPES = [
         self::TYPE_ENTRY => 'Entrada',
         self::TYPE_EXIT => 'Salida',
         self::TYPE_ADJUSTMENT => 'Ajuste',
+        self::TYPE_CONTAINER => 'Consumo de furgón',
+        self::TYPE_MAINTENANCE => 'Mantenimiento',
+        self::TYPE_RETURN => 'Devolución',
+        self::TYPE_VOID => 'Anulación',
     ];
 
     protected $fillable = [
@@ -40,6 +49,26 @@ class InventoryMovement extends Model
     public function items(): HasMany
     {
         return $this->hasMany(InventoryMovementItem::class, 'movement_id');
+    }
+
+    public function container(): BelongsTo
+    {
+        return $this->belongsTo(Container::class)->withTrashed();
+    }
+
+    public function vehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class)->withTrashed();
+    }
+
+    public function reversalOf(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reversal_of_id');
+    }
+
+    public function isVoided(): bool
+    {
+        return $this->voided_at !== null;
     }
 
     public function warehouse(): BelongsTo

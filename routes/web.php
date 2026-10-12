@@ -8,7 +8,11 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\Fleet\DriverController;
+use App\Http\Controllers\Fleet\VehicleController;
 use App\Http\Controllers\Inventory\CategoryController;
+use App\Http\Controllers\Operations\ContainerController;
+use App\Http\Controllers\Operations\TicketController;
 use App\Http\Controllers\Inventory\InventoryController;
 use App\Http\Controllers\Inventory\MovementController;
 use App\Http\Controllers\Inventory\ProductController;
@@ -47,6 +51,7 @@ Route::middleware('auth')->group(function () {
 
         // ---- Archivos privados (autorizados por permiso y empresa) -------------
         Route::get('/archivos/producto/{image}', [FileController::class, 'productImage'])->name('files.product-image');
+        Route::get('/archivos/vehiculo/{vehicle}', [FileController::class, 'vehiclePhoto'])->name('files.vehicle-photo');
         Route::get('/archivos/adjunto/{attachment}', [FileController::class, 'attachment'])->name('files.attachment');
 
         // ---- Almacén: productos y catálogos -------------------------------------
@@ -78,6 +83,57 @@ Route::middleware('auth')->group(function () {
             });
         });
 
+        // ---- Operaciones: furgones y tickets --------------------------------------
+        Route::prefix('operaciones')->group(function () {
+            Route::middleware('permission:containers.view')->group(function () {
+                Route::get('furgones', [ContainerController::class, 'index'])->name('containers.index');
+            });
+            Route::middleware('permission:containers.create')->group(function () {
+                Route::get('furgones/nuevo', [ContainerController::class, 'create'])->name('containers.create');
+                Route::post('furgones', [ContainerController::class, 'store'])->name('containers.store');
+                Route::get('furgones/{container}/editar', [ContainerController::class, 'edit'])->name('containers.edit');
+                Route::put('furgones/{container}', [ContainerController::class, 'update'])->name('containers.update');
+                Route::post('furgones/{container}/iniciar', [ContainerController::class, 'start'])->name('containers.start');
+            });
+            Route::middleware('permission:containers.view')->get('furgones/{container}', [ContainerController::class, 'show'])->name('containers.show');
+            Route::middleware('permission:containers.close')->post('furgones/{container}/cerrar', [ContainerController::class, 'close'])->name('containers.close');
+            Route::middleware('permission:containers.void')->post('furgones/{container}/anular', [ContainerController::class, 'void'])->name('containers.void');
+
+            Route::middleware('permission:tickets.view')->group(function () {
+                Route::get('tickets', [TicketController::class, 'index'])->name('tickets.index');
+            });
+            Route::middleware('permission:tickets.create')->group(function () {
+                Route::get('furgones/{container}/tickets/nuevo', [TicketController::class, 'create'])->name('tickets.create');
+                Route::post('furgones/{container}/tickets', [TicketController::class, 'store'])->name('tickets.store');
+            });
+            Route::middleware('permission:tickets.view')->get('tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+            Route::middleware('permission:tickets.print')->group(function () {
+                Route::get('tickets/{ticket}/imprimir', [TicketController::class, 'print'])->name('tickets.print');
+                Route::get('tickets/{ticket}/pdf', [TicketController::class, 'pdf'])->name('tickets.pdf');
+            });
+            Route::middleware('permission:tickets.void')->post('tickets/{ticket}/anular', [TicketController::class, 'void'])->name('tickets.void');
+        });
+
+        // ---- Flotilla: vehículos y choferes ---------------------------------------
+        Route::prefix('flotilla')->group(function () {
+            Route::middleware('permission:vehicles.view')->group(function () {
+                Route::get('vehiculos', [VehicleController::class, 'index'])->name('vehicles.index');
+                Route::get('choferes', [DriverController::class, 'index'])->name('drivers.index');
+            });
+            Route::middleware('permission:vehicles.edit')->group(function () {
+                Route::get('vehiculos/nuevo', [VehicleController::class, 'create'])->name('vehicles.create');
+                Route::post('vehiculos', [VehicleController::class, 'store'])->name('vehicles.store');
+                Route::get('vehiculos/{vehicle}/editar', [VehicleController::class, 'edit'])->name('vehicles.edit');
+                Route::put('vehiculos/{vehicle}', [VehicleController::class, 'update'])->name('vehicles.update');
+                Route::delete('vehiculos/{vehicle}', [VehicleController::class, 'destroy'])->name('vehicles.destroy');
+                Route::post('tipos-vehiculo', [VehicleController::class, 'storeType'])->name('vehicle-types.store');
+                Route::post('choferes', [DriverController::class, 'store'])->name('drivers.store');
+                Route::put('choferes/{driver}', [DriverController::class, 'update'])->name('drivers.update');
+                Route::delete('choferes/{driver}', [DriverController::class, 'destroy'])->name('drivers.destroy');
+            });
+            Route::middleware('permission:vehicles.view')->get('vehiculos/{vehicle}', [VehicleController::class, 'show'])->name('vehicles.show');
+        });
+
         // ---- Inventario: existencias y movimientos --------------------------------
         Route::prefix('inventario')->group(function () {
             Route::middleware('permission:inventory.view')->group(function () {
@@ -85,6 +141,7 @@ Route::middleware('auth')->group(function () {
                 Route::get('movimientos', [MovementController::class, 'index'])->name('movements.index');
                 Route::get('movimientos/{movement}', [MovementController::class, 'show'])->name('movements.show');
             });
+            Route::middleware('permission:inventory.void')->post('movimientos/{movement}/anular', [MovementController::class, 'void'])->name('movements.void');
             Route::middleware('permission:inventory.entry,inventory.dispatch,inventory.adjust')->group(function () {
                 Route::get('api/productos', [InventoryController::class, 'lookup'])->name('inventory.lookup');
                 Route::post('api/vista-previa', [InventoryController::class, 'preview'])->name('inventory.preview');

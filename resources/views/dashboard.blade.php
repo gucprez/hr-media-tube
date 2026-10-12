@@ -8,6 +8,13 @@
     <p class="text-sm text-slate-500">{{ $currentCompany->name }} · {{ now()->translatedFormat('l d \d\e F, Y') }}</p>
 </div>
 
+@isset($containers)
+<div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <x-stat label="Furgones este mes" :value="$containers['month']" icon="truck" tone="blue" :href="route('containers.index', ['from' => now()->startOfMonth()->toDateString()])" />
+    <x-stat label="Furgones abiertos / en proceso" :value="$containers['open']" icon="clipboard" tone="yellow" :href="route('containers.index', ['status' => 'open'])" />
+</div>
+@endisset
+
 @isset($inventory)
 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
     <x-stat label="Productos registrados" :value="$nf($inventory['products'])" icon="box" tone="blue" :href="route('products.index')" />
@@ -62,10 +69,21 @@
 </div>
 @endisset
 
+@isset($recentContainers)
+@if($recentContainers->isNotEmpty())
+<div class="card mt-6">
+    <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3"><h2 class="font-semibold text-slate-900">Furgones recientes</h2><a href="{{ route('containers.index') }}" class="text-sm font-medium text-brand hover:underline">Ver todos</a></div>
+    @foreach($recentContainers as $c)
+        <a href="{{ route('containers.show', $c) }}" class="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3 last:border-0 hover:bg-slate-50"><div class="min-w-0"><p class="text-sm font-semibold text-slate-800">Furgón #{{ $c->number }}</p><p class="truncate text-xs text-slate-500">{{ $c->date->format('d/m/Y') }} · {{ $c->driver_display ?? 'Sin chofer' }} {{ $c->vehicle ? '· '.$c->vehicle->ficha : '' }}</p></div><span class="{{ $c->status_badge }}">{{ $c->status_label }}</span></a>
+    @endforeach
+</div>
+@endif
+@endisset
+
 {{-- Módulos futuros: sin cifras inventadas --}}
 <h2 class="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-slate-500">Próximos módulos</h2>
 <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-    @foreach([['Furgones del mes', 'truck', 'Fase 3'], ['Gasoil disponible', 'fuel', 'Fase 4'], ['Vehículos con averías', 'alert', 'Fase 5'], ['Mantenimientos pendientes', 'wrench', 'Fase 5']] as [$label, $icon, $phase])
+    @foreach([['Gasoil disponible', 'fuel', 'Fase 4'], ['Vehículos con averías', 'alert', 'Fase 5'], ['Mantenimientos pendientes', 'wrench', 'Fase 5']] as [$label, $icon, $phase])
         <div class="card flex items-center gap-3 border-dashed bg-slate-50/60 p-4 opacity-80">
             <x-icon :name="$icon" class="h-7 w-7 shrink-0 text-slate-400" />
             <div class="min-w-0"><p class="truncate text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $label }}</p><p class="text-sm font-medium text-slate-400">Próximamente · {{ $phase }}</p></div>

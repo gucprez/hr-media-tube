@@ -86,6 +86,10 @@ class CompanyProvisioner
                 Unit::withoutGlobalScopes()->create(['company_id' => $company->id, 'name' => $name, 'plural' => $plural]);
             }
 
+            foreach (['Camión', 'Cabezote', 'Camioneta', 'Furgoneta'] as $type) {
+                \App\Models\VehicleType::withoutGlobalScopes()->create(['company_id' => $company->id, 'name' => $type]);
+            }
+
             $user = new User($admin + ['company_id' => $company->id, 'branch_id' => $branch->id, 'role_id' => $roles['company_admin']->id]);
             $user->is_active = true;
             $user->save();

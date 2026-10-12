@@ -21,6 +21,14 @@ class FileController extends Controller
         return $this->serve($path);
     }
 
+    public function vehiclePhoto(Request $request, \App\Models\Vehicle $vehicle)
+    {
+        abort_unless($request->user()->hasPermission('vehicles.view'), 403);
+        abort_unless($vehicle->photo_path, 404);
+
+        return $this->serve($vehicle->photo_path);
+    }
+
     public function attachment(Request $request, Attachment $attachment)
     {
         abort_unless($request->user()->hasPermission('inventory.view'), 403);

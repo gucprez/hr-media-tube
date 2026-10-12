@@ -49,6 +49,15 @@ class DashboardController extends Controller
                 ->orderByDesc('occurred_at')->orderByDesc('id')->limit(8)->get();
         }
 
+        if ($user->hasPermission('containers.view')) {
+            $monthStart = now()->startOfMonth()->toDateString();
+            $data['containers'] = [
+                'month' => \App\Models\Container::where('status', '!=', 'voided')->whereDate('date', '>=', $monthStart)->count(),
+                'open' => \App\Models\Container::whereIn('status', ['open', 'in_progress'])->count(),
+            ];
+            $data['recentContainers'] = \App\Models\Container::with('vehicle')->orderByDesc('date')->orderByDesc('id')->limit(6)->get();
+        }
+
         $data['audit'] = $user->hasPermission('audit.view') ? AuditLog::with('user')->latest('created_at')->latest('id')->limit(6)->get() : collect();
 
         return view('dashboard', $data);

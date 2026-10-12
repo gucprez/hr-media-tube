@@ -63,9 +63,30 @@ class MovementController extends Controller
 
     public function show(Movement $movement)
     {
-        $movement->load(['items.product.unit', 'warehouse.branch', 'user', 'attachments']);
+        $movement->load(['items.product.unit', 'warehouse.branch', 'user', 'attachments', 'container', 'vehicle', 'reversalOf']);
 
         return view('inventory.movements.show', ['movement' => $movement, 'converter' => $this->converter]);
+    }
+
+    /** Anula un documento de inventario generando su reverso (nada se borra). Los consumos de furgón se anulan desde el furgón. */
+    public function void(Request $request, Movement $movement, StockService $stock)
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:200']], ['reason.required' => 'Indique el motivo de la anulación.', 'reason.min' => 'El motivo debe tener al menos 5 caracteres.']);
+
+        if ($movement->type === Movement::TYPE_VOID || $movement->isVoided()) {
+            return back()->with('error', 'Este documento ya está anulado o es una anulación.');
+        }
+        if ($movement->type === Movement::TYPE_CONTAINER && $movement->container_id) {
+            return back()->with('error', 'El consumo de un furgón se anula desde el propio furgón.');
+        }
+
+        try {
+            $reverse = $stock->reverse($movement, $data['reason'], $request->user(), $request->boolean('allow_negative'));
+        } catch (InventoryException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('movements.show', $movement)->with('success', "Documento anulado con {$reverse->number}.");
     }
 
     // ---- formularios -----------------------------------------------------------
@@ -131,6 +152,7 @@ class MovementController extends Controller
             'defaultWarehouse' => $default,
             'oldLines' => $oldLines,
             'reasons' => self::ADJUST_REASONS,
+            'containers' => $mode === 'exit' ? \App\Models\Container::whereIn('status', ['open', 'in_progress'])->orderByDesc('date')->get(['id', 'number', 'date']) : collect(),
             'canNegative' => $mode === 'exit' && $company?->setting('allow_negative_stock') && $user->hasPermission('inventory.negative'),
         ]);
     }
@@ -155,8 +177,9 @@ class MovementController extends Controller
             $rules += ['supplier' => ['nullable', 'string', 'max:150'], 'document_no' => ['nullable', 'string', 'max:60']];
         } elseif ($mode === 'exit') {
             $rules += [
-                'destination' => ['required', 'string', 'max:150'],
-                'destination_type' => ['required', Rule::in(['other', 'employee'])],
+                'destination' => ['required_unless:destination_type,container', 'nullable', 'string', 'max:150'],
+                'destination_type' => ['required', Rule::in(['other', 'employee', 'container'])],
+                'container_id' => ['required_if:destination_type,container', 'nullable', Rule::exists('containers', 'id')->where('company_id', $cid)->whereNull('deleted_at')->whereIn('status', ['open', 'in_progress'])],
                 'employee_name' => ['nullable', 'required_if:destination_type,employee', 'string', 'max:150'],
                 'reason' => ['required', 'string', 'max:150'],
                 'allow_negative' => ['boolean'],
@@ -178,6 +201,9 @@ class MovementController extends Controller
             }
         }
         $data['allow_negative'] = $request->boolean('allow_negative');
+        if ($mode === 'exit' && ($data['destination_type'] ?? null) === 'container') {
+            $data['destination'] = 'Furgón '.\App\Models\Container::find($data['container_id'])?->number;
+        }
 
         return $data;
     }
@@ -194,6 +220,7 @@ class MovementController extends Controller
             'document_no' => $data['document_no'] ?? null,
             'destination' => $data['destination'] ?? null,
             'destination_type' => $data['destination_type'] ?? null,
+            'container_id' => ($data['destination_type'] ?? null) === 'container' ? ($data['container_id'] ?? null) : null,
             'employee_name' => $data['employee_name'] ?? null,
             'reason' => $data['reason'] ?? null,
             'notes' => $data['notes'] ?? null,

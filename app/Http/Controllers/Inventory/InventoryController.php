@@ -45,7 +45,7 @@ class InventoryController extends Controller
     public function preview(Request $request, StockService $service)
     {
         $data = $request->validate([
-            'type' => ['required', 'in:entry,exit,adjustment'],
+            'type' => ['required', 'in:entry,exit,adjustment,container,maintenance'],
             'warehouse_id' => ['required', 'integer'],
             'lines' => ['array', 'max:100'],
             'lines.*.product_id' => ['nullable', 'integer'],

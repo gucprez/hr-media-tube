@@ -27,6 +27,13 @@ use InvalidArgumentException;
  */
 class StockService
 {
+    /** Tipo de documento -> secuencia de numeración. */
+    public const NUMBERING_KEYS = [
+        Movement::TYPE_ENTRY => 'entry', Movement::TYPE_EXIT => 'exit', Movement::TYPE_ADJUSTMENT => 'adjustment',
+        Movement::TYPE_CONTAINER => 'container_move', Movement::TYPE_MAINTENANCE => 'maintenance_move',
+        Movement::TYPE_RETURN => 'return', Movement::TYPE_VOID => 'void',
+    ];
+
     public function __construct(
         protected QuantityConverter $converter,
         protected StockStatus $status,
@@ -63,6 +70,98 @@ class StockService
         return $this->post(Movement::TYPE_ADJUSTMENT, $header, $this->quantityLines($lines, allowZero: true), $user);
     }
 
+    /** Consumo de materiales de un furgón (header: container_id obligatorio). */
+    public function consume(array $header, array $lines, ?User $user = null): Movement
+    {
+        return $this->post(Movement::TYPE_CONTAINER, $header, $this->quantityLines($lines), $user);
+    }
+
+    /** Piezas/materiales usados en una reparación o entrega a vehículo (header: vehicle_id, source_*). */
+    public function maintenance(array $header, array $lines, ?User $user = null): Movement
+    {
+        return $this->post(Movement::TYPE_MAINTENANCE, $header, $this->quantityLines($lines), $user);
+    }
+
+    /** Devolución de material al almacén (aumenta existencia). */
+    public function returnToStock(array $header, array $lines, ?User $user = null): Movement
+    {
+        return $this->post(Movement::TYPE_RETURN, $header, $this->quantityLines($lines), $user);
+    }
+
+    /**
+     * ANULACIÓN: crea un documento inverso (tipo «void») que devuelve cada línea a su estado anterior y marca el original
+     * como anulado. Nada se borra ni se edita; el stock jamás queda negativo salvo autorización especial.
+     */
+    public function reverse(Movement $movement, string $reason, ?User $user = null, bool $allowNegative = false): Movement
+    {
+        $reason = trim($reason);
+        if (mb_strlen($reason) < 3) {
+            throw new InventoryException('Indique el motivo de la anulación.');
+        }
+        $companyId = app(CurrentCompany::class)->id();
+
+        return DB::transaction(function () use ($movement, $reason, $user, $allowNegative, $companyId) {
+            $original = Movement::lockForUpdate()->find($movement->id);
+            if (! $original) {
+                throw new InventoryException('El documento no existe o no pertenece a su empresa.');
+            }
+            if ($original->voided_at || $original->type === Movement::TYPE_VOID) {
+                throw new InventoryException('Este documento ya está anulado o es una anulación.');
+            }
+            $allowNegative = $this->negativeAllowed(Movement::TYPE_EXIT, ['allow_negative' => $allowNegative], $user);
+
+            $items = Line::where('movement_id', $original->id)->get();
+            $stocks = $this->lockStocks((int) $original->warehouse_id, $items->pluck('product_id')->unique()->sort()->values()->all(), $companyId);
+            $products = Product::withTrashed()->with('unit')->whereIn('id', $items->pluck('product_id'))->get()->keyBy('id');
+
+            $computed = [];
+            foreach ($items->sortBy('product_id') as $line) {
+                $stock = $stocks[$line->product_id];
+                $before = round((float) $stock->quantity_base, 3);
+                $delta = round(-1 * (float) $line->delta_base, 3);
+                $after = round($before + $delta, 3);
+                if ($after < 0 && ! $allowNegative) {
+                    $p = $products[$line->product_id];
+                    throw new InventoryException(sprintf(
+                        'No se puede anular: «%s» quedaría en negativo (hay %s y se devolverían %s). El material ya fue utilizado.',
+                        $p->name, $this->converter->format($p, $before), $this->converter->format($p, abs($delta)),
+                    ));
+                }
+                $computed[] = compact('line', 'stock', 'delta', 'before', 'after');
+            }
+
+            $void = Movement::create([
+                'company_id' => $companyId, 'branch_id' => $original->branch_id, 'warehouse_id' => $original->warehouse_id,
+                'number' => $this->numbering->next('void', $companyId), 'type' => Movement::TYPE_VOID, 'status' => 'posted',
+                'occurred_at' => now(), 'user_id' => $user?->id, 'reference' => $original->number, 'reason' => $reason,
+                'notes' => 'Anulación de '.$original->number.' ('.$original->type_label.')',
+                'container_id' => $original->container_id, 'vehicle_id' => $original->vehicle_id, 'destination' => $original->destination,
+                'destination_type' => $original->destination_type, 'employee_name' => $original->employee_name,
+                'source_type' => $original->source_type, 'source_id' => $original->source_id,
+                'negative_override' => $allowNegative && collect($computed)->contains(fn ($c) => $c['after'] < 0),
+                'authorized_by' => $allowNegative ? $user?->id : null, 'reversal_of_id' => $original->id,
+            ]);
+
+            foreach ($computed as $c) {
+                $this->applyDelta($c['stock'], $c['delta'], $allowNegative, $products[$c['line']->product_id]);
+                [$boxes, $units] = $this->converter->split($products[$c['line']->product_id], abs($c['delta']));
+                Line::create([
+                    'company_id' => $companyId, 'branch_id' => $original->branch_id, 'warehouse_id' => $original->warehouse_id,
+                    'movement_id' => $void->id, 'type' => Line::VOID, 'occurred_at' => $void->occurred_at, 'product_id' => $c['line']->product_id,
+                    'product_sku' => $c['line']->product_sku, 'product_name' => $c['line']->product_name, 'units_per_box' => $c['line']->units_per_box,
+                    'boxes' => abs($boxes), 'units' => abs($units), 'delta_base' => $c['delta'], 'stock_before_base' => $c['before'], 'balance_after_base' => $c['after'],
+                ]);
+            }
+
+            $original->forceFill(['voided_at' => now(), 'status' => 'voided'])->save();
+
+            Audit::log('inventory.void', sprintf('Anulación %s de %s %s: %s', $void->number, $original->type_label, $original->number, $reason), $original,
+                ['status' => 'posted'], ['status' => 'voided', 'motivo' => $reason, 'documento_anulacion' => $void->number]);
+
+            return $void->load('items');
+        }, 3);
+    }
+
     /**
      * Vista previa sin escribir ni bloquear: cantidades, existencia resultante y errores por línea.
      *
@@ -87,7 +186,7 @@ class StockService
                     $row['result_label'] = $this->converter->format($product, $base);
                     $row['ok'] = true;
                 } else {
-                    $result = $docType === Movement::TYPE_EXIT ? $current - $base : $current + $base;
+                    $result = in_array($docType, [Movement::TYPE_EXIT, Movement::TYPE_CONTAINER, Movement::TYPE_MAINTENANCE], true) ? $current - $base : $current + $base;
                     $row['result_label'] = $this->converter->format($product, $result);
                     $row['status'] = $this->status->label($this->status->for($product, max($result, 0)));
                     if ($base <= 0) {
@@ -141,13 +240,8 @@ class StockService
                 if (! $products->has($pid)) {
                     throw new InventoryException('Uno de los productos no existe o no pertenece a su empresa.');
                 }
-                DB::table('inventory_stocks')->insertOrIgnore([
-                    'company_id' => $companyId, 'warehouse_id' => $warehouse->id, 'product_id' => $pid,
-                    'quantity_base' => 0, 'created_at' => now(), 'updated_at' => now(),
-                ]);
             }
-            $stocks = InventoryStock::where('warehouse_id', $warehouse->id)->whereIn('product_id', $productIds)
-                ->orderBy('product_id')->lockForUpdate()->get()->keyBy('product_id');
+            $stocks = $this->lockStocks((int) $warehouse->id, $productIds->all(), $companyId);
 
             // 2) cálculo de cada línea contra el stock bloqueado
             $computed = [];
@@ -160,7 +254,7 @@ class StockService
                 if ($delta == 0.0) {
                     continue; // ajuste sin diferencia
                 }
-                if ($docType === Movement::TYPE_ENTRY && ! $product->is_active) {
+                if (in_array($docType, [Movement::TYPE_ENTRY, Movement::TYPE_RETURN], true) && ! $product->is_active) {
                     throw new InventoryException("«{$product->name}» está desactivado y no admite entradas.");
                 }
 
@@ -183,8 +277,10 @@ class StockService
                 'company_id' => $companyId,
                 'branch_id' => $warehouse->branch_id,
                 'warehouse_id' => $warehouse->id,
-                'number' => $this->numbering->next($docType, $companyId),
+                'number' => $this->numbering->next(self::NUMBERING_KEYS[$docType], $companyId),
                 'reference' => $header['reference'] ?? null,
+                'source_type' => $header['source_type'] ?? null,
+                'source_id' => $header['source_id'] ?? null,
                 'type' => $docType,
                 'status' => 'posted',
                 'occurred_at' => $occurredAt,
@@ -206,13 +302,7 @@ class StockService
             foreach ($computed as $c) {
                 /** @var Product $product */
                 $product = $c['product'];
-                $query = InventoryStock::where('id', $c['stock']->id);
-                if (! $allowNegative) {
-                    $query->whereRaw('quantity_base + ? >= 0', [$c['delta']]);
-                }
-                if ($query->update(['quantity_base' => DB::raw('quantity_base + ('.(float) $c['delta'].')'), 'updated_at' => now()]) !== 1) {
-                    throw new InventoryException("El stock de «{$product->name}» cambió mientras se registraba. Intente de nuevo.");
-                }
+                $this->applyDelta($c['stock'], $c['delta'], $allowNegative, $product);
 
                 [$boxes, $units] = $this->converter->split($product, abs($c['delta']));
                 Line::create([
@@ -237,11 +327,7 @@ class StockService
             // 5) auditoría
             $movement->load('items');
             Audit::log(
-                match ($docType) {
-                    Movement::TYPE_ENTRY => 'inventory.entry',
-                    Movement::TYPE_EXIT => 'inventory.exit',
-                    default => 'inventory.adjustment',
-                },
+                'inventory.'.$docType,
                 sprintf('%s %s: %s', Movement::TYPES[$docType], $movement->number, $this->summary($movement, $products)),
                 $movement,
                 null,
@@ -266,6 +352,9 @@ class StockService
         return match ($docType) {
             Movement::TYPE_ENTRY => [Line::ENTRY, $base],
             Movement::TYPE_EXIT => [Line::EXIT, -$base],
+            Movement::TYPE_CONTAINER => [Line::CONTAINER, -$base],
+            Movement::TYPE_MAINTENANCE => [Line::MAINTENANCE, -$base],
+            Movement::TYPE_RETURN => [Line::RETURN, $base],
             default => (function () use ($base, $before) {
                 $delta = round($base - $before, 3); // base = conteo físico
                 return [$delta >= 0 ? Line::ADJUSTMENT_IN : Line::ADJUSTMENT_OUT, $delta];
@@ -305,7 +394,7 @@ class StockService
 
     protected function negativeAllowed(string $docType, array $header, ?User $user): bool
     {
-        if ($docType !== Movement::TYPE_EXIT || empty($header['allow_negative'])) {
+        if (! in_array($docType, [Movement::TYPE_EXIT, Movement::TYPE_CONTAINER, Movement::TYPE_MAINTENANCE], true) || empty($header['allow_negative'])) {
             return false;
         }
         $company = app(CurrentCompany::class)->get();
@@ -319,5 +408,32 @@ class StockService
     protected function summary(Movement $movement, $products): string
     {
         return $movement->items->map(fn ($i) => $i->product_name.' '.($i->delta_base > 0 ? '+' : '−').$this->converter->format($products[$i->product_id], abs($i->delta_base)))->implode('; ');
+    }
+
+    /** Garantiza y bloquea (FOR UPDATE) las filas de stock en orden de producto. */
+    protected function lockStocks(int $warehouseId, array $productIds, int $companyId)
+    {
+        sort($productIds);
+        foreach ($productIds as $pid) {
+            DB::table('inventory_stocks')->insertOrIgnore([
+                'company_id' => $companyId, 'warehouse_id' => $warehouseId, 'product_id' => $pid,
+                'quantity_base' => 0, 'created_at' => now(), 'updated_at' => now(),
+            ]);
+        }
+
+        return InventoryStock::where('warehouse_id', $warehouseId)->whereIn('product_id', $productIds)
+            ->orderBy('product_id')->lockForUpdate()->get()->keyBy('product_id');
+    }
+
+    /** UPDATE relativo y condicionado: segunda barrera contra stock negativo aunque fallara el bloqueo. */
+    protected function applyDelta(InventoryStock $stock, float $delta, bool $allowNegative, Product $product): void
+    {
+        $query = InventoryStock::where('id', $stock->id);
+        if (! $allowNegative) {
+            $query->whereRaw('quantity_base + ? >= 0', [$delta]);
+        }
+        if ($query->update(['quantity_base' => DB::raw('quantity_base + ('.(float) $delta.')'), 'updated_at' => now()]) !== 1) {
+            throw new InventoryException("El stock de «{$product->name}» cambió mientras se registraba. Intente de nuevo.");
+        }
     }
 }

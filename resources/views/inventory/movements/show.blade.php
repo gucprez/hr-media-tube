@@ -17,6 +17,9 @@
         @if($movement->document_no)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Conduce / documento</dt><dd>{{ $movement->document_no }}</dd></div>@endif
         @if($movement->destination)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Destino</dt><dd>{{ $movement->destination }}@if($movement->employee_name) · {{ $movement->employee_name }}@endif</dd></div>@endif
         @if($movement->reason)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Motivo</dt><dd>{{ $movement->reason }}</dd></div>@endif
+        @if($movement->container)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Furgón</dt><dd><a href="{{ route('containers.show', $movement->container) }}" class="text-brand hover:underline">#{{ $movement->container->number }}</a></dd></div>@endif
+        @if($movement->reversalOf)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Anula el documento</dt><dd><a href="{{ route('movements.show', $movement->reversalOf) }}" class="text-brand hover:underline">{{ $movement->reversalOf->number }}</a></dd></div>@endif
+        @if($movement->isVoided())<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Estado</dt><dd><span class="badge-red">ANULADO {{ $movement->voided_at->format('d/m/Y H:i') }}</span></dd></div>@endif
         @if($movement->negative_override)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Autorización especial</dt><dd><span class="badge-red">Stock negativo autorizado</span></dd></div>@endif
     </dl>
     @if($movement->notes)<p class="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700"><b>Observaciones:</b> {{ $movement->notes }}</p>@endif
@@ -52,6 +55,15 @@
         </div>
     </div>
     @endif
+
+    @can('inventory.void')@unless($movement->isVoided() || $movement->type === 'void' || ($movement->type === 'container' && $movement->container_id))
+    <form method="POST" action="{{ route('movements.void', $movement) }}" class="no-print mt-6 grid gap-3 rounded-xl border border-red-200 bg-red-50/50 p-4 sm:grid-cols-[1fr_auto] sm:items-end" @submit="if (!confirm('¿Anular este documento? Se generará un movimiento inverso.')) $event.preventDefault()">
+        @csrf
+        <x-field name="reason" label="Anular este documento (motivo obligatorio)" required />
+        <button class="btn-danger">Anular documento</button>
+        <p class="text-xs text-slate-500 sm:col-span-2">Se crea un documento de anulación que devuelve cada línea a su existencia anterior; el original se conserva marcado como anulado.</p>
+    </form>
+    @endunless @endcan
 
     <x-report-signatures />
 </div>
