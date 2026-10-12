@@ -8,7 +8,7 @@
             <a href="{{ route('reports.run', ['warehouse', 'inventory-current'] + request()->only(['product', 'warehouse', 'category', 'status']) + ['format' => 'xlsx']) }}" class="btn-secondary btn-sm">Excel</a>
             <a href="{{ route('reports.run', ['warehouse', 'inventory-current'] + request()->only(['product', 'warehouse', 'category', 'status']) + ['format' => 'pdf']) }}" class="btn-secondary btn-sm">PDF</a>
         @endcan
-    <button type="button" onclick="window.print()" class="btn-primary btn-sm"><x-icon name="printer" class="h-4 w-4" /> Imprimir</button>
+    <button type="button" x-data @click="window.print()" class="btn-primary btn-sm"><x-icon name="printer" class="h-4 w-4" /> Imprimir</button>
     </div>
 </div>
 

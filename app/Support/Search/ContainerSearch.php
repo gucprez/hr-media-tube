@@ -17,7 +17,7 @@ class ContainerSearch implements SearchProvider
     {
         $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%';
 
-        return Container::with('vehicle')->where(fn ($q) => $q->where('number', 'like', $like)->orWhere('driver_name', 'like', $like)->orWhere('conduce', 'like', $like)
+        return Container::with(['vehicle', 'driver'])->where(fn ($q) => $q->where('number', 'like', $like)->orWhere('driver_name', 'like', $like)->orWhere('conduce', 'like', $like)
             ->orWhereHas('vehicle', fn ($v) => $v->where('ficha', 'like', $like)))
             ->orderByDesc('date')->limit($limit)->get()
             ->map(fn (Container $c) => [

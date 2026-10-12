@@ -3,7 +3,7 @@
 @section('content')
 <div class="no-print mb-4 flex flex-wrap items-center justify-between gap-3">
     <a href="{{ route('movements.index') }}" class="text-sm text-slate-500 hover:text-slate-800">← Movimientos</a>
-    <button type="button" onclick="window.print()" class="btn-secondary btn-sm"><x-icon name="printer" class="h-4 w-4" /> Imprimir</button>
+    <button type="button" x-data @click="window.print()" class="btn-secondary btn-sm"><x-icon name="printer" class="h-4 w-4" /> Imprimir</button>
 </div>
 
 <div class="card card-body">

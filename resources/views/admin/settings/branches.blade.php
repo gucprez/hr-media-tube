@@ -15,7 +15,7 @@
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" class="rounded border-slate-300" @checked($b->is_active)> Activa</label>
             <div class="flex justify-end gap-2">
                 <button class="btn-primary btn-sm">Guardar</button>
-                <button type="submit" form="del-branch-{{ $b->id }}" class="btn-danger btn-sm" onclick="return confirm('¿Eliminar la sucursal?')" aria-label="Eliminar"><x-icon name="trash" class="h-3.5 w-3.5" /></button>
+                <button type="submit" form="del-branch-{{ $b->id }}" class="btn-danger btn-sm" x-data @click="if (!confirm('¿Eliminar la sucursal?')) $event.preventDefault()" aria-label="Eliminar"><x-icon name="trash" class="h-3.5 w-3.5" /></button>
             </div>
         </form>
         <form id="del-branch-{{ $b->id }}" method="POST" action="{{ route('admin.settings.branches.destroy', $b) }}">@csrf @method('DELETE')</form>
@@ -45,7 +45,7 @@
             </div>
             <div class="flex justify-end gap-2 sm:col-span-2">
                 <button class="btn-primary btn-sm">Guardar</button>
-                @unless($w->is_default)<button type="submit" form="del-wh-{{ $w->id }}" class="btn-danger btn-sm" onclick="return confirm('¿Eliminar el almacén?')" aria-label="Eliminar"><x-icon name="trash" class="h-3.5 w-3.5" /></button>@endunless
+                @unless($w->is_default)<button type="submit" form="del-wh-{{ $w->id }}" class="btn-danger btn-sm" x-data @click="if (!confirm('¿Eliminar el almacén?')) $event.preventDefault()" aria-label="Eliminar"><x-icon name="trash" class="h-3.5 w-3.5" /></button>@endunless
             </div>
         </form>
         @unless($w->is_default)<form id="del-wh-{{ $w->id }}" method="POST" action="{{ route('admin.settings.warehouses.destroy', $w) }}">@csrf @method('DELETE')</form>@endunless

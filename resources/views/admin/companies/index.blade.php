@@ -19,7 +19,7 @@
         <div class="mt-4 flex flex-wrap gap-2">
             <form method="POST" action="{{ route('admin.companies.enter', $c) }}">@csrf<button class="btn-primary btn-sm">Entrar</button></form>
             <a href="{{ route('admin.companies.edit', $c) }}" class="btn-secondary btn-sm">Editar</a>
-            <form method="POST" action="{{ route('admin.companies.destroy', $c) }}" onsubmit="return confirm({{ \Illuminate\Support\Js::from('¿Eliminar la empresa '.$c->name.'?') }})">@csrf @method('DELETE')<button class="btn-danger btn-sm" aria-label="Eliminar"><x-icon name="trash" class="h-3.5 w-3.5" /></button></form>
+            <form method="POST" action="{{ route('admin.companies.destroy', $c) }}" x-data @submit="if (!confirm({{ \Illuminate\Support\Js::from('¿Eliminar la empresa '.$c->name.'?') }})) $event.preventDefault()">@csrf @method('DELETE')<button class="btn-danger btn-sm" aria-label="Eliminar"><x-icon name="trash" class="h-3.5 w-3.5" /></button></form>
         </div>
         @endunless
     </div>

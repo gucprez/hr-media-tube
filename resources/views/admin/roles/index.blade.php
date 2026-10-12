@@ -17,7 +17,7 @@
         <div class="mt-3 flex gap-2">
             <a href="{{ route('admin.roles.edit', $role) }}" class="btn-secondary btn-sm"><x-icon name="pencil" class="h-3.5 w-3.5" /> Editar permisos</a>
             @if(! $role->is_system)
-            <form method="POST" action="{{ route('admin.roles.destroy', $role) }}" onsubmit="return confirm({{ \Illuminate\Support\Js::from('¿Eliminar el rol '.$role->name.'?') }})">@csrf @method('DELETE')<button class="btn-danger btn-sm" aria-label="Eliminar"><x-icon name="trash" class="h-3.5 w-3.5" /></button></form>
+            <form method="POST" action="{{ route('admin.roles.destroy', $role) }}" x-data @submit="if (!confirm({{ \Illuminate\Support\Js::from('¿Eliminar el rol '.$role->name.'?') }})) $event.preventDefault()">@csrf @method('DELETE')<button class="btn-danger btn-sm" aria-label="Eliminar"><x-icon name="trash" class="h-3.5 w-3.5" /></button></form>
             @endif
         </div>
     </div>

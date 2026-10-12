@@ -63,3 +63,9 @@ Hash bcrypt, CSRF, validación backend, Eloquent (consultas parametrizadas), rat
 | `…000500` | tickets, ticket_items, attachments, notifications, audit_logs |
 
 Todas con FK e índices; compatibles con MySQL/MariaDB y SQLite (tests).
+
+## 9. Reportes (Fase 6)
+`App\Services\Reports`: `ReportRegistry` reúne las definiciones de cada sección (`Definitions/*Reports`); cada una declara filtros y una función `(Period, filtros) → ReportResult`. `ReportRunController` valida el permiso de la sección, ejecuta y entrega pantalla / PDF / Excel (`XlsxExporter`, openspout). Para añadir un reporte basta agregar una definición; aparece solo en el Centro de reportes, con filtros y exportación.
+
+## 10. Seguridad y PWA (Fase 7)
+CSP en `SecurityHeaders` (`config/security.php`), sin scripts ni manejadores en línea; service worker `public/sw.js` que solo cachea estáticos públicos; `Model::preventLazyLoading()` fuera de producción; límites de peticiones en login, búsqueda y exportaciones.

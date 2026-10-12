@@ -55,7 +55,7 @@ class DashboardController extends Controller
                 'month' => \App\Models\Container::where('status', '!=', 'voided')->whereDate('date', '>=', $monthStart)->count(),
                 'open' => \App\Models\Container::whereIn('status', ['open', 'in_progress'])->count(),
             ];
-            $data['recentContainers'] = \App\Models\Container::with('vehicle')->orderByDesc('date')->orderByDesc('id')->limit(6)->get();
+            $data['recentContainers'] = \App\Models\Container::with(['vehicle', 'driver'])->orderByDesc('date')->orderByDesc('id')->limit(6)->get();
         }
 
         if ($user->hasPermission('fuel.view')) {

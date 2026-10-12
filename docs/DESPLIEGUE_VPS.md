@@ -1,57 +1,79 @@
-# Despliegue en VPS Linux (Ubuntu 22.04/24.04)
+# Despliegue en el VPS — guía para el dueño del servidor
 
-## Requisitos
-Nginx, PHP 8.2+ (fpm, mbstring, xml, curl, zip, gd, intl, mysql, bcmath), MariaDB 10.6+/MySQL 8, Composer 2, Node 20+ (solo para compilar), Git.
+> **Regla de oro:** esta guía solo crea cosas **nuevas** (un sitio de Nginx propio, un pool de PHP-FPM propio, una base de datos propia y una carpeta propia).
+> No modifica ni detiene ninguna aplicación existente. Ningún paso requiere reiniciar el VPS, tocar el firewall global ni actualizar paquetes del sistema.
+> Cada comando que cambia algo fuera de la carpeta del proyecto lo ejecuta **usted** (o lo autoriza expresamente). Nunca comparta contraseñas ni llaves en chats: se escriben solo en el `.env` del servidor.
 
-## 1. Base de datos
+## 0. Antes de empezar
+
+| Dato | Valor |
+|------|-------|
+| Dominio previsto | `hr.deportesxtras.com` — **compruebe la ortografía**: sus otros sitios usan `deportesxtra.com` (sin la «s»). Si es un error de escritura, use `hr.deportesxtra.com`. El kit funciona con cualquier dominio: se cambia en un solo sitio (`__DOMINIO__`). |
+| DNS | Crear un registro **A** `hr` → `54.39.98.84` (la IP del VPS) en el proveedor del dominio y esperar a que propague. Sin esto no habrá HTTPS. |
+| Puertos | La app **no abre puertos propios**: usa 80/443 compartidos por `server_name` y PHP-FPM por socket Unix. No reutiliza 3001, 3002, 3004, 3005, 8010, 8020, 8090, 8100, 8443, 5555, 5556, 8001, 8002. |
+| Requisitos | Nginx, PHP 8.2+ (fpm, mbstring, xml, curl, zip, gd, intl, mysql, bcmath), MariaDB 10.6+/MySQL 8, Composer 2, Git. Node 20+ **solo para compilar** (si no hay Node, compile en su equipo y suba `public/build`). |
+
+Verifique primero qué hay instalado (solo lectura): `php -v`, `nginx -v`, `mysql --version`, `composer --version`, `node -v`.
+
+## 1. Usuario y carpeta propios (sin root)
+```bash
+sudo adduser --system --group --home /var/www/hrmedia hrmedia      # usuario sin privilegios
+sudo -u hrmedia git clone -b claude/carmen-cargo-warehouse-system-0jift5 https://github.com/gucprez/hr-media-tube.git /var/www/hrmedia/app
+```
+(Si prefiere otra ruta, úsela en todos los pasos.) La aplicación **nunca** corre como root.
+
+## 2. Base de datos propia
 ```sql
 CREATE DATABASE hr_media_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'hrmedia'@'localhost' IDENTIFIED BY '<contraseña-fuerte>';
+CREATE USER 'hrmedia'@'localhost' IDENTIFIED BY '<contraseña-fuerte-solo-para-esta-app>';
 GRANT ALL ON hr_media_system.* TO 'hrmedia'@'localhost';
 ```
+No toca ninguna otra base de datos.
 
-## 2. Código
+## 3. Código y configuración
 ```bash
-cd /var/www && git clone <repo> hrmedia && cd hrmedia
-composer install --no-dev --optimize-autoloader
-npm ci && npm run build
-cp .env.example .env && php artisan key:generate
-# Edite .env: APP_ENV=production, APP_DEBUG=false, APP_URL=https://su-dominio, DB_*, SUPERADMIN_*
-php artisan migrate --force --seed
-php artisan storage:link
-php artisan config:cache && php artisan route:cache && php artisan view:cache
-```
-
-## 3. Permisos
-```bash
-chown -R www-data:www-data storage bootstrap/cache
-find storage bootstrap/cache -type d -exec chmod 775 {} \; ; find storage bootstrap/cache -type f -exec chmod 664 {} \;
+cd /var/www/hrmedia/app
+sudo -u hrmedia cp deploy/env.production.example .env        # edite: APP_URL, DB_PASSWORD, SUPERADMIN_*
+sudo -u hrmedia composer install --no-dev --optimize-autoloader
+sudo -u hrmedia npm ci && sudo -u hrmedia npm run build       # o suba public/build compilado en su equipo
+sudo -u hrmedia php artisan key:generate
+sudo -u hrmedia php artisan migrate --force --seed            # permisos + super administrador
+sudo -u hrmedia php artisan storage:link
+sudo -u hrmedia php artisan optimize
 chmod 640 .env
 ```
-El *document root* de Nginx es `public/` (nunca la raíz del proyecto).
+**No** ejecute `DemoSeeder` en producción (crea usuarios de demostración con contraseña conocida).
 
-## 4. Nginx + HTTPS
-Ver `deploy/nginx.conf.example`; `certbot --nginx -d su-dominio`. Con HTTPS ponga `SESSION_SECURE_COOKIE=true`.
-Límites de subida: `client_max_body_size 20M;` y `upload_max_filesize = 20M` / `post_max_size = 25M` en PHP.
+## 4. PHP-FPM propio y Nginx nuevo
+1. `deploy/php-fpm-hrmedia.conf.example` → `/etc/php/<versión>/fpm/pool.d/hrmedia.conf` (reemplace `__APP_DIR__`), luego `sudo php-fpm<versión> -t && sudo systemctl reload php<versión>-fpm`. Solo añade un pool; los existentes no cambian.
+2. `deploy/nginx-hrmedia.conf.example` → `/etc/nginx/sites-available/hrmedia.conf` (reemplace `__DOMINIO__` y `__APP_DIR__` por `/var/www/hrmedia/app`), enlazar en `sites-enabled`, **`sudo nginx -t`** y solo si dice *successful*: `sudo systemctl reload nginx`. Es un archivo nuevo: no se edita ningún sitio existente.
+3. HTTPS: `sudo certbot --nginx -d <dominio>` (necesita el DNS del paso 0). Después ponga `SESSION_SECURE_COOKIE=true` y vuelva a ejecutar `php artisan config:cache`.
 
-## 5. Scheduler y colas
-```
-* * * * * cd /var/www/hrmedia && php artisan schedule:run >> /dev/null 2>&1
-```
-Si usa colas (`QUEUE_CONNECTION=database`), ejecute `php artisan queue:work` con Supervisor/systemd.
+## 5. Tareas programadas y respaldos
+`deploy/cron.example` (crontab del usuario `hrmedia`): scheduler cada minuto (verifica integridad de inventario y gasoil cada noche) y `deploy/backup.sh` diario. El respaldo guarda base de datos + `storage/app/public` (logo) + `storage/app/private` (fotos y documentos) y rota a 14 días. **Copie los respaldos fuera del servidor** (rsync/rclone). Pruebe una restauración antes de operar.
 
-## 6. Respaldos
-`deploy/backup.sh` genera dump de BD + `storage/app/public` (logos) y `storage/app/private` (fotos y documentos) comprimidos con rotación (14 días). Cron: `0 2 * * * /var/www/hrmedia/deploy/backup.sh`. Copie los respaldos fuera del servidor (rclone/rsync).
-
-## 6b. Integridad del inventario
-El scheduler ejecuta `inventory:verify` cada día a las 02:30 (salida en `storage/logs/inventory-verify.log`). Cualquier línea con «≠ libro» indica que alguien modificó el stock fuera de la aplicación. Tras instalar en el VPS puede validar el bloqueo de concurrencia con `php artisan inventory:concurrency-check --workers=10` (crea y borra una empresa temporal).
-
-## 7. Actualizar
+## 6. Prueba de humo
 ```bash
-git pull && composer install --no-dev -o && npm ci && npm run build
-php artisan migrate --force && php artisan permissions:sync && php artisan optimize
+deploy/smoke-test.sh https://<dominio>
 ```
-`permissions:sync` agrega permisos nuevos al catálogo y los asigna a los roles base que los incluyen; las personalizaciones de roles no se sobrescriben salvo `--reset-roles`. (Fase 2: el rol «Solo consulta»/«Auditor» ahora incluye `search.use`; en empresas ya creadas, actívelo desde *Roles y permisos* o use `--reset-roles`.)
+Comprueba login, PWA, protección de rutas privadas, que `.env`/`composer.json` no se sirvan y las cabeceras de seguridad.
 
-## 8. Nueva empresa cliente
-Super administrador → **Plataforma → Empresas → Nueva empresa**. Se crean roles, sucursal, almacén y numeraciones. No requiere reprogramar.
+## 7. Primer acceso
+1. Entre con el super administrador de `.env` y **cambie la contraseña**.
+2. *Plataforma → Empresas → Nueva empresa* (Carmen Cargo Express): crea roles, sucursal, almacén y numeraciones.
+3. *Configuración → Empresa*: suba el **logo real** (el sistema nunca inventa uno), datos fiscales y colores.
+4. Cree los usuarios y asigne roles. Cargue categorías, unidades y productos; registre la **entrada inicial** y la **reserva inicial de gasoil** (ajuste de gasoil con motivo).
+5. Instale la app en el teléfono: Chrome/Edge → «Instalar aplicación» (requiere HTTPS).
+
+## 8. Actualizar a una versión nueva
+```bash
+sudo -u hrmedia /var/www/hrmedia/app/deploy/deploy.sh
+```
+Modo mantenimiento durante la actualización, `git pull`, dependencias, compilación, migraciones, `permissions:sync`, cachés y verificación de integridad.
+
+## 9. Seguridad aplicada (resumen)
+- Cabeceras: CSP estricta (sin scripts en línea), HSTS bajo HTTPS, `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`. Ajustable con `CSP_MODE=enforce|report|off`.
+- Archivos privados (fotos, documentos) fuera de `public/`, servidos solo con sesión + permiso + empresa.
+- Límite de intentos de login, límite de peticiones en búsqueda y exportaciones, CSRF en todos los formularios, contraseñas con bcrypt.
+- Service worker: solo guarda estáticos públicos; **nunca** datos de la empresa.
+- Detalle completo en `docs/FASES_3_A_7.md`.

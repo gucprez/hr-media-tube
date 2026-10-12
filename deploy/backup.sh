@@ -2,7 +2,7 @@
 # Respaldo de base de datos y archivos. Uso: ./deploy/backup.sh  (cron diario)
 set -euo pipefail
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-BACKUP_DIR="${BACKUP_DIR:-/var/backups/hrmedia}"
+BACKUP_DIR="${BACKUP_DIR:-$APP_DIR/../hrmedia-backups}"
 KEEP_DAYS="${KEEP_DAYS:-14}"
 STAMP="$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$BACKUP_DIR"

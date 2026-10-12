@@ -26,7 +26,7 @@
                     <td class="whitespace-nowrap text-right">
                         <a href="{{ route('admin.users.edit', $u) }}" class="btn-secondary btn-sm"><x-icon name="pencil" class="h-3.5 w-3.5" /> Editar</a>
                         @if($u->id !== auth()->id())
-                        <form method="POST" action="{{ route('admin.users.destroy', $u) }}" class="inline" onsubmit="return confirm({{ \Illuminate\Support\Js::from('¿Eliminar al usuario '.$u->username.'?') }})">@csrf @method('DELETE')
+                        <form method="POST" action="{{ route('admin.users.destroy', $u) }}" class="inline" x-data @submit="if (!confirm({{ \Illuminate\Support\Js::from('¿Eliminar al usuario '.$u->username.'?') }})) $event.preventDefault()">@csrf @method('DELETE')
                             <button class="btn-danger btn-sm" aria-label="Eliminar"><x-icon name="trash" class="h-3.5 w-3.5" /></button></form>
                         @endif
                     </td>

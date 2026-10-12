@@ -29,6 +29,9 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
+// PWA: página mostrada por el service worker cuando no hay conexión (pública y sin datos de ninguna empresa).
+Route::view('/offline', 'offline')->name('offline');
+
 Route::redirect('/', '/dashboard');
 
 Route::middleware('guest')->group(function () {
@@ -54,7 +57,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('permission:dashboard.view')->name('dashboard');
 
         // ---- Búsqueda global ---------------------------------------------------
-        Route::get('/buscar', [SearchController::class, 'index'])->middleware('permission:search.use')->name('search');
+        Route::get('/buscar', [SearchController::class, 'index'])->middleware(['permission:search.use', 'throttle:120,1'])->name('search');
 
         // ---- Archivos privados (autorizados por permiso y empresa) -------------
         Route::get('/archivos/producto/{image}', [FileController::class, 'productImage'])->name('files.product-image');

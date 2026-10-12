@@ -1,0 +1,17 @@
+{
+  "name": "HR Media System",
+  "short_name": "HR Media",
+  "description": "Gestión de almacén, furgones, gasoil y flotilla.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "es",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0f2a52",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

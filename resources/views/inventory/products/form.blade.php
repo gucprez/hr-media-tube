@@ -83,7 +83,7 @@
                         <div class="flex items-center justify-between gap-1 bg-white p-1">
                             @if($img->is_primary)<span class="badge-blue">Principal</span>@else
                                 <button type="submit" form="img-primary-{{ $img->id }}" class="text-[11px] font-medium text-brand">Hacer principal</button>@endif
-                            <button type="submit" form="img-del-{{ $img->id }}" class="text-red-600" aria-label="Eliminar foto" onclick="return confirm('¿Eliminar esta foto?')"><x-icon name="trash" class="h-4 w-4" /></button>
+                            <button type="submit" form="img-del-{{ $img->id }}" class="text-red-600" aria-label="Eliminar foto" x-data @click="if (!confirm('¿Eliminar esta foto?')) $event.preventDefault()"><x-icon name="trash" class="h-4 w-4" /></button>
                         </div>
                     </div>
                 @endforeach

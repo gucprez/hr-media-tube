@@ -1,0 +1,22 @@
+; Pool de PHP-FPM propio para HR Media System (aísla la app de los demás sitios).
+; Copiar a /etc/php/<versión>/fpm/pool.d/hrmedia.conf  y  sudo systemctl reload php<versión>-fpm
+; Requiere un usuario de sistema SIN privilegios (no root):  sudo adduser --system --group --home __APP_DIR__ hrmedia
+[hrmedia]
+user = hrmedia
+group = hrmedia
+listen = /run/php/hrmedia.sock
+listen.owner = www-data
+listen.group = www-data
+listen.mode = 0660
+
+pm = ondemand
+pm.max_children = 8
+pm.process_idle_timeout = 30s
+pm.max_requests = 500
+
+php_admin_value[upload_max_filesize] = 20M
+php_admin_value[post_max_size] = 25M
+php_admin_value[memory_limit] = 256M
+php_admin_value[expose_php] = Off
+php_admin_value[open_basedir] = __APP_DIR__:/tmp
+php_admin_value[session.cookie_httponly] = 1

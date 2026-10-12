@@ -67,7 +67,7 @@ class VehicleFile
                 'detail' => $d->odometer ? 'Kilometraje '.number_format($d->odometer, 1) : null, 'url' => null,
             ]);
         }
-        foreach (Container::where('vehicle_id', $v->id)->where('status', '!=', 'voided')->orderByDesc('date')->limit($limit)->get() as $c) {
+        foreach (Container::with('driver')->where('vehicle_id', $v->id)->where('status', '!=', 'voided')->orderByDesc('date')->limit($limit)->get() as $c) {
             $events->push([
                 'at' => $c->date->copy()->setTime(9, 0), 'icon' => 'truck', 'tone' => 'slate', 'title' => 'Furgón #'.$c->number.' ('.$c->status_label.')',
                 'detail' => $c->driver_display, 'url' => route('containers.show', $c),

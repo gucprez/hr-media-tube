@@ -10,13 +10,12 @@ Laravel 12 · PHP 8.2+ · MySQL/MariaDB · Blade + Tailwind CSS 4 + Alpine.js ·
 |------|-----------|--------|
 | 1 | Arquitectura, esquema BD completo, autenticación, multiempresa, roles/permisos, layout, configuración, auditoría | ✅ Hecha |
 | 2 | Productos, fotos, categorías, inventario, cajas/unidades, entradas/salidas/ajustes, alertas, búsqueda global, dashboard real, reportes de almacén | ✅ Hecha — ver [`docs/FASE2.md`](docs/FASE2.md) |
-| 3 | Furgones, materiales, tickets, impresión 4 por hoja | ⏳ |
-| 4 | Gasoil (recepciones, despachos, reserva) y vehículos | ⏳ |
-| 5 | Inspecciones, averías, mantenimiento, gomas, retornables | ⏳ |
-| 6 | Reportes, Excel, PDF, auditoría avanzada | ⏳ |
-| 7 | PWA/móvil, seguridad, optimización, despliegue | ⏳ |
+| 3 | Furgones, materiales, tickets, impresión 1/2/4 por hoja | ✅ Hecha |
+| 4 | Gasoil (recepciones, despachos, reserva) y vehículos | ✅ Hecha |
+| 5 | Inspecciones, averías, mantenimiento, gomas, retornables | ✅ Hecha |
+| 6 | Reportes (35), Excel, PDF, auditoría | ✅ Hecha |
+| 7 | PWA/móvil, seguridad (CSP), optimización, kit de despliegue | ✅ Hecha — ver [`docs/FASES_3_A_7.md`](docs/FASES_3_A_7.md) |
 
-Las migraciones ya contienen **el esquema completo de todas las fases** (ver `docs/ARQUITECTURA.md`).
 
 ## Instalación local (desarrollo)
 
@@ -40,7 +39,7 @@ El super administrador se crea con `SUPERADMIN_EMAIL` / `SUPERADMIN_USERNAME` / 
 ## Pruebas
 
 ```bash
-php artisan test                        # 102 tests (SQLite en memoria por defecto)
+php artisan test                        # 196 tests (SQLite en memoria por defecto)
 DB_CONNECTION=mysql DB_DATABASE=… php artisan test   # también pasan contra MariaDB/MySQL
 php artisan inventory:verify            # el stock de cada producto = suma de su libro de movimientos
 php artisan inventory:concurrency-check # estrés con procesos paralelos (solo MySQL/MariaDB)
@@ -52,6 +51,7 @@ Cubren autenticación, rate limiting, **aislamiento multiempresa** (incluido rou
 
 - [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) — multiempresa, permisos, inventario, esquema de BD.
 - [`docs/FASE2.md`](docs/FASE2.md) — lo que funciona en Fase 2, decisiones técnicas, contrato de datos de reportes y revisión de seguridad.
-- [`docs/DESPLIEGUE_VPS.md`](docs/DESPLIEGUE_VPS.md) — instalación en producción, permisos, cron y respaldos.
+- [`docs/FASES_3_A_7.md`](docs/FASES_3_A_7.md) — qué hace cada fase, decisiones y pendientes.
+- [`docs/DESPLIEGUE_VPS.md`](docs/DESPLIEGUE_VPS.md) — instalación en el VPS paso a paso (sin tocar lo existente), cron, respaldos y prueba de humo.
 
 > `legacy/` contiene el placeholder anterior del repositorio (FastAPI); no forma parte del sistema.

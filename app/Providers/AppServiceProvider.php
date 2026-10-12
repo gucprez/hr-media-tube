@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
 
 class AppServiceProvider extends ServiceProvider
@@ -38,6 +39,17 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::defaultView('pagination.tailwind-es');
+
+        // N+1: en desarrollo y pruebas una relación cargada perezosamente dentro de un bucle falla ruidosamente; en producción solo se registra.
+        Model::preventLazyLoading();
+        Model::handleLazyLoadingViolationUsing(function ($model, string $relation) {
+            if (app()->isProduction()) {
+                \Illuminate\Support\Facades\Log::warning(sprintf('N+1: %s::%s', $model::class, $relation));
+
+                return;
+            }
+            throw new \Illuminate\Database\LazyLoadingViolationException($model, $relation);
+        });
 
         // Todo `@can('products.edit')` / Gate::allows() se resuelve por permiso individual.
         Gate::before(function ($user, string $ability) {

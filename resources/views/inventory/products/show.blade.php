@@ -10,7 +10,7 @@
         @can('inventory.adjust')<a href="{{ route('adjustments.create', ['product' => $product->id]) }}" class="btn-secondary btn-sm"><x-icon name="scale" class="h-4 w-4" /> Ajustar</a>@endcan
         @can('products.edit')<a href="{{ route('products.edit', $product) }}" class="btn-secondary btn-sm"><x-icon name="pencil" class="h-4 w-4" /> Editar</a>@endcan
         @can('products.delete')
-        <form method="POST" action="{{ route('products.destroy', $product) }}" onsubmit="return confirm({{ \Illuminate\Support\Js::from('¿Eliminar el producto '.$product->name.'? El historial se conserva.') }})">@csrf @method('DELETE')<button class="btn-danger btn-sm"><x-icon name="trash" class="h-4 w-4" /> Eliminar</button></form>
+        <form method="POST" action="{{ route('products.destroy', $product) }}" x-data @submit="if (!confirm({{ \Illuminate\Support\Js::from('¿Eliminar el producto '.$product->name.'? El historial se conserva.') }})) $event.preventDefault()">@csrf @method('DELETE')<button class="btn-danger btn-sm"><x-icon name="trash" class="h-4 w-4" /> Eliminar</button></form>
         @endcan
     </div>
 </div>

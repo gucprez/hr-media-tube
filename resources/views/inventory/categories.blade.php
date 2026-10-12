@@ -27,7 +27,7 @@
                     @endcan
                     <a href="{{ route('products.index', ['category' => $c->id]) }}" class="text-xs text-brand hover:underline">{{ $c->products_count }} producto(s)</a>
                     @can('products.delete')
-                    <form method="POST" action="{{ route('categories.destroy', $c) }}" onsubmit="return confirm({{ \Illuminate\Support\Js::from('¿Eliminar la categoría '.$c->name.'?') }})">@csrf @method('DELETE')<button class="btn-danger btn-sm" aria-label="Eliminar"><x-icon name="trash" class="h-3.5 w-3.5" /></button></form>
+                    <form method="POST" action="{{ route('categories.destroy', $c) }}" x-data @submit="if (!confirm({{ \Illuminate\Support\Js::from('¿Eliminar la categoría '.$c->name.'?') }})) $event.preventDefault()">@csrf @method('DELETE')<button class="btn-danger btn-sm" aria-label="Eliminar"><x-icon name="trash" class="h-3.5 w-3.5" /></button></form>
                     @endcan
                 </div>
             @empty
@@ -61,7 +61,7 @@
                     <span class="flex-1 text-sm">{{ $u->name }} <span class="text-slate-400">/ {{ $u->plural }}</span></span>
                     @endcan
                     @can('products.delete')
-                    <form method="POST" action="{{ route('units.destroy', $u) }}" onsubmit="return confirm({{ \Illuminate\Support\Js::from('¿Eliminar la unidad '.$u->name.'?') }})">@csrf @method('DELETE')<button class="btn-danger btn-sm" aria-label="Eliminar"><x-icon name="trash" class="h-3.5 w-3.5" /></button></form>
+                    <form method="POST" action="{{ route('units.destroy', $u) }}" x-data @submit="if (!confirm({{ \Illuminate\Support\Js::from('¿Eliminar la unidad '.$u->name.'?') }})) $event.preventDefault()">@csrf @method('DELETE')<button class="btn-danger btn-sm" aria-label="Eliminar"><x-icon name="trash" class="h-3.5 w-3.5" /></button></form>
                     @endcan
                 </div>
             @endforeach
