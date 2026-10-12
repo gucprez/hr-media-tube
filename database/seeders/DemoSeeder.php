@@ -93,6 +93,7 @@ class DemoSeeder extends Seeder
             ['FIL-ACEITE', 'Filtro de Aceite', $filters, 'Unidad', 'units', 1, 'units', 2, ['aisle' => 'B', 'shelf' => '2']],
             ['ACEITE-15W40', 'Aceite 15W40', $filters, 'Galón', 'units', 1, 'units', 5, ['aisle' => 'B', 'shelf' => '3']],
             ['BOMBILLA', 'Bombilla', $parts, 'Unidad', 'units', 1, 'units', 5, ['aisle' => 'B', 'shelf' => '4']],
+            ['MANGUERA', 'Manguera hidráulica', $parts, 'Unidad', 'units', 1, 'units', 2, ['aisle' => 'B', 'shelf' => '5']],
         ];
         $products = [];
         foreach ($defs as [$sku, $name, $category, $unitName, $mode, $perBox, $alertUnit, $min, $extra]) {
@@ -133,6 +134,7 @@ class DemoSeeder extends Seeder
             [$L('FLEJE', 0, 53)], $actor);
 
         $this->seedOperations($company, $actor, $products);
+        $this->seedFleet($actor, $products);
 
         auth()->logout();
         app(CurrentCompany::class)->clear();
@@ -235,5 +237,61 @@ class DemoSeeder extends Seeder
         foreach ($rows as [$ago, $vehicle, $start, $end, $km]) {
             $fuel->dispatch(['dispatched_at' => now()->subDays($ago)->toDateString(), 'vehicle_id' => $vehicle->id, 'reading_start' => $start, 'reading_end' => $end, 'odometer' => $km], $actor);
         }
+    }
+
+    /** Inspecciones, averías (con el ejemplo F3 · luz trasera · bombilla), mantenimiento, gomas con devolución pendiente y tóner retornable. */
+    protected function seedFleet(User $actor, array $products): void
+    {
+        $wh = Warehouse::where('is_default', true)->first();
+        $stock = app(StockService::class);
+        $f1 = \App\Models\Vehicle::where('ficha', 'F1')->first();
+        $f2 = \App\Models\Vehicle::where('ficha', 'F2')->first();
+        $f3 = \App\Models\Vehicle::where('ficha', 'F3')->first();
+        $incidents = app(\App\Services\Fleet\IncidentService::class);
+
+        $stock->entry(['warehouse_id' => $wh->id, 'supplier' => 'Repuestos del Caribe', 'document_no' => 'CD-2210', 'occurred_at' => now()->subDays(4)], [['product_id' => $products['BOMBILLA'], 'units' => 2]], $actor);
+
+        // Inspecciones: F1 sin novedades este mes; F2 del mes pasado con una observación; F3 hace 2 días con la luz trasera dañada
+        $makeInspection = function (\App\Models\Vehicle $v, int $daysAgo, array $special) use ($actor) {
+            $i = \App\Models\VehicleInspection::create([
+                'vehicle_id' => $v->id, 'inspector_id' => $actor->id, 'inspected_at' => now()->subDays($daysAgo)->toDateString(), 'next_due_at' => now()->subDays($daysAgo)->addMonth()->toDateString(),
+                'odometer' => $v->odometer, 'overall_status' => collect($special)->contains('damaged') ? 'damaged' : (collect($special)->contains('attention') ? 'attention' : 'good'),
+            ]);
+            foreach (\App\Models\InspectionChecklistItem::orderBy('sort_order')->get() as $it) {
+                \App\Models\InspectionItem::create(['vehicle_inspection_id' => $i->id, 'checklist_item_id' => $it->id, 'label' => $it->name, 'status' => $special[$it->name] ?? 'good', 'notes' => isset($special[$it->name]) ? 'Observado durante la inspección' : null]);
+            }
+            \App\Services\Audit::log('inspection.created', 'Inspección de '.$v->ficha, $i);
+
+            return $i;
+        };
+        $makeInspection($f1, 5, []);
+        $makeInspection($f2, 40, ['Gomas' => 'attention']);
+        $makeInspection($f3, 2, ['Luces traseras' => 'damaged']);
+
+        // Avería de F3 (ejemplo del cliente) → reparada con 1 bombilla del inventario
+        $inc = $incidents->report($f3, ['title' => 'Luz trasera derecha dañada', 'description' => 'Se detectó en la inspección mensual.', 'odometer' => 415540, 'priority' => 'low', 'reported_at' => now()->subDays(2)], $actor);
+        $incidents->changeStatus($inc, 'pending', 'Se programa para mañana', $actor);
+        app(\App\Services\Fleet\MaintenanceService::class)->record($f3, [
+            'performed_at' => now()->subDay()->toDateString(), 'description' => 'Reemplazo de bombilla de la luz trasera derecha', 'responsible' => 'Germán Mantenimiento',
+            'odometer' => 415540, 'incident_id' => $inc->id, 'warehouse_id' => $wh->id,
+        ], [['product_id' => $products['BOMBILLA'], 'units' => 1]], $actor);
+
+        // F2: avería crítica en reparación y un mantenimiento preventivo de F1 (aceite)
+        $f2inc = $incidents->report($f2, ['title' => 'Falla en el sistema de frenos', 'description' => 'Pedal esponjoso.', 'odometer' => 389100, 'priority' => 'critical', 'reported_at' => now()->subDays(1)], $actor);
+        $incidents->changeStatus($f2inc, 'in_repair', 'En el taller', $actor);
+        app(\App\Services\Fleet\MaintenanceService::class)->record($f1, [
+            'performed_at' => now()->subDays(3)->toDateString(), 'type' => 'preventive', 'description' => 'Cambio de aceite y filtro de aceite', 'responsible' => 'Germán Mantenimiento',
+            'odometer' => 415200.5, 'warehouse_id' => $wh->id,
+        ], [['product_id' => $products['ACEITE-15W40'], 'units' => 4], ['product_id' => $products['FIL-ACEITE'], 'units' => 1]], $actor);
+
+        // Gomas: entrega a F3 sin recibir la usada (queda pendiente) y a F1 recibiendo la usada
+        $tires = app(\App\Services\Fleet\TireService::class);
+        $tires->deliver(['vehicle_id' => $f3->id, 'product_id' => $products['GOMA-225'], 'warehouse_id' => $wh->id, 'quantity' => 1, 'delivered_at' => now()->subDays(2)->toDateString(), 'odometer' => 415540, 'reason' => 'Desgaste', 'used_received' => false], [], $actor);
+        $tires->deliver(['vehicle_id' => $f1->id, 'product_id' => $products['GOMA-225'], 'warehouse_id' => $wh->id, 'quantity' => 1, 'delivered_at' => now()->subDays(8)->toDateString(), 'odometer' => 414800, 'reason' => 'Reventón', 'used_received' => true], [['condition' => 'repairable', 'notes' => 'Se puede reencauchar']], $actor);
+
+        // Tóner (retornable): entrega, uso y devolución
+        $ret = app(\App\Services\Fleet\ReturnableService::class);
+        $ret->deliver(['product_id' => $products['TONER-85A'], 'quantity' => 1, 'warehouse_id' => $wh->id, 'holder' => 'Oficina administrativa', 'notes' => 'Impresora de contabilidad'], $actor);
+        $ret->transition(['product_id' => $products['TONER-85A'], 'quantity' => 1, 'state' => 'used', 'holder' => 'Oficina administrativa'], $actor);
     }
 }

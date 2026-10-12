@@ -15,6 +15,22 @@
 </div>
 @endisset
 
+@isset($fleet)
+<div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <x-stat label="Vehículos operativos" :value="$fleet['operational'].' / '.$fleet['total']" icon="truck" tone="green" :href="route('vehicles.index', ['status' => 'operational'])" />
+    <x-stat label="Camiones con averías" :value="$fleet['with_incidents']" icon="alert" :tone="$fleet['with_incidents'] ? 'red' : 'slate'" :href="route('incidents.index', ['status' => 'open'])" />
+    <x-stat label="Mantenimientos pendientes" :value="$fleet['pending_maintenance']" icon="wrench" tone="yellow" :href="route('maintenance.index')" />
+    <x-stat label="Devoluciones pendientes" :value="$fleet['pending_returns']" icon="refresh" :tone="$fleet['pending_returns'] ? 'yellow' : 'slate'" hint="Gomas usadas y retornables" :href="route('tires.index')" />
+</div>
+@if($fleet['overdue']->isNotEmpty() || $fleet['critical']->isNotEmpty())
+<div class="mb-4 card">
+    <h2 class="border-b border-slate-100 px-5 py-3 font-semibold text-slate-900">Alertas de flotilla</h2>
+    @foreach($fleet['critical'] as $inc)<a href="{{ route('incidents.show', $inc) }}" class="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3 hover:bg-slate-50"><span class="text-sm"><b>{{ $inc->vehicle?->ficha }}</b> — {{ $inc->title }}</span><span class="{{ \App\Models\VehicleIncident::PRIORITY_BADGES[$inc->priority] }}">{{ $inc->priority_label }}</span></a>@endforeach
+    @if($fleet['overdue']->isNotEmpty())<div class="px-5 py-3 text-sm"><span class="font-medium text-slate-800">Inspección vencida o pendiente:</span> @foreach($fleet['overdue'] as $v)<a href="{{ route('vehicles.show', $v) }}" class="ml-1 inline-block rounded-md bg-amber-50 px-2 py-0.5 font-semibold text-amber-800 ring-1 ring-amber-200">{{ $v->ficha }}</a>@endforeach</div>@endif
+</div>
+@endif
+@endisset
+
 @isset($fuel)
 <div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
     <x-stat label="Gasoil disponible" :value="number_format($fuel['reserve'], 1).' gal'" icon="fuel" tone="{{ $fuel['percent'] !== null && $fuel['percent'] < 20 ? 'red' : 'green' }}" :hint="$fuel['percent'] !== null ? $fuel['percent'].'% de la capacidad' : null" :href="route('fuel.index')" />
@@ -97,17 +113,6 @@
 </div>
 @endif
 @endisset
-
-{{-- Módulos futuros: sin cifras inventadas --}}
-<h2 class="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-slate-500">Próximos módulos</h2>
-<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-    @foreach([['Vehículos con averías', 'alert', 'Fase 5'], ['Mantenimientos pendientes', 'wrench', 'Fase 5']] as [$label, $icon, $phase])
-        <div class="card flex items-center gap-3 border-dashed bg-slate-50/60 p-4 opacity-80">
-            <x-icon :name="$icon" class="h-7 w-7 shrink-0 text-slate-400" />
-            <div class="min-w-0"><p class="truncate text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $label }}</p><p class="text-sm font-medium text-slate-400">Próximamente · {{ $phase }}</p></div>
-        </div>
-    @endforeach
-</div>
 
 @if($audit->isNotEmpty())
 <div class="card mt-8">

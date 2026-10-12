@@ -36,7 +36,7 @@ class InventoryReportsTest extends TestCase
 
         // empresa vacía: ceros reales y módulos futuros marcados "Próximamente"
         $this->actingAs($user)->get('/dashboard')->assertOk()->assertSee('Productos registrados')->assertSee('Aún no hay movimientos')
-            ->assertSee('Próximamente')->assertSee('Furgones este mes')->assertSee('Gasoil disponible')->assertDontSee('galones');
+            ->assertDontSee('Próximamente')->assertSee('Furgones este mes')->assertSee('Gasoil disponible')->assertSee('0.0 gal');   // módulos reales: cifras reales (cero en empresa nueva), sin marcadores
 
         $tape = $this->makeProduct($company);                                                                 // mínimo 36
         $bulb = $this->makeProduct($company, ['name' => 'Bombilla', 'handling_mode' => 'units', 'units_per_box' => 1, 'unit' => 'Unidad', 'alert_unit' => 'units', 'min_quantity' => 5]);
@@ -61,7 +61,7 @@ class InventoryReportsTest extends TestCase
         $user = $this->makeUser($company, 'read_only');
         $user->permissionOverrides()->attach(\App\Models\Permission::whereIn('key', ['products.view', 'inventory.view'])->pluck('id'), ['granted' => false]);
 
-        $this->actingAs($user->fresh())->get('/dashboard')->assertOk()->assertDontSee('Productos registrados')->assertSee('Próximos módulos');
+        $this->actingAs($user->fresh())->get('/dashboard')->assertOk()->assertDontSee('Productos registrados')->assertDontSee('Alertas de inventario');
     }
 
     public function test_current_inventory_report_columns_filters_and_print(): void

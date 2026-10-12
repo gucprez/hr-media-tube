@@ -68,6 +68,21 @@ class DashboardController extends Controller
             $data['recentDispatches'] = \App\Models\FuelDispatch::with('vehicle')->whereNull('voided_at')->orderByDesc('dispatched_at')->orderByDesc('id')->limit(6)->get();
         }
 
+        if ($user->hasPermission('vehicles.view')) {
+            $open = \App\Models\VehicleIncident::whereIn('status', \App\Models\VehicleIncident::OPEN);
+            $monthAgo = now()->subMonth()->toDateString();
+            $overdue = \App\Models\Vehicle::where('status', '!=', 'inactive')->whereDoesntHave('inspections', fn ($q) => $q->whereDate('inspected_at', '>', $monthAgo))->orderBy('ficha')->get(['id', 'ficha']);
+            $data['fleet'] = [
+                'operational' => \App\Models\Vehicle::where('status', 'operational')->count(),
+                'total' => \App\Models\Vehicle::count(),
+                'with_incidents' => (clone $open)->distinct('vehicle_id')->count('vehicle_id'),
+                'pending_maintenance' => \App\Models\VehicleIncident::whereIn('status', ['pending', 'in_repair'])->count(),
+                'pending_returns' => \App\Models\TireReturn::where('status', 'pending')->count() + app(\App\Services\Fleet\ReturnableService::class)->pending()->count(),
+                'overdue' => $overdue,
+                'critical' => (clone $open)->with('vehicle')->whereIn('priority', ['high', 'critical'])->orderByDesc('reported_at')->limit(5)->get(),
+            ];
+        }
+
         $data['audit'] = $user->hasPermission('audit.view') ? AuditLog::with('user')->latest('created_at')->latest('id')->limit(6)->get() : collect();
 
         return view('dashboard', $data);

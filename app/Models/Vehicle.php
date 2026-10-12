@@ -43,6 +43,11 @@ class Vehicle extends Model
         return $this->belongsTo(Driver::class, 'usual_driver_id')->withTrashed();
     }
 
+    public function inspections(): HasMany
+    {
+        return $this->hasMany(VehicleInspection::class);
+    }
+
     public function containers(): HasMany
     {
         return $this->hasMany(Container::class);

@@ -86,6 +86,10 @@ class CompanyProvisioner
                 Unit::withoutGlobalScopes()->create(['company_id' => $company->id, 'name' => $name, 'plural' => $plural]);
             }
 
+            foreach (\App\Models\InspectionChecklistItem::DEFAULTS as $i => $name) {
+                \App\Models\InspectionChecklistItem::withoutGlobalScopes()->create(['company_id' => $company->id, 'name' => $name, 'sort_order' => $i + 1, 'is_active' => true]);
+            }
+
             foreach (['Camión', 'Cabezote', 'Camioneta', 'Furgoneta'] as $type) {
                 \App\Models\VehicleType::withoutGlobalScopes()->create(['company_id' => $company->id, 'name' => $type]);
             }

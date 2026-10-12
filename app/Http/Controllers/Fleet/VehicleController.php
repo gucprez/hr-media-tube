@@ -54,6 +54,12 @@ class VehicleController extends Controller
             'lastDispatch' => $file->lastDispatch($vehicle),
             'fuel' => $file->fuelStats($vehicle),
             'timeline' => $file->timeline($vehicle),
+            'inspection' => $file->nextInspection($vehicle),
+            'incidents' => $file->incidentCounts($vehicle),
+            'lastMaintenance' => $file->lastMaintenance($vehicle),
+            'parts' => $file->partsReceived($vehicle),
+            'tires' => $file->tireStats($vehicle),
+            'openIncidents' => \App\Models\VehicleIncident::where('vehicle_id', $vehicle->id)->whereIn('status', \App\Models\VehicleIncident::OPEN)->orderByDesc('reported_at')->get(),
         ]);
     }
 

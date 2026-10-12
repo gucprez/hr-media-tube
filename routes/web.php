@@ -8,7 +8,13 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\Admin\ChecklistController;
 use App\Http\Controllers\Fleet\DriverController;
+use App\Http\Controllers\Fleet\IncidentController;
+use App\Http\Controllers\Fleet\InspectionController;
+use App\Http\Controllers\Fleet\MaintenanceController;
+use App\Http\Controllers\Fleet\ReturnableController;
+use App\Http\Controllers\Fleet\TireController;
 use App\Http\Controllers\Fuel\FuelController;
 use App\Http\Controllers\Fleet\VehicleController;
 use App\Http\Controllers\Inventory\CategoryController;
@@ -161,6 +167,48 @@ Route::middleware('auth')->group(function () {
                 Route::delete('choferes/{driver}', [DriverController::class, 'destroy'])->name('drivers.destroy');
             });
             Route::middleware('permission:vehicles.view')->get('vehiculos/{vehicle}', [VehicleController::class, 'show'])->name('vehicles.show');
+
+            // Inspecciones mensuales
+            Route::middleware('permission:vehicles.view')->get('inspecciones', [InspectionController::class, 'index'])->name('inspections.index');
+            Route::middleware('permission:vehicles.inspect')->group(function () {
+                Route::get('inspecciones/nueva', [InspectionController::class, 'create'])->name('inspections.create');
+                Route::post('inspecciones', [InspectionController::class, 'store'])->name('inspections.store');
+            });
+            Route::middleware('permission:vehicles.view')->get('inspecciones/{inspection}', [InspectionController::class, 'show'])->name('inspections.show');
+
+            // Averías
+            Route::middleware('permission:vehicles.view,incidents.report,incidents.manage')->get('averias', [IncidentController::class, 'index'])->name('incidents.index');
+            Route::middleware('permission:incidents.report')->group(function () {
+                Route::get('averias/nueva', [IncidentController::class, 'create'])->name('incidents.create');
+                Route::post('averias', [IncidentController::class, 'store'])->name('incidents.store');
+            });
+            Route::middleware('permission:vehicles.view,incidents.report,incidents.manage')->get('averias/{incident}', [IncidentController::class, 'show'])->name('incidents.show');
+            Route::middleware('permission:incidents.manage')->post('averias/{incident}/estado', [IncidentController::class, 'status'])->name('incidents.status');
+
+            // Mantenimiento
+            Route::middleware('permission:maintenance.view')->get('mantenimiento', [MaintenanceController::class, 'index'])->name('maintenance.index');
+            Route::middleware('permission:maintenance.manage')->group(function () {
+                Route::get('mantenimiento/nuevo', [MaintenanceController::class, 'create'])->name('maintenance.create');
+                Route::post('mantenimiento', [MaintenanceController::class, 'store'])->name('maintenance.store');
+                Route::post('mantenimiento/{maintenance}/anular', [MaintenanceController::class, 'void'])->name('maintenance.void');
+            });
+            Route::middleware('permission:maintenance.view')->get('mantenimiento/{maintenance}', [MaintenanceController::class, 'show'])->name('maintenance.show');
+
+            // Gomas nuevas y usadas
+            Route::middleware('permission:tires.view')->get('gomas', [TireController::class, 'index'])->name('tires.index');
+            Route::middleware('permission:tires.manage')->group(function () {
+                Route::get('gomas/entrega', [TireController::class, 'create'])->name('tires.create');
+                Route::post('gomas/entrega', [TireController::class, 'store'])->name('tires.store');
+                Route::post('gomas/{tire}/recibir', [TireController::class, 'receive'])->name('tires.receive');
+                Route::post('gomas/{tire}/cancelar', [TireController::class, 'waive'])->name('tires.waive');
+            });
+
+            // Retornables (tóner, etc.)
+            Route::middleware('permission:returnables.view')->get('retornables', [ReturnableController::class, 'index'])->name('returnables.index');
+            Route::middleware('permission:returnables.manage')->group(function () {
+                Route::post('retornables/entregar', [ReturnableController::class, 'deliver'])->name('returnables.deliver');
+                Route::post('retornables/estado', [ReturnableController::class, 'transition'])->name('returnables.transition');
+            });
         });
 
         // ---- Inventario: existencias y movimientos --------------------------------
@@ -219,6 +267,12 @@ Route::middleware('auth')->group(function () {
                 Route::post('almacenes', [SettingsController::class, 'storeWarehouse'])->name('warehouses.store');
                 Route::put('almacenes/{warehouse}', [SettingsController::class, 'updateWarehouse'])->name('warehouses.update');
                 Route::delete('almacenes/{warehouse}', [SettingsController::class, 'destroyWarehouse'])->name('warehouses.destroy');
+                Route::get('checklist', [ChecklistController::class, 'index'])->name('checklist');
+                Route::post('checklist', [ChecklistController::class, 'store'])->name('checklist.store');
+                Route::put('checklist/{item}', [ChecklistController::class, 'update'])->name('checklist.update');
+                Route::delete('checklist/{item}', [ChecklistController::class, 'destroy'])->name('checklist.destroy');
+                Route::post('tipos-vehiculo', [ChecklistController::class, 'storeType'])->name('vehicle-types.store');
+                Route::delete('tipos-vehiculo/{type}', [ChecklistController::class, 'destroyType'])->name('vehicle-types.destroy');
                 Route::get('numeracion', [SettingsController::class, 'numbering'])->name('numbering');
                 Route::put('numeracion', [SettingsController::class, 'updateNumbering'])->name('numbering.update');
             });
