@@ -1,0 +1,56 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+:root {
+    --brand: #2563eb;
+    --sidebar: #0f2a52;
+}
+
+@theme inline {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --color-brand: var(--brand);
+    --color-sidebar: var(--sidebar);
+}
+
+[x-cloak] { display: none !important; }
+
+@utility btn {
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+}
+
+@layer components {
+    .card { @apply rounded-xl border border-slate-200 bg-white shadow-sm; }
+    .card-body { @apply p-4 sm:p-5; }
+    .page-title { @apply text-xl font-bold tracking-tight text-slate-900 sm:text-2xl; }
+
+    .btn-primary { @apply btn bg-brand text-white shadow-sm hover:brightness-110 focus-visible:ring-brand; }
+    .btn-secondary { @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus-visible:ring-slate-400; }
+    .btn-danger { @apply btn bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500; }
+    .btn-success { @apply btn bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-500; }
+    .btn-sm { @apply min-h-8 px-3 py-1 text-xs; }
+
+    .label { @apply mb-1 block text-sm font-medium text-slate-700; }
+    .input { @apply block min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:bg-slate-100; }
+    .field-error { @apply mt-1 text-xs text-red-600; }
+
+    .table-wrap { @apply overflow-x-auto; }
+    .table { @apply w-full text-left text-sm; }
+    .table thead th { @apply whitespace-nowrap border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500; }
+    .table tbody td { @apply border-b border-slate-100 px-3 py-2.5 align-middle text-slate-700; }
+    .table tbody tr:hover { @apply bg-slate-50/70; }
+
+    .badge-green { @apply badge bg-emerald-100 text-emerald-800; }
+    .badge-yellow { @apply badge bg-amber-100 text-amber-800; }
+    .badge-orange { @apply badge bg-orange-100 text-orange-800; }
+    .badge-red { @apply badge bg-red-100 text-red-800; }
+    .badge-blue { @apply badge bg-blue-100 text-blue-800; }
+    .badge-gray { @apply badge bg-slate-100 text-slate-700; }
+}

@@ -1,0 +1,38 @@
+<?php
+
+return [
+    'accepted' => 'Debe aceptar :attribute.',
+    'alpha_dash' => ':attribute solo puede contener letras, números, guiones y guiones bajos.',
+    'array' => ':attribute debe ser una lista.',
+    'between' => ['numeric' => ':attribute debe estar entre :min y :max.', 'string' => ':attribute debe tener entre :min y :max caracteres.'],
+    'boolean' => ':attribute debe ser verdadero o falso.',
+    'confirmed' => 'La confirmación de :attribute no coincide.',
+    'current_password' => 'La contraseña actual es incorrecta.',
+    'date' => ':attribute no es una fecha válida.',
+    'email' => ':attribute debe ser un correo válido.',
+    'exists' => ':attribute seleccionado no es válido.',
+    'image' => ':attribute debe ser una imagen.',
+    'in' => ':attribute seleccionado no es válido.',
+    'integer' => ':attribute debe ser un número entero.',
+    'max' => ['numeric' => ':attribute no puede ser mayor a :max.', 'file' => ':attribute no puede pesar más de :max KB.', 'string' => ':attribute no puede tener más de :max caracteres.'],
+    'mimes' => ':attribute debe ser un archivo de tipo: :values.',
+    'min' => ['numeric' => ':attribute debe ser al menos :min.', 'string' => ':attribute debe tener al menos :min caracteres.'],
+    'numeric' => ':attribute debe ser un número.',
+    'regex' => 'El formato de :attribute no es válido.',
+    'required' => 'El campo :attribute es obligatorio.',
+    'string' => ':attribute debe ser texto.',
+    'unique' => ':attribute ya está en uso.',
+    'password' => [
+        'letters' => ':attribute debe contener al menos una letra.',
+        'mixed' => ':attribute debe contener mayúsculas y minúsculas.',
+        'numbers' => ':attribute debe contener al menos un número.',
+        'symbols' => ':attribute debe contener al menos un símbolo.',
+    ],
+    'attributes' => [
+        'first_name' => 'nombre', 'last_name' => 'apellido', 'username' => 'usuario', 'email' => 'correo',
+        'password' => 'contraseña', 'current_password' => 'contraseña actual', 'role_id' => 'rol', 'branch_id' => 'sucursal',
+        'name' => 'nombre', 'phone' => 'teléfono', 'address' => 'dirección', 'logo' => 'logo', 'code' => 'código',
+        'admin_first_name' => 'nombre del administrador', 'admin_last_name' => 'apellido del administrador',
+        'admin_username' => 'usuario del administrador', 'admin_email' => 'correo del administrador', 'admin_password' => 'contraseña del administrador',
+    ],
+];
