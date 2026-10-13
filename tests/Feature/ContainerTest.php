@@ -46,6 +46,22 @@ class ContainerTest extends TestCase
         return Container::where('number', $extra['number'] ?? '0111')->firstOrFail();
     }
 
+    public function test_container_can_be_saved_with_the_fuel_field_left_blank(): void
+    {
+        // El formulario real deja «Gasoil (galones)» vacío cuando es 0: antes daba error 500 (columna no admite null).
+        $w = $this->world();
+        $c = $this->createContainer($w, [['product_id' => $w['tape']->id, 'boxes' => 1]], ['number' => '0113', 'fuel_gallons' => '']);
+
+        $this->assertSame(0.0, (float) $c->fuel_gallons);
+
+        $this->actingAs($w['user'])->put("/operaciones/furgones/{$c->id}", [
+            'date' => now()->toDateString(), 'warehouse_id' => $w['wh']->id, 'fuel_gallons' => '',
+            'materials' => [['product_id' => $w['tape']->id, 'boxes' => 2]],
+        ])->assertSessionHasNoErrors();
+        $this->actAs($w['company']);
+        $this->assertSame(0.0, (float) $c->fresh()->fuel_gallons);
+    }
+
     public function test_empty_material_rows_are_ignored_when_saving(): void
     {
         $w = $this->world();
