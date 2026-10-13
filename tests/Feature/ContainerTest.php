@@ -46,6 +46,30 @@ class ContainerTest extends TestCase
         return Container::where('number', $extra['number'] ?? '0111')->firstOrFail();
     }
 
+    public function test_empty_material_rows_are_ignored_when_saving(): void
+    {
+        $w = $this->world();
+        $blank = ['product_id' => '', 'boxes' => '', 'units' => ''];
+        $c = $this->createContainer($w, [$blank, ['product_id' => $w['tape']->id, 'boxes' => 1], $blank, $blank]);
+
+        $this->assertCount(1, $c->materials);
+        $this->assertSame($w['tape']->id, $c->materials->first()->product_id);
+    }
+
+    public function test_row_with_quantity_but_no_product_gets_a_readable_error(): void
+    {
+        $w = $this->world();
+        $response = $this->actingAs($w['user'])->post('/operaciones/furgones', [
+            'number' => '0112', 'date' => now()->toDateString(), 'warehouse_id' => $w['wh']->id, 'fuel_gallons' => 0,
+            'materials' => [['product_id' => $w['tape']->id, 'boxes' => 1], ['product_id' => '', 'boxes' => 2]],
+        ]);
+
+        $response->assertSessionHasErrors('materials.1.product_id');
+        $this->assertSame('Material 2: elija un producto.', session('errors')->first('materials.1.product_id'));
+        $this->actAs($w['company']);
+        $this->assertNull(Container::where('number', '0112')->first(), 'con un error no se guarda nada');
+    }
+
     public function test_create_container_with_materials_does_not_touch_stock(): void
     {
         $w = $this->world();

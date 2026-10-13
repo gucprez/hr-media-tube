@@ -160,6 +160,7 @@ class MovementController extends Controller
     protected function validateDocument(Request $request, string $mode): array
     {
         $cid = app(CurrentCompany::class)->id();
+        \App\Support\LineInput::dropEmpty($request, 'lines');
         $rules = [
             'warehouse_id' => ['required', Rule::exists('warehouses', 'id')->where('company_id', $cid)->where('is_active', true)],
             'date' => ['required', 'date', 'before_or_equal:today', 'after:'.now()->subYears(2)->toDateString()],

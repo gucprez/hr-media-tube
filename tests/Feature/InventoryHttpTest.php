@@ -58,6 +58,22 @@ class InventoryHttpTest extends TestCase
         $this->get("/inventario/movimientos/{$m->id}")->assertOk()->assertSee('ENT-000001')->assertSee('4 cajas')->assertSee('2 cajas + 3 rollos');
     }
 
+    public function test_entry_ignores_blank_rows_and_asks_for_at_least_one_product(): void
+    {
+        [$company, $user, $wh, $tape] = $this->world();
+        $blank = ['product_id' => '', 'boxes' => '', 'units' => ''];
+        $base = ['date' => now()->toDateString(), 'warehouse_id' => $wh->id, 'supplier' => 'Suplidora', 'document_no' => 'CD-80'];
+
+        // filas en blanco entre medias: se ignoran y la entrada se guarda
+        $this->actingAs($user)->post('/inventario/entradas', $base + ['lines' => [$blank, ['product_id' => $tape->id, 'boxes' => 2], $blank]])
+            ->assertSessionHasNoErrors()->assertRedirect();
+
+        // solo filas en blanco: mensaje claro, no un error técnico
+        $this->actingAs($user)->post('/inventario/entradas', $base + ['document_no' => 'CD-81', 'lines' => [$blank, $blank]])
+            ->assertSessionHasErrors('lines');
+        $this->assertSame('Agregue al menos un producto.', session('errors')->first('lines'));
+    }
+
     public function test_exit_reduces_and_over_stock_exit_is_rejected_without_side_effects(): void
     {
         [$company, $user, $wh, $tape] = $this->world();

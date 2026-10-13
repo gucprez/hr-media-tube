@@ -236,6 +236,8 @@ class ContainerController extends Controller
     {
         $cid = app(CurrentCompany::class)->id();
 
+        \App\Support\LineInput::dropEmpty($request, 'materials');
+
         return $request->validate([
             'number' => ['nullable', 'string', 'max:30', Rule::unique('containers', 'number')->where('company_id', $cid)->ignore($container?->id)],
             'date' => ['required', 'date', 'before_or_equal:'.now()->addDay()->toDateString()],
