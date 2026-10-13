@@ -222,7 +222,12 @@ Route::middleware('auth')->group(function () {
                 Route::get('movimientos/{movement}', [MovementController::class, 'show'])->name('movements.show');
             });
             Route::middleware('permission:inventory.void')->post('movimientos/{movement}/anular', [MovementController::class, 'void'])->name('movements.void');
-            Route::middleware('permission:inventory.entry,inventory.dispatch,inventory.adjust')->group(function () {
+            // Editar una entrada/salida = anular el original y crear uno nuevo corregido (el libro nunca se modifica).
+            Route::middleware('permission:inventory.edit')->group(function () {
+                Route::get('movimientos/{movement}/editar', [MovementController::class, 'edit'])->name('movements.edit');
+                Route::put('movimientos/{movement}', [MovementController::class, 'update'])->name('movements.update');
+            });
+            Route::middleware('permission:inventory.entry,inventory.dispatch,inventory.adjust,inventory.edit')->group(function () {
                 Route::get('api/productos', [InventoryController::class, 'lookup'])->name('inventory.lookup');
                 Route::post('api/vista-previa', [InventoryController::class, 'preview'])->name('inventory.preview');
             });

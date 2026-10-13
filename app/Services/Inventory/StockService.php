@@ -295,6 +295,7 @@ class StockService
                 'reason' => $header['reason'] ?? null,
                 'notes' => $header['notes'] ?? null,
                 'negative_override' => $negative,
+                'replaces_id' => $header['replaces_id'] ?? null,
                 'authorized_by' => $negative ? $user?->id : null,
             ]);
 

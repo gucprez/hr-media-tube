@@ -9,6 +9,7 @@ use App\Models\InventoryMovementItem as Line;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Services\Audit;
 use App\Services\ImageStore;
 use App\Services\Inventory\InventoryException;
 use App\Services\Inventory\QuantityConverter;
@@ -63,7 +64,7 @@ class MovementController extends Controller
 
     public function show(Movement $movement)
     {
-        $movement->load(['items.product.unit', 'warehouse.branch', 'user', 'attachments', 'container', 'vehicle', 'reversalOf']);
+        $movement->load(['items.product.unit', 'warehouse.branch', 'user', 'attachments', 'container', 'vehicle', 'reversalOf', 'replaces', 'replacedBy']);
 
         return view('inventory.movements.show', ['movement' => $movement, 'converter' => $this->converter]);
     }
@@ -127,17 +128,82 @@ class MovementController extends Controller
         return $this->post($request, 'adjustment', $data, fn () => $service->adjust($this->header($data, 'adjustment'), $data['lines'], $request->user()));
     }
 
+    // ---- editar = anular el original y crear uno nuevo corregido ----------------
+
+    public function edit(Movement $movement)
+    {
+        if ($reason = $movement->editBlockReason()) {
+            return redirect()->route('movements.show', $movement)->with('error', $reason);
+        }
+        $movement->load(['items', 'container']);
+
+        return $this->form($movement->type, $movement);
+    }
+
+    /**
+     * El libro de inventario NUNCA se modifica: «editar» crea un documento nuevo con los datos corregidos y anula el original
+     * (ligados entre sí, con motivo y auditoría), todo en una sola transacción. Si algo falla no queda nada a medias.
+     * El orden evita falsos rechazos: en una ENTRADA se registra primero la nueva y luego se anula la original (solo importa la
+     * existencia final); en una SALIDA se anula primero la original (devuelve el stock) y luego se registra la nueva.
+     */
+    public function update(Request $request, Movement $movement, StockService $service)
+    {
+        if ($reason = $movement->editBlockReason()) {
+            return redirect()->route('movements.show', $movement)->with('error', $reason);
+        }
+        $why = $request->validate(
+            ['edit_reason' => ['required', 'string', 'min:5', 'max:200']],
+            ['edit_reason.required' => 'Indique el motivo de la edición.', 'edit_reason.min' => 'El motivo debe tener al menos 5 caracteres.'],
+        )['edit_reason'];
+
+        $mode = $movement->type;
+        $data = $this->validateDocument($request, $mode);
+        $header = $this->header($data, $mode) + ['replaces_id' => $movement->id];
+        $user = $request->user();
+
+        return $this->post($request, $mode, $data, function () use ($service, $movement, $mode, $header, $data, $why, $user) {
+            try {
+                if ($mode === Movement::TYPE_ENTRY) {
+                    $new = $service->entry($header, $data['lines'], $user);
+                    $service->reverse($movement, 'Edición: '.$why, $user, (bool) ($data['allow_negative'] ?? false));
+                } else {
+                    $service->reverse($movement, 'Edición: '.$why, $user, false);
+                    $new = $service->exit($header, $data['lines'], $user);
+                }
+            } catch (InventoryException $e) {
+                throw new InventoryException(str_replace('No se puede anular:', 'No se puede editar:', $e->getMessage()));
+            }
+
+            // Las fotos y documentos del original (conduce, factura) siguen con el documento corregido.
+            foreach ($movement->attachments as $a) {
+                Attachment::create([
+                    'attachable_type' => $new->getMorphClass(), 'attachable_id' => $new->id, 'collection' => $a->collection,
+                    'disk' => $a->disk, 'path' => $a->path, 'original_name' => $a->original_name, 'mime' => $a->mime, 'size' => $a->size, 'user_id' => $a->user_id,
+                ]);
+            }
+            Audit::log('inventory.edit', sprintf('Edición de %s %s: lo reemplaza %s — %s', $movement->type_label, $movement->number, $new->number, $why), $new,
+                ['documento_original' => $movement->number], ['documento_nuevo' => $new->number, 'motivo' => $why]);
+
+            return $new;
+        }, fn (Movement $new) => "{$movement->type_label} {$movement->number} editada: se anuló y se creó {$new->number} con los datos corregidos.");
+    }
+
     // ---- internos --------------------------------------------------------------
 
-    protected function form(string $mode)
+    protected function form(string $mode, ?Movement $movement = null)
     {
         $warehouses = Warehouse::where('is_active', true)->orderByDesc('is_default')->orderBy('name')->get();
         $user = auth()->user();
         $default = $warehouses->firstWhere('branch_id', $user->branch_id && $warehouses->where('branch_id', $user->branch_id)->count() === 1 ? $user->branch_id : null)
             ?? $warehouses->firstWhere('is_default', true) ?? $warehouses->first();
+        if ($movement) {
+            $default = $warehouses->firstWhere('id', $movement->warehouse_id) ?? $default;
+        }
 
         $preselect = request()->integer('product');
-        $initial = old('lines', $preselect ? [['product_id' => $preselect]] : []);
+        $initial = old('lines', $movement
+            ? $movement->items->map(fn ($i) => ['product_id' => $i->product_id, 'boxes' => $i->boxes ?: '', 'units' => $i->units ?: ''])->all()
+            : ($preselect ? [['product_id' => $preselect]] : []));
         $oldLines = collect($initial)->map(function ($l) {
             $p = Product::with(['unit', 'primaryImage'])->withSum('stocks as total_base', 'quantity_base')->find($l['product_id'] ?? 0);
 
@@ -153,7 +219,8 @@ class MovementController extends Controller
             'oldLines' => $oldLines,
             'reasons' => self::ADJUST_REASONS,
             'containers' => $mode === 'exit' ? \App\Models\Container::whereIn('status', ['open', 'in_progress'])->orderByDesc('date')->get(['id', 'number', 'date']) : collect(),
-            'canNegative' => $mode === 'exit' && $company?->setting('allow_negative_stock') && $user->hasPermission('inventory.negative'),
+            'canNegative' => ($mode === 'exit' || $movement !== null) && $company?->setting('allow_negative_stock') && $user->hasPermission('inventory.negative'),
+            'movement' => $movement,
         ]);
     }
 
@@ -230,7 +297,7 @@ class MovementController extends Controller
     }
 
     /** Registra el documento y sus adjuntos en una sola transacción; si algo falla no queda nada a medias. */
-    protected function post(Request $request, string $mode, array $data, \Closure $action)
+    protected function post(Request $request, string $mode, array $data, \Closure $action, ?\Closure $message = null)
     {
         $stored = [];
         try {
@@ -258,7 +325,7 @@ class MovementController extends Controller
             throw $e;
         }
 
-        return redirect()->route('movements.show', $movement)->with('success', Movement::TYPES[$mode].' '.$movement->number.' registrada correctamente.');
+        return redirect()->route('movements.show', $movement)->with('success', $message ? $message($movement) : Movement::TYPES[$mode].' '.$movement->number.' registrada correctamente.');
     }
 
     protected function cleanup(array $stored): void
