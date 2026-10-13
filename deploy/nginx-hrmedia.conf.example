@@ -2,7 +2,7 @@
 #  HR Media System — sitio NUEVO de Nginx (archivo propio; no edita ningún sitio existente)
 #
 #  Copiar a:   /etc/nginx/sites-available/hrmedia.conf   y enlazar en sites-enabled
-#  Cambie:     __DOMINIO__  (p. ej. hr.deportesxtras.com)   y   __APP_DIR__  (p. ej. /var/www/hrmedia)
+#  Cambie:     __DOMINIO__  (p. ej. hr.deportesxtra.com)   y   __APP_DIR__  (p. ej. /var/www/hrmedia)
 #  Antes de recargar Nginx:  sudo nginx -t   (si falla, NO recargue)
 #
 #  No usa ningún puerto propio: comparte 80/443 con los demás sitios y se distingue por server_name.
@@ -31,16 +31,20 @@ server {
     # Archivos compilados con hash en el nombre: caché larga.
     location /build/ { expires 1y; add_header Cache-Control "public, immutable"; try_files $uri =404; }
 
-    location ~ \.php$ {
+    # PHP SOLO a través de index.php: un archivo .php subido (p. ej. dentro de /storage) nunca se ejecuta.
+    location = /index.php {
         fastcgi_pass unix:/run/php/hrmedia.sock;          # pool propio, ver deploy/php-fpm-hrmedia.conf.example
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
         fastcgi_read_timeout 60s;
     }
+    location ~ \.php$ { return 404; }
 
     # Nunca servir archivos ocultos (.env, .git) ni el código.
+    # OJO: /storage SÍ debe servirse (enlace public/storage -> storage/app/public: logo de la empresa).
+    # Los archivos privados no están ahí: viven en storage/app/private y solo salen por la aplicación (sesión + permiso).
     location ~ /\.(?!well-known).* { deny all; }
-    location ~* ^/(storage|vendor|bootstrap|database|tests)/ { deny all; }
+    location ~* ^/(vendor|bootstrap|database|tests)/ { deny all; }
 }
 
 # HTTPS: ejecute  sudo certbot --nginx -d __DOMINIO__  (certbot añade el bloque 443 y la redirección en ESTE archivo).

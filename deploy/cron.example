@@ -1,3 +1,5 @@
+SHELL=/bin/bash
+PATH=/usr/bin:/bin
 # Tareas programadas (crontab del usuario de la app: `crontab -e`). Ajuste la ruta.
 * * * * *  cd __APP_DIR__ && php artisan schedule:run >> /dev/null 2>&1    # verificaciones de integridad diarias
 0 2 * * *  __APP_DIR__/deploy/backup.sh >> __APP_DIR__/storage/logs/backup.log 2>&1

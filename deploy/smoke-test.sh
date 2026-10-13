@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Prueba rápida tras instalar/actualizar. Uso: deploy/smoke-test.sh https://hr.deportesxtras.com
+# Prueba rápida tras instalar/actualizar. Uso: deploy/smoke-test.sh https://hr.deportesxtra.com
 set -uo pipefail
-BASE="${1:?Indique la URL base, p. ej. https://hr.deportesxtras.com}"
+BASE="${1:?Indique la URL base, p. ej. https://hr.deportesxtra.com}"
 fail=0
 check() { # descripción, comando
     if eval "$2" >/dev/null 2>&1; then echo "OK   $1"; else echo "FALLA $1"; fail=1; fi
