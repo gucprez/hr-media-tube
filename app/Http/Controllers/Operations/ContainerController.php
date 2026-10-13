@@ -141,7 +141,10 @@ class ContainerController extends Controller
         try {
             DB::transaction(function () use ($container, $stock, $request) {
                 $movementId = null;
-                if ($container->materials->isNotEmpty()) {
+                // Solo lo que FALTE: lo ya descontado por salidas ligadas a este furgón no se vuelve a descontar.
+                // Con «descontar al cerrar» desmarcado, el furgón es solo un registro y no se toca el inventario.
+                $pending = $container->deduct_on_close ? $this->pendingLines($container) : [];
+                if ($pending !== []) {
                     $movement = $stock->consume([
                         'warehouse_id' => $container->warehouse_id,
                         'container_id' => $container->id,
@@ -154,7 +157,7 @@ class ContainerController extends Controller
                         'reason' => 'Consumo de furgón',
                         'source_type' => $container->getMorphClass(), 'source_id' => $container->id,
                         'allow_negative' => $request->boolean('allow_negative'),
-                    ], $container->materials->map(fn ($m) => ['product_id' => $m->product_id, 'boxes' => $m->boxes, 'units' => $m->units])->all(), $request->user());
+                    ], $pending, $request->user());
                     $movementId = $movement->id;
                 }
 
@@ -169,7 +172,39 @@ class ContainerController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        return redirect()->route('containers.show', $container)->with('success', "Furgón {$container->number} cerrado: materiales descontados del inventario.");
+        $container->refresh();
+        $result = match (true) {
+            (bool) $container->movement_id => 'materiales descontados del inventario.',
+            ! $container->deduct_on_close => 'el inventario no se tocó (furgón de solo registro).',
+            $container->materials()->doesntExist() => 'sin materiales que descontar.',
+            default => 'no faltaba nada por descontar: ya estaba descontado con salidas de este furgón.',
+        };
+
+        return redirect()->route('containers.show', $container)->with('success', "Furgón {$container->number} cerrado: {$result}");
+    }
+
+    /**
+     * Líneas que FALTAN por descontar al cerrar: lo listado en el furgón menos lo que ya descontaron las salidas
+     * ligadas a él (libro de movimientos, neto de anulaciones). Nunca se descuenta dos veces lo mismo.
+     *
+     * @return array<int, array{product_id:int, boxes:int|float, units:int|float}>
+     */
+    protected function pendingLines(Container $container): array
+    {
+        $done = app(ContainerConsumption::class)->byProduct([$container->id])->keyBy('product_id');
+        $lines = [];
+        foreach ($container->materials as $m) {
+            $already = max(0.0, (float) ($done->get($m->product_id)?->quantity_base ?? 0));
+            $rest = round((float) $m->quantity_base - $already, 3);
+            if ($rest <= 0) {
+                continue;
+            }
+            $product = Product::with('unit')->find($m->product_id);   // si ya no existe, el servicio de inventario lo informa
+            [$boxes, $units] = $product ? $this->converter->split($product, $rest) : [0, $rest];
+            $lines[] = ['product_id' => $m->product_id, 'boxes' => $boxes, 'units' => $units];
+        }
+
+        return $lines;
     }
 
     public function void(Request $request, Container $container, StockService $stock)
@@ -250,6 +285,7 @@ class ContainerController extends Controller
             'responsible_id' => ['nullable', Rule::exists('users', 'id')->where('company_id', $cid)],
             'fuel_gallons' => ['nullable', 'numeric', 'min:0', 'max:99999'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'deduct_on_close' => ['nullable', 'boolean'],
             'materials' => ['nullable', 'array', 'max:100'],
             'materials.*.product_id' => ['required', 'integer', Rule::exists('products', 'id')->where('company_id', $cid)->whereNull('deleted_at')],
             'materials.*.boxes' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
@@ -258,6 +294,8 @@ class ContainerController extends Controller
         // El formulario envía el campo vacío cuando es 0: debe ganar 0, no null (la columna no admite null).
         // Ojo: con el operador «+» de arrays ganaría el null ya validado.
         $validated['fuel_gallons'] = (float) $request->input('fuel_gallons', 0);
+        // Sin el campo (API/pruebas) se mantiene el comportamiento de siempre: descontar al cerrar.
+        $validated['deduct_on_close'] = $request->has('deduct_on_close') ? $request->boolean('deduct_on_close') : true;
 
         return $validated;
     }

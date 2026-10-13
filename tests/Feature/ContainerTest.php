@@ -111,6 +111,91 @@ class ContainerTest extends TestCase
         $this->post('/operaciones/furgones', ['number' => '0001', 'date' => now()->toDateString(), 'warehouse_id' => $w['wh']->id])->assertSessionHasErrors('number');
     }
 
+    /** La salida manual de almacén con destino el furgón (la que el usuario ya hizo a mano). */
+    protected function manualExit(array $w, Container $c, array $lines)
+    {
+        $this->actAs($w['company']);
+
+        return app(StockService::class)->exit([
+            'warehouse_id' => $w['wh']->id, 'container_id' => $c->id, 'destination_type' => 'container',
+            'destination' => 'Furgón '.$c->number, 'reason' => 'Salida manual',
+        ], $lines, $w['user']);
+    }
+
+    public function test_closing_only_deducts_what_manual_exits_linked_to_the_container_did_not(): void
+    {
+        $w = $this->world();
+        // Lista del furgón: 2 cajas de cinta (72) + 1 caja de plástico (12)
+        $c = $this->createContainer($w, [['product_id' => $w['tape']->id, 'boxes' => 2], ['product_id' => $w['plastic']->id, 'boxes' => 1]]);
+        $this->manualExit($w, $c, [['product_id' => $w['tape']->id, 'boxes' => 1]]);          // ya descontó 36 a mano
+        $this->assertSame(152.0, $w['tape']->stockInWarehouse($w['wh']->id));                  // 188 − 36
+
+        $this->post("/operaciones/furgones/{$c->id}/cerrar")->assertRedirect()->assertSessionHasNoErrors();
+
+        // cinta: solo faltaban 36 (no 72); plástico: completo
+        $this->assertSame(116.0, $w['tape']->stockInWarehouse($w['wh']->id));                  // 188 − 72, UNA sola vez
+        $this->assertSame(24.0, $w['plastic']->stockInWarehouse($w['wh']->id));                // 36 − 12
+        $this->assertCount(2, InventoryMovement::findOrFail($c->fresh()->movement_id)->items);
+    }
+
+    public function test_closing_when_everything_was_already_deducted_manually_creates_no_second_movement(): void
+    {
+        $w = $this->world();
+        $c = $this->createContainer($w, [['product_id' => $w['tape']->id, 'boxes' => 1]]);
+        $this->manualExit($w, $c, [['product_id' => $w['tape']->id, 'boxes' => 1]]);
+
+        $this->post("/operaciones/furgones/{$c->id}/cerrar")->assertRedirect()->assertSessionHasNoErrors()->assertSessionHas('success');
+
+        $c->refresh();
+        $this->assertSame('closed', $c->status);
+        $this->assertNull($c->movement_id, 'no se crea un segundo movimiento');
+        $this->assertSame(152.0, $w['tape']->stockInWarehouse($w['wh']->id));                  // 188 − 36, una sola vez
+    }
+
+    public function test_container_marked_as_record_only_does_not_touch_inventory_when_closed(): void
+    {
+        $w = $this->world();
+        $c = $this->createContainer($w, [['product_id' => $w['tape']->id, 'boxes' => 1]], ['number' => '0114', 'deduct_on_close' => 0]);
+        $this->assertFalse($c->deduct_on_close);
+
+        $this->post("/operaciones/furgones/{$c->id}/cerrar")->assertRedirect()->assertSessionHasNoErrors()->assertSessionHas('success');
+
+        $c->refresh();
+        $this->assertSame('closed', $c->status);
+        $this->assertNull($c->movement_id);
+        $this->assertSame(188.0, $w['tape']->stockInWarehouse($w['wh']->id));                  // intacto
+        $this->assertCount(1, $c->materials, 'la lista de materiales se conserva como registro');
+    }
+
+    public function test_a_voided_manual_exit_no_longer_counts_as_already_deducted(): void
+    {
+        $w = $this->world();
+        $c = $this->createContainer($w, [['product_id' => $w['tape']->id, 'boxes' => 1]]);
+        $exit = $this->manualExit($w, $c, [['product_id' => $w['tape']->id, 'boxes' => 1]]);
+        app(StockService::class)->reverse($exit, 'Se anula la salida manual', $w['user']);
+        $this->assertSame(188.0, $w['tape']->stockInWarehouse($w['wh']->id));                  // devuelta
+
+        $this->post("/operaciones/furgones/{$c->id}/cerrar")->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertSame(152.0, $w['tape']->stockInWarehouse($w['wh']->id));                  // al cerrar sí descuenta todo
+        $this->assertNotNull($c->fresh()->movement_id);
+    }
+
+    public function test_the_option_can_be_changed_while_the_container_is_open(): void
+    {
+        $w = $this->world();
+        $c = $this->createContainer($w, [['product_id' => $w['tape']->id, 'boxes' => 1]]);
+        $this->assertTrue($c->deduct_on_close, 'por defecto descuenta al cerrar');
+
+        $this->put("/operaciones/furgones/{$c->id}", [
+            'date' => now()->toDateString(), 'warehouse_id' => $w['wh']->id, 'deduct_on_close' => '0',
+            'materials' => [['product_id' => $w['tape']->id, 'boxes' => 1]],
+        ])->assertSessionHasNoErrors();
+        $this->actAs($w['company']);
+
+        $this->assertFalse($c->fresh()->deduct_on_close);
+    }
+
     public function test_closing_deducts_all_materials_in_one_movement_and_keeps_history(): void
     {
         $w = $this->world();
