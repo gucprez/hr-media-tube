@@ -11,8 +11,9 @@ HR Media Tube: app FastAPI desplegada en Railway.
 
 ## Comandos
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 uvicorn main:app --reload      # desarrollo local
+ruff check . && pytest -q      # antes de abrir PR
 ```
 
 ## Flujo de trabajo (obligatorio)
@@ -20,7 +21,9 @@ uvicorn main:app --reload      # desarrollo local
 2. **Nunca** hagas push directo a `main`. Trabaja en una rama propia y abre un Pull Request.
 3. Nombres de rama: `claude/<tema>` o `chatgpt/<tema>`.
 4. Un PR = un cambio pequeño y enfocado. Describe qué cambió y cómo probarlo.
-5. **La otra IA (o el humano) revisa el PR** antes de mergear. Quien escribió el código no lo mergea solo.
+5. **La otra IA revisa el PR** antes de mergear, siguiendo `docs/REVISION.md`. Quien escribió el código no lo revisa ni lo mergea solo.
+   Los hallazgos se comentan como `[severidad] problema → solución` y los errores fuera del PR se abren como issue (plantilla "Error").
+   CI (`ruff` + `pytest`) debe estar en verde.
 6. Antes de empezar: `git pull origin main` para no trabajar sobre código viejo.
 7. No toques archivos que otro PR abierto esté modificando; revisa los PRs abiertos primero.
 
