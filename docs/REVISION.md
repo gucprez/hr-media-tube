@@ -20,6 +20,17 @@ Quien escribe el código **no** lo revisa solo. Si lo escribió Claude, lo revis
 6. **Revisor** confirma la solución y resuelve el hilo.
 7. Cuando CI está en verde y no quedan hilos abiertos → el humano mergea.
 
+## Revisión en vivo con las dos IA (sin API key)
+Para cambios grandes o riesgosos, antes o durante el PR, usa el plugin [`jarvis-consenso`](https://github.com/gucprez/jarvis-consenso) en tu computadora (necesita Claude Code y Codex con sesión iniciada, sin API keys):
+
+```
+/revisar 12        # PR 12
+/revisar main.py   # un archivo
+/revisar           # cambios actuales
+```
+
+Ambas IA revisan por separado, contrastan hallazgos y se verifican entre sí. Pega el resultado en el PR con el formato `[severidad] problema → solución`. Cuesta cuota de las dos suscripciones, así que úsalo donde valga la pena; el resto va por CI y revisión cruzada en GitHub.
+
 ## Revisión periódica del repo completo
 Cada cierto tiempo, pide a una IA: "Revisa todo el repo, busca errores y abre un issue por cada uno". Luego la otra IA confirma cada issue (¿es real?) y propone o implementa la solución en un PR.
 
