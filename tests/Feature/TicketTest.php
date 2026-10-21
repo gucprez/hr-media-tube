@@ -66,6 +66,22 @@ class TicketTest extends TestCase
         $this->assertSame((float) max(44, 2 * $perBox), (float) Ticket::latest('id')->first()->items()->sum('total_units'));
     }
 
+    public function test_ticket_can_print_only_what_was_spent(): void
+    {
+        $w = $this->world();   // el furgón lista 44 unidades, pero todavía no se ha descontado nada
+        $this->actingAs($w['user'])->get("/operaciones/furgones/{$w['container']->id}/tickets/nuevo?source=used")->assertOk()->assertSee('Solo lo gastado');
+        $this->post("/operaciones/furgones/{$w['container']->id}/tickets", ['type' => 'materials', 'source' => 'used', 'issued_at' => now()->toDateString()])->assertSessionHas('error');
+
+        $this->post('/inventario/salidas', [
+            'warehouse_id' => $w['wh']->id, 'date' => now()->toDateString(), 'destination_type' => 'container', 'container_id' => $w['container']->id,
+            'reason' => 'Carga', 'lines' => [['product_id' => $w['tape']->id, 'boxes' => 1, 'units' => '']],
+        ])->assertSessionHasNoErrors();
+        $this->actAs($w['company']);
+        $this->post("/operaciones/furgones/{$w['container']->id}/tickets", ['type' => 'materials', 'source' => 'used', 'issued_at' => now()->toDateString()])->assertSessionHasNoErrors();
+        $ticket = Ticket::latest('id')->first();
+        $this->assertSame((float) $w['tape']->units_per_box, (float) $ticket->items()->sum('total_units'));   // solo la caja gastada, no las 44 listadas
+    }
+
     public function test_materials_ticket_snapshots_container_and_items(): void
     {
         $w = $this->world();

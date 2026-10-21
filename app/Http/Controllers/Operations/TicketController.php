@@ -44,7 +44,8 @@ class TicketController extends Controller
         return view('operations.tickets.form', [
             'container' => $container,
             'type' => $type,
-            'items' => $type === Ticket::MATERIALS ? $this->materialItems($container) : $this->fuelDefaults($container),
+            'source' => $this->source($request),
+            'items' => $type === Ticket::MATERIALS ? $this->materialItems($container, $this->source($request)) : $this->fuelDefaults($container),
         ]);
     }
 
@@ -70,9 +71,9 @@ class TicketController extends Controller
         }
         $data = $request->validate($rules, ['rows.required' => 'Agregue al menos una fila de gasoil.', 'rows.*.gallons.gt' => 'Los galones deben ser mayores que cero.']);
 
-        $items = $type === Ticket::MATERIALS ? $this->materialItems($container) : [];
+        $items = $type === Ticket::MATERIALS ? $this->materialItems($container, $this->source($request)) : [];
         if ($type === Ticket::MATERIALS && ! $items) {
-            return back()->with('error', 'El furgón no tiene materiales registrados: agréguelos antes de emitir el ticket.')->withInput();
+            return back()->with('error', $this->source($request) === 'used' ? 'Todavía no se ha descontado ningún material del inventario para este furgón (registre una salida hacia el furgón o ciérrelo).' : 'El furgón no tiene materiales registrados: agréguelos antes de emitir el ticket.')->withInput();
         }
 
         $ticket = DB::transaction(function () use ($container, $type, $data, $items, $request) {
@@ -170,10 +171,16 @@ class TicketController extends Controller
      * (libro: cierre + salidas dirigidas al furgón, netas de anulaciones). El cierre solo descuenta lo que falta, así que
      * lo listado ya incluye lo descontado antes: sumar ambos lo contaría dos veces.
      */
-    protected function materialItems(Container $container): array
+    /** «all» = listado + gastado; «used» = solo lo ya descontado del inventario (gastado) para este furgón. */
+    protected function source(Request $request): string
+    {
+        return $request->input('source', $request->query('source')) === 'used' ? 'used' : 'all';
+    }
+
+    protected function materialItems(Container $container, string $source = 'all'): array
     {
         $qty = [];
-        foreach ($container->materials as $m) {
+        foreach ($source === 'used' ? [] : $container->materials as $m) {
             $qty[$m->product_id] = ($qty[$m->product_id] ?? 0) + $m->quantity_base;
         }
         foreach (app(\App\Services\Operations\ContainerConsumption::class)->byProduct([$container->id]) as $r) {

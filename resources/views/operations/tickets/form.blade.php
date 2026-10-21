@@ -6,7 +6,7 @@
     <h1 class="page-title mt-1">{{ $isFuel ? 'Ticket de gasoil' : 'Ticket de materiales' }} · Furgón #{{ $container->number }}</h1>
     <p class="text-sm text-slate-500">El ticket guarda una copia de los datos actuales; si el furgón cambia después, el ticket emitido no se modifica.</p></div>
 <form method="POST" action="{{ route('tickets.store', $container) }}" class="space-y-6" x-data="{ rows: @js(old('rows', $items)) }">
-    @csrf <input type="hidden" name="type" value="{{ $type }}">
+    @csrf <input type="hidden" name="type" value="{{ $type }}"><input type="hidden" name="source" value="{{ $source }}">
     <div class="card card-body grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <x-field name="issued_at" label="Fecha" type="date" :value="now()->toDateString()" required />
         <x-field name="dispatched_by" label="Despachado por" :value="auth()->user()->name" />
@@ -34,6 +34,10 @@
             <button type="button" class="btn-secondary w-full sm:w-auto" @click="rows.push({ ficha: '', odometer: '', gallons: '' })"><x-icon name="plus" class="h-4 w-4" /> Agregar fila</button>
         @else
             <h2 class="font-semibold text-slate-900">Materiales del ticket</h2>
+            <div class="flex flex-wrap gap-2 text-sm">
+                <a href="{{ route('tickets.create', [$container, 'type' => 'materials', 'source' => 'all']) }}" class="{{ $source === 'all' ? 'btn-primary' : 'btn-secondary' }} btn-sm">Todos los materiales del furgón</a>
+                <a href="{{ route('tickets.create', [$container, 'type' => 'materials', 'source' => 'used']) }}" class="{{ $source === 'used' ? 'btn-primary' : 'btn-secondary' }} btn-sm">Solo lo gastado (descontado del inventario)</a>
+            </div>
             @forelse($items as $it)
                 <div class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm"><span class="font-medium text-slate-800">{{ $it['description'] }}</span><span class="text-slate-600">{{ $it['quantity_label'] }} <span class="text-slate-400">· {{ rtrim(rtrim(number_format($it['total_units'], 3), '0'), '.') }} {{ $it['unit_label'] }}</span></span></div>
             @empty
