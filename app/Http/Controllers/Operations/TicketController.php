@@ -165,19 +165,35 @@ class TicketController extends Controller
     }
 
     /** @return array<int,array<string,mixed>> líneas ya convertidas (snapshot) del ticket de materiales */
+    /**
+     * Materiales del ticket: lo ya descontado del inventario para este furgón (libro: cierre + salidas dirigidas al furgón,
+     * netas de anulaciones) más, si el furgón aún no se cierra, los materiales cargados en él. Así una salida hecha desde
+     * «Nueva salida → Furgón» también sale en el ticket y nada se cuenta dos veces.
+     */
     protected function materialItems(Container $container): array
     {
-        return $container->materials->map(function ($m) {
-            $p = $m->product;
+        $qty = [];
+        foreach (app(\App\Services\Operations\ContainerConsumption::class)->byProduct([$container->id]) as $r) {
+            $qty[$r->product_id] = ($qty[$r->product_id] ?? 0) + $r->quantity_base;
+        }
+        if (! $container->movement_id) {   // sin cierre: sus materiales cargados todavía no están en el libro
+            foreach ($container->materials as $m) {
+                $qty[$m->product_id] = ($qty[$m->product_id] ?? 0) + $m->quantity_base;
+            }
+        }
+        $products = \App\Models\Product::withTrashed()->with('unit')->whereIn('id', array_keys($qty))->get()->keyBy('id');
+
+        return collect($qty)->filter(fn ($q) => $q > 0)->map(function ($q, $id) use ($products) {
+            $p = $products[$id];
 
             return [
-                'product_id' => $m->product_id,
-                'description' => $m->product_name ?: $p->name,
-                'quantity_label' => $this->converter->format($p, $m->quantity_base),
-                'total_units' => $m->quantity_base,
-                'unit_label' => $this->converter->unitLabel($p, $m->quantity_base),
+                'product_id' => $id,
+                'description' => $p->name,
+                'quantity_label' => $this->converter->format($p, $q),
+                'total_units' => $q,
+                'unit_label' => $this->converter->unitLabel($p, $q),
             ];
-        })->all();
+        })->values()->all();
     }
 
     protected function fuelDefaults(Container $container): array

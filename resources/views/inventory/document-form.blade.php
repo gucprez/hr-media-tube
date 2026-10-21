@@ -42,6 +42,7 @@ $cfg = [
                         <label for="container_id" class="label">Furgón</label>
                         <select id="container_id" name="container_id" class="input"><option value="">Seleccione…</option>@foreach($containers as $c)<option value="{{ $c->id }}" @selected(old('container_id', request('container')) == $c->id)>#{{ $c->number }} · {{ $c->date->format('d/m/Y') }}</option>@endforeach</select>
                         @error('container_id')<p class="field-error">{{ $message }}</p>@enderror
+                        @if($containers->isEmpty())<p class="mt-1 text-xs text-amber-700">No hay furgones abiertos. <a href="{{ route('containers.create') }}" class="underline">Cree el furgón primero</a>; solo los furgones abiertos o en proceso aparecen aquí.</p>@endif
                     </div>
                     <div x-show="type !== 'container'"><x-field name="destination" label="Destino" hint="Ej.: Taller, Oficina" /></div>
                     <div x-show="type === 'employee'" x-cloak><x-field name="employee_name" label="Empleado" /></div>

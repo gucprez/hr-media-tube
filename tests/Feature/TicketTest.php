@@ -46,6 +46,26 @@ class TicketTest extends TestCase
         return Ticket::latest('id')->firstOrFail();
     }
 
+    public function test_ticket_includes_materials_issued_from_a_new_exit_to_the_container(): void
+    {
+        $w = $this->world();
+        $this->actingAs($w['user'])->post('/inventario/salidas', [
+            'warehouse_id' => $w['wh']->id, 'date' => now()->toDateString(), 'destination_type' => 'container', 'container_id' => $w['container']->id,
+            'reason' => 'Carga', 'lines' => [['product_id' => $w['tape']->id, 'boxes' => 2, 'units' => '']],
+        ])->assertSessionHasNoErrors();
+        $this->actAs($w['company']);
+
+        // 44 (materiales cargados en el furgón, aún sin cerrar) + 2 cajas ya descontadas por la salida dirigida al furgón
+        $page = $this->actingAs($w['user'])->get("/operaciones/furgones/{$w['container']->id}/tickets/nuevo")->assertOk();
+        $items = collect($page->viewData('items'));
+        $perBox = $w['tape']->units_per_box;
+        $this->assertSame(44.0 + 2 * $perBox, (float) $items->firstWhere('product_id', $w['tape']->id)['total_units']);
+        $this->assertCount(1, $items);
+
+        $this->issue($w);
+        $this->assertSame((float) (44 + 2 * $perBox), (float) Ticket::latest('id')->first()->items()->sum('total_units'));
+    }
+
     public function test_materials_ticket_snapshots_container_and_items(): void
     {
         $w = $this->world();
