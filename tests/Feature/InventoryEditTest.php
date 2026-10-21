@@ -56,6 +56,24 @@ class InventoryEditTest extends TestCase
         return $w['tape']->stockInWarehouse($w['wh']->id);
     }
 
+    public function test_exit_can_be_reassigned_to_a_container_even_if_the_old_one_is_closed(): void
+    {
+        $w = $this->world();
+        $this->entry($w, 10);
+        $old = \App\Models\Container::create(['number' => 'A1', 'date' => now(), 'status' => 'closed', 'warehouse_id' => $w['wh']->id, 'deduct_on_close' => false]);
+        $new = \App\Models\Container::create(['number' => 'B2', 'date' => now(), 'status' => 'open', 'warehouse_id' => $w['wh']->id, 'deduct_on_close' => false]);
+        $exit = app(StockService::class)->exit(['warehouse_id' => $w['wh']->id, 'destination' => 'Furgón A1', 'destination_type' => 'container', 'container_id' => $old->id, 'reason' => 'Carga'],
+            [['product_id' => $w['tape']->id, 'boxes' => 2]], $w['user']);
+        $this->assertTrue($exit->fresh()->isEditable());
+
+        $this->actingAs($w['user'])->get("/inventario/movimientos/{$exit->id}/editar")->assertOk()->assertSee('B2');
+        $this->put("/inventario/movimientos/{$exit->id}", $this->exitPayload($w, 2, ['destination_type' => 'container', 'container_id' => $new->id, 'destination' => null, 'reason' => 'Carga']))->assertSessionHasNoErrors();
+        $this->actAs($w['company']);
+        $fresh = InventoryMovement::where('replaces_id', $exit->id)->firstOrFail();
+        $this->assertSame($new->id, $fresh->container_id);
+        $this->assertSame(8 * 36.0, $this->stock($w));
+    }
+
     public function test_editing_an_entry_voids_the_original_and_creates_a_linked_corrected_one(): void
     {
         $w = $this->world();

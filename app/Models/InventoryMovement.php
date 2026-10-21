@@ -96,10 +96,6 @@ class InventoryMovement extends Model
         if ($this->isVoided()) {
             return 'El documento ya está anulado'.($this->replacedBy ? ' (fue editado y lo reemplaza '.$this->replacedBy->number.')' : '').'.';
         }
-        if ($this->type === self::TYPE_EXIT && $this->container_id && ! in_array($this->container?->status, ['open', 'in_progress'], true)) {
-            return 'La salida está ligada a un furgón que ya no está abierto. Anúlala o corrige con un ajuste de inventario.';
-        }
-
         return null;
     }
 
