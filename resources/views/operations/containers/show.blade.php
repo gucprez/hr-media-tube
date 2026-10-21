@@ -40,18 +40,26 @@
     <h2 class="mt-6 mb-2 font-semibold text-slate-900">Materiales utilizados</h2>
     <div class="table-wrap">
         <table class="table">
-            <thead><tr><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">Total unidades</th>@if($container->status === 'closed')<th class="text-right">Consumo real (libro)</th>@endif</tr></thead>
+            <thead><tr><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">Total unidades</th>@if($container->isEditable())<th class="text-right">Ya descontado (salidas)</th><th class="text-right">Se descontará al cerrar</th>@endif @if($container->status === 'closed')<th class="text-right">Consumo real (libro)</th>@endif</tr></thead>
             <tbody>
             @forelse($container->materials as $m)
-                @php $real = $consumption->firstWhere('product_id', $m->product_id); @endphp
+                @php
+                    $real = $consumption->firstWhere('product_id', $m->product_id);
+                    $done = max(0.0, (float) ($real->quantity_base ?? 0));
+                    $rest = max(0.0, (float) $m->quantity_base - $done);
+                @endphp
                 <tr>
                     <td><span class="font-medium text-slate-900">{{ $m->product_name }}</span><span class="block text-xs text-slate-500">{{ $m->product_sku }}</span></td>
                     <td class="text-right">{{ $converter->format($m->product, $m->quantity_base) }}</td>
                     <td class="text-right">{{ $converter->formatTotal($m->product, $m->quantity_base) }}</td>
+                    @if($container->isEditable())
+                        <td class="text-right">{{ $done > 0 ? $converter->formatTotal($m->product, $done) : '—' }}</td>
+                        <td class="text-right">{{ $container->deduct_on_close ? ($rest > 0 ? $converter->formatTotal($m->product, $rest) : 'Nada: ya descontado') : 'No (solo registro)' }}</td>
+                    @endif
                     @if($container->status === 'closed')<td class="text-right">{{ $real ? $converter->formatTotal($m->product, $real->quantity_base) : '—' }}</td>@endif
                 </tr>
             @empty
-                <tr><td colspan="4" class="py-6 text-center text-slate-500">Sin materiales registrados.</td></tr>
+                <tr><td colspan="6" class="py-6 text-center text-slate-500">Sin materiales registrados.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -83,14 +91,18 @@
 <div class="no-print mt-6 grid gap-4 lg:grid-cols-2">
     @if($container->isEditable())
     @can('containers.close')
-    <form method="POST" action="{{ route('containers.close', $container) }}" class="card card-body space-y-3" @submit="if (!confirm('¿Cerrar el furgón? Se descontarán los materiales del inventario.')) $event.preventDefault()">
+    <form method="POST" action="{{ route('containers.close', $container) }}" class="card card-body space-y-3" @submit="if (!confirm({{ \Illuminate\Support\Js::from($container->deduct_on_close ? '¿Cerrar el furgón? Se descontarán del inventario los materiales que falten (lo ya descontado con salidas de este furgón no se repite).' : '¿Cerrar el furgón? Este furgón es solo un registro: el inventario NO se toca.') }})) $event.preventDefault()">
         @csrf
         <h2 class="font-semibold text-slate-900">Cerrar furgón</h2>
-        <p class="text-sm text-slate-500">Descuenta automáticamente todos los materiales del inventario y conserva el historial.</p>
+        @if($container->deduct_on_close)
+            <p class="text-sm text-slate-500">Descuenta del inventario los materiales que <b>falten</b> y conserva el historial. Lo que ya descontaste con salidas de almacén ligadas a este furgón (columna «Ya descontado») no se vuelve a descontar.</p>
+        @else
+            <p class="rounded-lg border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800">Este furgón está marcado como <b>solo registro</b>: al cerrarlo <b>no se toca el inventario</b>. Para cambiarlo, edita el furgón y marca «Descontar estos materiales del inventario al cerrar».</p>
+        @endif
         @if(auth()->user()->hasPermission('inventory.negative') && $currentCompany->setting('allow_negative_stock'))
             <label class="flex items-start gap-2 text-sm text-red-700"><input type="checkbox" name="allow_negative" value="1" class="mt-0.5 rounded border-red-300"> Autorización especial: permitir existencia negativa.</label>
         @endif
-        <button class="btn-success">Cerrar y descontar inventario</button>
+        <button class="btn-success">{{ $container->deduct_on_close ? 'Cerrar y descontar inventario' : 'Cerrar furgón (sin tocar inventario)' }}</button>
     </form>
     @endcan
     @endif

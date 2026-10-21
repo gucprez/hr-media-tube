@@ -8,7 +8,7 @@
 
 | Dato | Valor |
 |------|-------|
-| Dominio previsto | `hr.deportesxtras.com` — **compruebe la ortografía**: sus otros sitios usan `deportesxtra.com` (sin la «s»). Si es un error de escritura, use `hr.deportesxtra.com`. El kit funciona con cualquier dominio: se cambia en un solo sitio (`__DOMINIO__`). |
+| Dominio | `hr.deportesxtra.com` (el dominio real es `deportesxtra.com`, sin «s» final). El kit funciona con cualquier dominio: se cambia en un solo sitio (`__DOMINIO__`). |
 | DNS | Crear un registro **A** `hr` → `54.39.98.84` (la IP del VPS) en el proveedor del dominio y esperar a que propague. Sin esto no habrá HTTPS. |
 | Puertos | La app **no abre puertos propios**: usa 80/443 compartidos por `server_name` y PHP-FPM por socket Unix. No reutiliza 3001, 3002, 3004, 3005, 8010, 8020, 8090, 8100, 8443, 5555, 5556, 8001, 8002. |
 | Requisitos | Nginx, PHP 8.2+ (fpm, mbstring, xml, curl, zip, gd, intl, mysql, bcmath), MariaDB 10.6+/MySQL 8, Composer 2, Git. Node 20+ **solo para compilar** (si no hay Node, compile en su equipo y suba `public/build`). |
@@ -17,7 +17,8 @@ Verifique primero qué hay instalado (solo lectura): `php -v`, `nginx -v`, `mysq
 
 ## 1. Usuario y carpeta propios (sin root)
 ```bash
-sudo adduser --system --group --home /var/www/hrmedia hrmedia      # usuario sin privilegios
+sudo adduser --system --group --home /var/www/hrmedia --shell /usr/sbin/nologin hrmedia      # usuario sin privilegios
+sudo chmod 755 /var/www/hrmedia      # nginx (www-data) debe poder atravesar la carpeta
 sudo -u hrmedia git clone -b claude/carmen-cargo-warehouse-system-0jift5 https://github.com/gucprez/hr-media-tube.git /var/www/hrmedia/app
 ```
 (Si prefiere otra ruta, úsela en todos los pasos.) La aplicación **nunca** corre como root.

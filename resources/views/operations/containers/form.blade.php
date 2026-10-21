@@ -37,6 +37,18 @@
             <x-field name="fuel_gallons" label="Gasoil (galones)" type="number" step="0.1" min="0" inputmode="decimal" :value="$container->fuel_gallons ?: ''" hint="Se descuenta de la reserva al cerrar el furgón." />
         </div>
         <x-field name="notes" label="Observaciones" type="textarea" :value="$container->notes" />
+
+        <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <input type="hidden" name="deduct_on_close" value="0">
+            <label class="flex items-start gap-2 text-sm">
+                <input type="checkbox" name="deduct_on_close" value="1" class="mt-0.5 rounded border-slate-300" @checked((bool) filter_var(old('deduct_on_close', $container->exists ? $container->deduct_on_close : true), FILTER_VALIDATE_BOOLEAN))>
+                <span>
+                    <b class="text-slate-900">Descontar estos materiales del inventario al cerrar el furgón</b>
+                    <span class="mt-1 block text-slate-600">Si ya los descuentas con una <b>salida de almacén</b> (elige este furgón como destino), no se descuentan dos veces: al cerrar solo se descuenta lo que falte.</span>
+                    <span class="mt-1 block text-slate-600">Desmárcalo si quieres usar el furgón solo como <b>lista de materiales</b>: el cierre no tocará el inventario.</span>
+                </span>
+            </label>
+        </div>
     </div>
 
     @include('inventory._lines-editor', ['field' => 'materials', 'title' => 'Materiales utilizados'])

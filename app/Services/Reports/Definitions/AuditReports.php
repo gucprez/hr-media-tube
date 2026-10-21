@@ -10,7 +10,7 @@ use App\Services\Reports\ReportSet;
 class AuditReports extends ReportSet
 {
     /** Acciones que representan un ajuste, anulación, reverso o cambio sensible. */
-    public const SENSITIVE = ['inventory.void', 'ticket.voided', 'container.voided', 'maintenance.voided', 'fuel.adjustment', 'tire.waived', 'incident.status', 'vehicle.status', 'user.deleted', 'role.updated'];
+    public const SENSITIVE = ['inventory.void', 'inventory.edit', 'ticket.voided', 'container.voided', 'maintenance.voided', 'fuel.adjustment', 'tire.waived', 'incident.status', 'vehicle.status', 'user.deleted', 'role.updated'];
 
     public function section(): string
     {

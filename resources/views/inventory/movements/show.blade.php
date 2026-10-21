@@ -3,7 +3,12 @@
 @section('content')
 <div class="no-print mb-4 flex flex-wrap items-center justify-between gap-3">
     <a href="{{ route('movements.index') }}" class="text-sm text-slate-500 hover:text-slate-800">← Movimientos</a>
-    <button type="button" x-data @click="window.print()" class="btn-secondary btn-sm"><x-icon name="printer" class="h-4 w-4" /> Imprimir</button>
+    <div class="flex flex-wrap items-center gap-2">
+        @can('inventory.edit')@if($movement->isEditable())
+            <a href="{{ route('movements.edit', $movement) }}" class="btn-primary btn-sm">Editar</a>
+        @endif @endcan
+        <button type="button" x-data @click="window.print()" class="btn-secondary btn-sm"><x-icon name="printer" class="h-4 w-4" /> Imprimir</button>
+    </div>
 </div>
 
 <div class="card card-body">
@@ -19,6 +24,8 @@
         @if($movement->reason)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Motivo</dt><dd>{{ $movement->reason }}</dd></div>@endif
         @if($movement->container)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Furgón</dt><dd><a href="{{ route('containers.show', $movement->container) }}" class="text-brand hover:underline">#{{ $movement->container->number }}</a></dd></div>@endif
         @if($movement->reversalOf)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Anula el documento</dt><dd><a href="{{ route('movements.show', $movement->reversalOf) }}" class="text-brand hover:underline">{{ $movement->reversalOf->number }}</a></dd></div>@endif
+        @if($movement->replaces)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Corrige (edición de)</dt><dd><a href="{{ route('movements.show', $movement->replaces) }}" class="text-brand hover:underline">{{ $movement->replaces->number }}</a> <span class="badge-yellow">Editado</span></dd></div>@endif
+        @if($movement->replacedBy)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Editado: lo reemplaza</dt><dd><a href="{{ route('movements.show', $movement->replacedBy) }}" class="text-brand hover:underline">{{ $movement->replacedBy->number }}</a></dd></div>@endif
         @if($movement->isVoided())<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Estado</dt><dd><span class="badge-red">ANULADO {{ $movement->voided_at->format('d/m/Y H:i') }}</span></dd></div>@endif
         @if($movement->negative_override)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Autorización especial</dt><dd><span class="badge-red">Stock negativo autorizado</span></dd></div>@endif
     </dl>

@@ -28,6 +28,12 @@ return [
         'numbers' => ':attribute debe contener al menos un número.',
         'symbols' => ':attribute debe contener al menos un símbolo.',
     ],
+    // Mensajes legibles para las filas de los editores de líneas (:position = número de fila, empezando en 1).
+    'custom' => [
+        'materials.*.product_id' => ['required' => 'Material :position: elija un producto.', 'integer' => 'Material :position: el producto no es válido.', 'exists' => 'Material :position: el producto elegido no es válido.'],
+        'parts.*.product_id' => ['required' => 'Pieza :position: elija un producto.', 'integer' => 'Pieza :position: el producto no es válido.', 'exists' => 'Pieza :position: el producto elegido no es válido.'],
+        'lines.*.product_id' => ['required' => 'Línea :position: elija un producto.', 'integer' => 'Línea :position: el producto no es válido.', 'exists' => 'Línea :position: el producto elegido no es válido.'],
+    ],
     'attributes' => [
         'first_name' => 'nombre', 'last_name' => 'apellido', 'username' => 'usuario', 'email' => 'correo',
         'password' => 'contraseña', 'current_password' => 'contraseña actual', 'role_id' => 'rol', 'branch_id' => 'sucursal',

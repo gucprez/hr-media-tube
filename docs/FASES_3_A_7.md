@@ -37,5 +37,5 @@ Tanque con **libro de gasoil** (recepciones por lectura de medidor, despachos po
 
 ## Pendiente / decisiones del dueño
 - **Logo**: nunca se recibió el logo real de Carmen Cargo Express; se sube desde *Configuración → Empresa* y se usa automáticamente en reportes, tickets y PDF. Los íconos de la app instalable son genéricos («HR») y se pueden reemplazar en `public/icons/`.
-- **Dominio**: confirmar `hr.deportesxtras.com` vs `hr.deportesxtra.com` y crear el registro DNS A → `54.39.98.84`.
+- **Dominio**: `hr.deportesxtra.com` (registro DNS A → `54.39.98.84` creado). Desplegado en el VPS el 2026-10-13.
 - Ejecutar el despliegue en el VPS lo hace el dueño (o lo autoriza expresamente): el sistema no se instaló ni se tocó ningún servidor.

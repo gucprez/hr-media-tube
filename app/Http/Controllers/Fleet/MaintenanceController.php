@@ -59,6 +59,7 @@ class MaintenanceController extends Controller
     public function store(Request $request, MaintenanceService $service)
     {
         $cid = app(CurrentCompany::class)->id();
+        \App\Support\LineInput::dropEmpty($request, 'parts');
         $data = $request->validate([
             'vehicle_id' => ['required', Rule::exists('vehicles', 'id')->where('company_id', $cid)->whereNull('deleted_at')],
             'incident_id' => ['nullable', Rule::exists('vehicle_incidents', 'id')->where('company_id', $cid)->whereNull('deleted_at')],

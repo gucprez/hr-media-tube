@@ -33,13 +33,13 @@ class Container extends Model
     ];
 
     protected $fillable = [
-        'company_id', 'warehouse_id', 'number', 'date', 'driver_id', 'vehicle_id', 'driver_name', 'conduce', 'phone', 'fuel_gallons',
+        'company_id', 'warehouse_id', 'number', 'date', 'driver_id', 'vehicle_id', 'driver_name', 'conduce', 'phone', 'fuel_gallons', 'deduct_on_close',
         'responsible_id', 'movement_id', 'void_movement_id', 'status', 'notes', 'closed_at', 'closed_by', 'started_at',
         'voided_at', 'voided_by', 'void_reason',
     ];
 
     protected $casts = [
-        'date' => 'date', 'fuel_gallons' => 'float', 'closed_at' => 'datetime', 'started_at' => 'datetime', 'voided_at' => 'datetime',
+        'date' => 'date', 'fuel_gallons' => 'float', 'deduct_on_close' => 'boolean', 'closed_at' => 'datetime', 'started_at' => 'datetime', 'voided_at' => 'datetime',
     ];
 
     public function materials(): HasMany
