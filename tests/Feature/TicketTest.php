@@ -55,15 +55,15 @@ class TicketTest extends TestCase
         ])->assertSessionHasNoErrors();
         $this->actAs($w['company']);
 
-        // 44 (materiales cargados en el furgón, aún sin cerrar) + 2 cajas ya descontadas por la salida dirigida al furgón
+        // el furgón lista 44 y la salida dirigida a él descontó 2 cajas: el ticket muestra lo mayor por producto, no la suma
         $page = $this->actingAs($w['user'])->get("/operaciones/furgones/{$w['container']->id}/tickets/nuevo")->assertOk();
         $items = collect($page->viewData('items'));
         $perBox = $w['tape']->units_per_box;
-        $this->assertSame(44.0 + 2 * $perBox, (float) $items->firstWhere('product_id', $w['tape']->id)['total_units']);
+        $this->assertSame((float) max(44, 2 * $perBox), (float) $items->firstWhere('product_id', $w['tape']->id)['total_units']);
         $this->assertCount(1, $items);
 
         $this->issue($w);
-        $this->assertSame((float) (44 + 2 * $perBox), (float) Ticket::latest('id')->first()->items()->sum('total_units'));
+        $this->assertSame((float) max(44, 2 * $perBox), (float) Ticket::latest('id')->first()->items()->sum('total_units'));
     }
 
     public function test_materials_ticket_snapshots_container_and_items(): void

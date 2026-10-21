@@ -166,20 +166,18 @@ class TicketController extends Controller
 
     /** @return array<int,array<string,mixed>> líneas ya convertidas (snapshot) del ticket de materiales */
     /**
-     * Materiales del ticket: lo ya descontado del inventario para este furgón (libro: cierre + salidas dirigidas al furgón,
-     * netas de anulaciones) más, si el furgón aún no se cierra, los materiales cargados en él. Así una salida hecha desde
-     * «Nueva salida → Furgón» también sale en el ticket y nada se cuenta dos veces.
+     * Materiales del ticket: por producto, lo mayor entre lo listado en el furgón y lo ya descontado del inventario para él
+     * (libro: cierre + salidas dirigidas al furgón, netas de anulaciones). El cierre solo descuenta lo que falta, así que
+     * lo listado ya incluye lo descontado antes: sumar ambos lo contaría dos veces.
      */
     protected function materialItems(Container $container): array
     {
         $qty = [];
-        foreach (app(\App\Services\Operations\ContainerConsumption::class)->byProduct([$container->id]) as $r) {
-            $qty[$r->product_id] = ($qty[$r->product_id] ?? 0) + $r->quantity_base;
+        foreach ($container->materials as $m) {
+            $qty[$m->product_id] = ($qty[$m->product_id] ?? 0) + $m->quantity_base;
         }
-        if (! $container->movement_id) {   // sin cierre: sus materiales cargados todavía no están en el libro
-            foreach ($container->materials as $m) {
-                $qty[$m->product_id] = ($qty[$m->product_id] ?? 0) + $m->quantity_base;
-            }
+        foreach (app(\App\Services\Operations\ContainerConsumption::class)->byProduct([$container->id]) as $r) {
+            $qty[$r->product_id] = max($qty[$r->product_id] ?? 0, $r->quantity_base);
         }
         $products = \App\Models\Product::withTrashed()->with('unit')->whereIn('id', array_keys($qty))->get()->keyBy('id');
 
