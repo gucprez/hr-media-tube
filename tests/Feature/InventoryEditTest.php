@@ -32,7 +32,7 @@ class InventoryEditTest extends TestCase
 
     protected function exit(array $w, int $boxes)
     {
-        return app(StockService::class)->exit(['warehouse_id' => $w['wh']->id, 'destination' => 'Taller', 'destination_type' => 'other', 'reason' => 'Uso operativo'], [['product_id' => $w['tape']->id, 'boxes' => $boxes]], $w['user']);
+        return app(StockService::class)->exit(['warehouse_id' => $w['wh']->id, 'destination' => 'Taller', 'requested_by' => 'Pedro Pérez', 'destination_type' => 'other', 'reason' => 'Uso operativo'], [['product_id' => $w['tape']->id, 'boxes' => $boxes]], $w['user']);
     }
 
     protected function payload(array $w, int $boxes, array $extra = []): array
@@ -46,7 +46,7 @@ class InventoryEditTest extends TestCase
     protected function exitPayload(array $w, int $boxes, array $extra = []): array
     {
         return $extra + [
-            'date' => now()->toDateString(), 'warehouse_id' => $w['wh']->id, 'destination_type' => 'other', 'destination' => 'Taller', 'reason' => 'Uso operativo',
+            'date' => now()->toDateString(), 'warehouse_id' => $w['wh']->id, 'requested_by' => 'Pedro Pérez', 'destination_type' => 'other', 'destination' => 'Taller', 'reason' => 'Uso operativo',
             'lines' => [['product_id' => $w['tape']->id, 'boxes' => $boxes]], 'edit_reason' => 'Cantidad mal digitada',
         ];
     }
@@ -62,12 +62,12 @@ class InventoryEditTest extends TestCase
         $this->entry($w, 10);
         $old = \App\Models\Container::create(['number' => 'A1', 'date' => now(), 'status' => 'closed', 'warehouse_id' => $w['wh']->id, 'deduct_on_close' => false]);
         $new = \App\Models\Container::create(['number' => 'B2', 'date' => now(), 'status' => 'open', 'warehouse_id' => $w['wh']->id, 'deduct_on_close' => false]);
-        $exit = app(StockService::class)->exit(['warehouse_id' => $w['wh']->id, 'destination' => 'Furgón A1', 'destination_type' => 'container', 'container_id' => $old->id, 'reason' => 'Carga'],
+        $exit = app(StockService::class)->exit(['warehouse_id' => $w['wh']->id, 'destination' => 'Furgón A1', 'requested_by' => 'Pedro Pérez', 'destination_type' => 'container', 'container_id' => $old->id, 'reason' => 'Carga'],
             [['product_id' => $w['tape']->id, 'boxes' => 2]], $w['user']);
         $this->assertTrue($exit->fresh()->isEditable());
 
         $this->actingAs($w['user'])->get("/inventario/movimientos/{$exit->id}/editar")->assertOk()->assertSee('B2');
-        $this->put("/inventario/movimientos/{$exit->id}", $this->exitPayload($w, 2, ['destination_type' => 'container', 'container_id' => $new->id, 'destination' => null, 'reason' => 'Carga']))->assertSessionHasNoErrors();
+        $this->put("/inventario/movimientos/{$exit->id}", $this->exitPayload($w, 2, ['requested_by' => 'Pedro Pérez', 'destination_type' => 'container', 'container_id' => $new->id, 'destination' => null, 'reason' => 'Carga']))->assertSessionHasNoErrors();
         $this->actAs($w['company']);
         $fresh = InventoryMovement::where('replaces_id', $exit->id)->firstOrFail();
         $this->assertSame($new->id, $fresh->container_id);
@@ -233,5 +233,37 @@ class InventoryEditTest extends TestCase
 
         $this->actingAs($b['user'])->get("/inventario/movimientos/{$e->id}/editar")->assertNotFound();
         $this->actingAs($b['user'])->put("/inventario/movimientos/{$e->id}", $this->payload($b, 6))->assertNotFound();
+    }
+
+    public function test_manual_exit_requires_the_employee_who_requested_it_and_shows_it_on_the_document(): void
+    {
+        $w = $this->world();
+        $this->entry($w, 10);
+        $base = ['date' => now()->toDateString(), 'warehouse_id' => $w['wh']->id, 'destination_type' => 'other', 'destination' => 'Taller', 'reason' => 'Uso',
+            'lines' => [['product_id' => $w['tape']->id, 'boxes' => 1]]];
+
+        $this->actingAs($w['user'])->post('/inventario/salidas', $base)->assertSessionHasErrors('requested_by');
+        $this->assertSame(0, InventoryMovement::where('type', 'exit')->count());
+
+        $this->post('/inventario/salidas', $base + ['requested_by' => 'María Gómez'])->assertSessionHasNoErrors();
+        $this->actAs($w['company']);
+        $exit = InventoryMovement::where('type', 'exit')->firstOrFail();
+        $this->assertSame('María Gómez', $exit->requested_by);
+        $this->actingAs($w['user'])->get("/inventario/movimientos/{$exit->id}")->assertOk()->assertSee('Solicitado por')->assertSee('María Gómez');
+    }
+
+    public function test_editing_and_voiding_an_exit_keep_the_requester(): void
+    {
+        $w = $this->world();
+        $this->entry($w, 10);
+        $exit = $this->exit($w, 2);
+        $this->assertSame('Pedro Pérez', $exit->fresh()->requested_by);
+
+        $this->actingAs($w['user'])->put("/inventario/movimientos/{$exit->id}", $this->exitPayload($w, 3, ['requested_by' => 'Luis Díaz']))->assertSessionHasNoErrors();
+        $this->actAs($w['company']);
+        $new = InventoryMovement::where('replaces_id', $exit->id)->firstOrFail();
+        $this->assertSame('Luis Díaz', $new->requested_by);
+        $void = InventoryMovement::where('reversal_of_id', $exit->id)->firstOrFail();
+        $this->assertSame('Pedro Pérez', $void->requested_by);
     }
 }

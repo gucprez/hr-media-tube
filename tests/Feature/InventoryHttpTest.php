@@ -81,14 +81,14 @@ class InventoryHttpTest extends TestCase
         app(StockService::class)->entry(['warehouse_id' => $wh->id], [['product_id' => $tape->id, 'boxes' => 5, 'units' => 8]], $user);
 
         $this->actingAs($user)->post('/inventario/salidas', [
-            'date' => now()->toDateString(), 'warehouse_id' => $wh->id, 'destination' => 'Furgón 0111', 'destination_type' => 'other', 'reason' => 'Consumo',
+            'date' => now()->toDateString(), 'warehouse_id' => $wh->id, 'destination' => 'Furgón 0111', 'requested_by' => 'Pedro Pérez', 'destination_type' => 'other', 'reason' => 'Consumo',
             'lines' => [['product_id' => $tape->id, 'boxes' => 1]],
         ])->assertSessionHasNoErrors();
         $this->assertSame(152.0, $tape->stockInWarehouse($wh->id));
 
         $before = [InventoryMovement::count(), InventoryMovementItem::count()];
         $this->post('/inventario/salidas', [
-            'date' => now()->toDateString(), 'warehouse_id' => $wh->id, 'destination' => 'X', 'destination_type' => 'other', 'reason' => 'Y',
+            'date' => now()->toDateString(), 'warehouse_id' => $wh->id, 'destination' => 'X', 'requested_by' => 'Pedro Pérez', 'destination_type' => 'other', 'reason' => 'Y',
             'lines' => [['product_id' => $tape->id, 'boxes' => 5]],
         ])->assertSessionHasErrors('lines');
         $this->assertSame(152.0, $tape->stockInWarehouse($wh->id));
@@ -99,7 +99,7 @@ class InventoryHttpTest extends TestCase
     {
         [$company, $user, $wh, $tape] = $this->world();
         $this->actingAs($user)->post('/inventario/salidas', [
-            'date' => now()->toDateString(), 'warehouse_id' => $wh->id, 'destination_type' => 'other', 'lines' => [['product_id' => $tape->id, 'units' => 1]],
+            'date' => now()->toDateString(), 'warehouse_id' => $wh->id, 'requested_by' => 'Pedro Pérez', 'destination_type' => 'other', 'lines' => [['product_id' => $tape->id, 'units' => 1]],
         ])->assertSessionHasErrors(['destination', 'reason']);
     }
 
@@ -109,7 +109,7 @@ class InventoryHttpTest extends TestCase
         $company->update(['settings' => ['allow_negative_stock' => true]]);
         $this->actAs($company->fresh());
         app(StockService::class)->entry(['warehouse_id' => $wh->id], [['product_id' => $tape->id, 'units' => 2]], $user);
-        $payload = ['date' => now()->toDateString(), 'warehouse_id' => $wh->id, 'destination' => 'X', 'destination_type' => 'other', 'reason' => 'Y', 'allow_negative' => 1, 'lines' => [['product_id' => $tape->id, 'units' => 5]]];
+        $payload = ['date' => now()->toDateString(), 'warehouse_id' => $wh->id, 'destination' => 'X', 'requested_by' => 'Pedro Pérez', 'destination_type' => 'other', 'reason' => 'Y', 'allow_negative' => 1, 'lines' => [['product_id' => $tape->id, 'units' => 5]]];
 
         $this->actingAs($user)->post('/inventario/salidas', $payload)->assertSessionHasErrors('lines');
         $this->assertSame(2.0, $tape->stockInWarehouse($wh->id));
@@ -181,7 +181,7 @@ class InventoryHttpTest extends TestCase
         $tape->update(['is_active' => false]);
 
         $this->actingAs($user)->post('/inventario/entradas', ['date' => now()->toDateString(), 'warehouse_id' => $wh->id, 'lines' => [['product_id' => $tape->id, 'units' => 1]]])->assertSessionHasErrors('lines');
-        $this->post('/inventario/salidas', ['date' => now()->toDateString(), 'warehouse_id' => $wh->id, 'destination' => 'X', 'destination_type' => 'other', 'reason' => 'Y', 'lines' => [['product_id' => $tape->id, 'units' => 4]]])->assertSessionHasNoErrors();
+        $this->post('/inventario/salidas', ['date' => now()->toDateString(), 'warehouse_id' => $wh->id, 'destination' => 'X', 'requested_by' => 'Pedro Pérez', 'destination_type' => 'other', 'reason' => 'Y', 'lines' => [['product_id' => $tape->id, 'units' => 4]]])->assertSessionHasNoErrors();
         $this->assertSame(6.0, $tape->stockInWarehouse($wh->id));
     }
 
@@ -235,8 +235,8 @@ class InventoryHttpTest extends TestCase
         $d = now()->toDateString();
         $this->actingAs($user);
         $this->post('/inventario/entradas', ['date' => $d, 'warehouse_id' => $wh->id, 'lines' => [['product_id' => $tape->id, 'boxes' => 3], ['product_id' => $plastic->id, 'units' => 20]]]);
-        $this->post('/inventario/salidas', ['date' => $d, 'warehouse_id' => $wh->id, 'destination' => 'A', 'destination_type' => 'other', 'reason' => 'B', 'lines' => [['product_id' => $tape->id, 'units' => 50]]]);
-        $this->post('/inventario/salidas', ['date' => $d, 'warehouse_id' => $wh->id, 'destination' => 'A', 'destination_type' => 'other', 'reason' => 'B', 'lines' => [['product_id' => $plastic->id, 'units' => 999]]]); // rechazada
+        $this->post('/inventario/salidas', ['date' => $d, 'warehouse_id' => $wh->id, 'destination' => 'A', 'requested_by' => 'Pedro Pérez', 'destination_type' => 'other', 'reason' => 'B', 'lines' => [['product_id' => $tape->id, 'units' => 50]]]);
+        $this->post('/inventario/salidas', ['date' => $d, 'warehouse_id' => $wh->id, 'destination' => 'A', 'requested_by' => 'Pedro Pérez', 'destination_type' => 'other', 'reason' => 'B', 'lines' => [['product_id' => $plastic->id, 'units' => 999]]]); // rechazada
         $this->post('/inventario/ajustes', ['date' => $d, 'warehouse_id' => $wh->id, 'reason' => 'Conteo físico', 'notes' => 'Conteo de prueba', 'lines' => [['product_id' => $plastic->id, 'units' => 18]]]);
 
         $this->actAs($company);

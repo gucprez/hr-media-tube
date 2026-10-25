@@ -35,7 +35,7 @@ class InventoryMovement extends Model
 
     protected $fillable = [
         'company_id', 'branch_id', 'warehouse_id', 'number', 'reference', 'type', 'status', 'occurred_at', 'user_id',
-        'supplier', 'document_no', 'destination', 'destination_type', 'container_id', 'vehicle_id', 'employee_name',
+        'supplier', 'document_no', 'destination', 'destination_type', 'container_id', 'vehicle_id', 'employee_name', 'requested_by',
         'reason', 'notes', 'source_type', 'source_id', 'negative_override', 'authorized_by', 'reversal_of_id', 'replaces_id', 'voided_at',
     ];
 

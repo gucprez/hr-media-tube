@@ -21,6 +21,7 @@
         @if($movement->supplier)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Proveedor</dt><dd>{{ $movement->supplier }}</dd></div>@endif
         @if($movement->document_no)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Conduce / documento</dt><dd>{{ $movement->document_no }}</dd></div>@endif
         @if($movement->destination)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Destino</dt><dd>{{ $movement->destination }}@if($movement->employee_name) · {{ $movement->employee_name }}@endif</dd></div>@endif
+        @if($movement->requested_by)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Solicitado por</dt><dd>{{ $movement->requested_by }}</dd></div>@endif
         @if($movement->reason)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Motivo</dt><dd>{{ $movement->reason }}</dd></div>@endif
         @if($movement->container)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Furgón</dt><dd><a href="{{ route('containers.show', $movement->container) }}" class="text-brand hover:underline">#{{ $movement->container->number }}</a></dd></div>@endif
         @if($movement->reversalOf)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Anula el documento</dt><dd><a href="{{ route('movements.show', $movement->reversalOf) }}" class="text-brand hover:underline">{{ $movement->reversalOf->number }}</a></dd></div>@endif

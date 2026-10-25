@@ -72,7 +72,7 @@ class InventoryTenancyTest extends TestCase
         $d = now()->toDateString();
 
         // producto ajeno
-        $this->actingAs($userB)->post('/inventario/salidas', ['date' => $d, 'warehouse_id' => $whB->id, 'destination' => 'X', 'destination_type' => 'other', 'reason' => 'Y', 'lines' => [['product_id' => $prodA->id, 'units' => 5]]])
+        $this->actingAs($userB)->post('/inventario/salidas', ['date' => $d, 'warehouse_id' => $whB->id, 'destination' => 'X', 'requested_by' => 'Pedro Pérez', 'destination_type' => 'other', 'reason' => 'Y', 'lines' => [['product_id' => $prodA->id, 'units' => 5]]])
             ->assertSessionHasErrors('lines.0.product_id');
         // almacén ajeno
         $this->post('/inventario/entradas', ['date' => $d, 'warehouse_id' => $whA->id, 'lines' => [['product_id' => $prodB->id, 'units' => 5]]])->assertSessionHasErrors('warehouse_id');

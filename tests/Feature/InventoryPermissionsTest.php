@@ -51,7 +51,7 @@ class InventoryPermissionsTest extends TestCase
         $this->get('/inventario/entradas/nueva')->assertForbidden();
         $this->post('/inventario/entradas', ['date' => $d, 'warehouse_id' => $wh->id, 'lines' => [['product_id' => $p->id, 'units' => 1]]])->assertForbidden();
         $this->get('/inventario/salidas/nueva')->assertForbidden();
-        $this->post('/inventario/salidas', ['date' => $d, 'warehouse_id' => $wh->id, 'destination' => 'X', 'reason' => 'Y', 'destination_type' => 'other', 'lines' => [['product_id' => $p->id, 'units' => 1]]])->assertForbidden();
+        $this->post('/inventario/salidas', ['date' => $d, 'warehouse_id' => $wh->id, 'destination' => 'X', 'reason' => 'Y', 'requested_by' => 'Pedro Pérez', 'destination_type' => 'other', 'lines' => [['product_id' => $p->id, 'units' => 1]]])->assertForbidden();
         $this->get('/inventario/ajustes/nuevo')->assertForbidden();
         $this->post('/inventario/ajustes', ['date' => $d, 'warehouse_id' => $wh->id, 'reason' => 'Conteo físico', 'notes' => 'Intento no autorizado', 'lines' => [['product_id' => $p->id, 'units' => 1]]])->assertForbidden();
         $this->getJson('/inventario/api/productos?q=tape')->assertForbidden();
@@ -84,7 +84,7 @@ class InventoryPermissionsTest extends TestCase
 
         $this->actingAs($op)->get('/inventario/entradas/nueva')->assertOk();
         $this->post('/inventario/entradas', ['date' => $d, 'warehouse_id' => $wh->id, 'lines' => [['product_id' => $p->id, 'units' => 1]]])->assertSessionHasNoErrors();
-        $this->post('/inventario/salidas', ['date' => $d, 'warehouse_id' => $wh->id, 'destination' => 'X', 'destination_type' => 'other', 'reason' => 'Y', 'lines' => [['product_id' => $p->id, 'units' => 1]]])->assertSessionHasNoErrors();
+        $this->post('/inventario/salidas', ['date' => $d, 'warehouse_id' => $wh->id, 'destination' => 'X', 'requested_by' => 'Pedro Pérez', 'destination_type' => 'other', 'reason' => 'Y', 'lines' => [['product_id' => $p->id, 'units' => 1]]])->assertSessionHasNoErrors();
         $this->get('/inventario/ajustes/nuevo')->assertForbidden();
         $this->post('/inventario/ajustes', [])->assertForbidden();
         $this->get('/almacen/productos/nuevo')->assertForbidden();

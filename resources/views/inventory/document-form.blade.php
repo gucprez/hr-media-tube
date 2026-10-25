@@ -55,6 +55,7 @@ if ($editing) {
                     <div x-show="type !== 'container'"><x-field name="destination" label="Destino" hint="Ej.: Taller, Oficina" :value="$editing && $movement->destination_type !== 'container' ? $movement->destination : null" /></div>
                     <div x-show="type === 'employee'" x-cloak><x-field name="employee_name" label="Empleado" :value="$editing ? $movement->employee_name : null" /></div>
                 </div>
+                <x-field name="requested_by" label="Solicitado por" required hint="Empleado que pidió el material" :value="$editing ? $movement->requested_by : null" />
                 <x-field name="reason" label="Motivo" required hint="Ej.: Consumo operativo, reposición" :value="$editing ? $movement->reason : null" />
             @else
                 <div>

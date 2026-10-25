@@ -249,10 +249,11 @@ class MovementController extends Controller
                 'destination_type' => ['required', Rule::in(['other', 'employee', 'container'])],
                 'container_id' => ['required_if:destination_type,container', 'nullable', Rule::exists('containers', 'id')->where('company_id', $cid)->whereNull('deleted_at')->whereIn('status', ['open', 'in_progress'])],
                 'employee_name' => ['nullable', 'required_if:destination_type,employee', 'string', 'max:150'],
+                'requested_by' => ['required', 'string', 'max:150'],
                 'reason' => ['required', 'string', 'max:150'],
                 'allow_negative' => ['boolean'],
             ];
-            $messages += ['destination.required' => 'Indique el destino de la salida.', 'reason.required' => 'Indique el motivo de la salida.'];
+            $messages += ['destination.required' => 'Indique el destino de la salida.', 'reason.required' => 'Indique el motivo de la salida.', 'requested_by.required' => 'Indique el nombre del empleado que solicitó el material.'];
         } else {
             $rules['reason'] = ['required', 'string', Rule::in(self::ADJUST_REASONS)];
             $rules['notes'] = ['required', 'string', 'min:5', 'max:2000'];
@@ -290,6 +291,7 @@ class MovementController extends Controller
             'destination_type' => $data['destination_type'] ?? null,
             'container_id' => ($data['destination_type'] ?? null) === 'container' ? ($data['container_id'] ?? null) : null,
             'employee_name' => $data['employee_name'] ?? null,
+            'requested_by' => $data['requested_by'] ?? null,
             'reason' => $data['reason'] ?? null,
             'notes' => $data['notes'] ?? null,
             'allow_negative' => $data['allow_negative'] ?? false,

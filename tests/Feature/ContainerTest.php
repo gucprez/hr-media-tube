@@ -117,7 +117,7 @@ class ContainerTest extends TestCase
         $this->actAs($w['company']);
 
         return app(StockService::class)->exit([
-            'warehouse_id' => $w['wh']->id, 'container_id' => $c->id, 'destination_type' => 'container',
+            'warehouse_id' => $w['wh']->id, 'container_id' => $c->id, 'requested_by' => 'Pedro Pérez', 'destination_type' => 'container',
             'destination' => 'Furgón '.$c->number, 'reason' => 'Salida manual',
         ], $lines, $w['user']);
     }
@@ -342,7 +342,7 @@ class ContainerTest extends TestCase
     {
         $w = $this->world();
         $c = $this->createContainer($w, [['product_id' => $w['tape']->id, 'units' => 1]]);
-        $this->post('/inventario/salidas', ['date' => now()->toDateString(), 'warehouse_id' => $w['wh']->id, 'destination_type' => 'container', 'container_id' => $c->id, 'reason' => 'Extra', 'lines' => [['product_id' => $w['plastic']->id, 'boxes' => 1]]])->assertRedirect()->assertSessionHasNoErrors();
+        $this->post('/inventario/salidas', ['date' => now()->toDateString(), 'warehouse_id' => $w['wh']->id, 'requested_by' => 'Pedro Pérez', 'destination_type' => 'container', 'container_id' => $c->id, 'reason' => 'Extra', 'lines' => [['product_id' => $w['plastic']->id, 'boxes' => 1]]])->assertRedirect()->assertSessionHasNoErrors();
 
         $m = InventoryMovement::where('type', 'exit')->first();
         $this->assertSame($c->id, $m->container_id);
@@ -362,7 +362,7 @@ class ContainerTest extends TestCase
         $this->actAs($w['company']);
         $this->post("/operaciones/furgones/{$closed->id}/cerrar");
 
-        $payload = fn ($id) => ['date' => now()->toDateString(), 'warehouse_id' => $w['wh']->id, 'destination_type' => 'container', 'container_id' => $id, 'reason' => 'Y', 'lines' => [['product_id' => $w['tape']->id, 'units' => 1]]];
+        $payload = fn ($id) => ['date' => now()->toDateString(), 'warehouse_id' => $w['wh']->id, 'requested_by' => 'Pedro Pérez', 'destination_type' => 'container', 'container_id' => $id, 'reason' => 'Y', 'lines' => [['product_id' => $w['tape']->id, 'units' => 1]]];
         $this->actingAs($w['user'])->post('/inventario/salidas', $payload($foreign->id))->assertSessionHasErrors('container_id');
         $this->post('/inventario/salidas', $payload($closed->id))->assertSessionHasErrors('container_id');
         $this->post('/inventario/salidas', $payload(''))->assertSessionHasErrors('container_id');

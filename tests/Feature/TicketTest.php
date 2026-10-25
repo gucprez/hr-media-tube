@@ -50,7 +50,7 @@ class TicketTest extends TestCase
     {
         $w = $this->world();
         $this->actingAs($w['user'])->post('/inventario/salidas', [
-            'warehouse_id' => $w['wh']->id, 'date' => now()->toDateString(), 'destination_type' => 'container', 'container_id' => $w['container']->id,
+            'warehouse_id' => $w['wh']->id, 'date' => now()->toDateString(), 'requested_by' => 'Pedro Pérez', 'destination_type' => 'container', 'container_id' => $w['container']->id,
             'reason' => 'Carga', 'lines' => [['product_id' => $w['tape']->id, 'boxes' => 2, 'units' => '']],
         ])->assertSessionHasNoErrors();
         $this->actAs($w['company']);
@@ -73,7 +73,7 @@ class TicketTest extends TestCase
         $this->post("/operaciones/furgones/{$w['container']->id}/tickets", ['type' => 'materials', 'source' => 'used', 'issued_at' => now()->toDateString()])->assertSessionHas('error');
 
         $this->post('/inventario/salidas', [
-            'warehouse_id' => $w['wh']->id, 'date' => now()->toDateString(), 'destination_type' => 'container', 'container_id' => $w['container']->id,
+            'warehouse_id' => $w['wh']->id, 'date' => now()->toDateString(), 'requested_by' => 'Pedro Pérez', 'destination_type' => 'container', 'container_id' => $w['container']->id,
             'reason' => 'Carga', 'lines' => [['product_id' => $w['tape']->id, 'boxes' => 1, 'units' => '']],
         ])->assertSessionHasNoErrors();
         $this->actAs($w['company']);
