@@ -85,12 +85,17 @@ class ContainerRemoval
     }
 
     /** Borra un ticket y sus renglones; queda constancia en la auditoría. Los números no se reutilizan. */
-    public function deleteTicket(Ticket $ticket, string $reason): void
+    public function deleteTicket(Ticket $ticket, string $reason, bool $syncContainer = true): void
     {
-        DB::transaction(function () use ($ticket, $reason) {
+        DB::transaction(function () use ($ticket, $reason, $syncContainer) {
             $snapshot = $this->ticketSnapshot($ticket);
+            $container = $syncContainer && $ticket->type === Ticket::FUEL && $ticket->container_id ? Container::find($ticket->container_id) : null;
+            $fuelBefore = $container ? $this->fuel->ticketGallons($container) : 0.0;
             DB::table('ticket_items')->where('ticket_id', $ticket->id)->delete();
             DB::table('tickets')->where('id', $ticket->id)->delete();
+            if ($container) {
+                $this->fuel->onTicketRemoved($container, $fuelBefore);
+            }
             Audit::log('ticket.deleted', "{$ticket->type_label} {$ticket->number} anulado y borrado: {$reason}", $ticket, $snapshot, ['motivo' => $reason, 'borrado' => true]);
         });
     }
@@ -104,7 +109,7 @@ class ContainerRemoval
         ];
 
         foreach (Ticket::where('container_id', $c->id)->get() as $t) {
-            $this->deleteTicket($t, 'Furgón '.$c->number.' anulado: '.$reason);
+            $this->deleteTicket($t, 'Furgón '.$c->number.' anulado: '.$reason, false);
         }
         $this->stock->purgeAttachments($c);
         DB::table('inventory_movements')->where('container_id', $c->id)->update(['container_id' => null]);   // las salidas se quedan; conservan el texto del destino

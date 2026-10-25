@@ -143,6 +143,8 @@ class FuelController extends Controller
             'vehicles' => Vehicle::where('status', '!=', 'inactive')->orderBy('ficha')->get(),
             'lastReading' => $this->lastReading(),
             'selected' => $request->integer('vehicle'),
+            'containers' => \App\Models\Container::with('vehicle')->whereIn('status', ['open', 'in_progress'])->orderByDesc('date')->orderByDesc('id')->get(),
+            'selectedContainer' => $request->integer('container'),
         ]);
     }
 
@@ -152,6 +154,7 @@ class FuelController extends Controller
         $data = $request->validate([
             'dispatched_at' => ['required', 'date', 'before_or_equal:today'],
             'vehicle_id' => ['required', Rule::exists('vehicles', 'id')->where('company_id', $cid)->whereNull('deleted_at')],
+            'container_id' => ['nullable', Rule::exists('containers', 'id')->where('company_id', $cid)->whereNull('deleted_at')->whereIn('status', ['open', 'in_progress'])],
             'reading_start' => ['required', 'numeric', 'min:0', 'max:999999999999'],
             'reading_end' => ['required', 'numeric', 'gt:reading_start', 'max:999999999999'],
             'odometer' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
@@ -163,6 +166,10 @@ class FuelController extends Controller
             $dispatch = DB::transaction(function () use ($data, $request, &$stored) {
                 $d = $this->fuel->dispatch($data, $request->user());
                 $this->attach($request, $d, ['photos'], $stored, 'photo');
+                // con furgón: sus galones pasan a los datos del furgón y al cerrarlo solo se descuenta lo que falte
+                if (! empty($data['container_id']) && ($container = \App\Models\Container::find($data['container_id']))) {
+                    app(\App\Services\Fleet\ContainerFuel::class)->afterDispatch($container, $d, $request->user());
+                }
 
                 return $d;
             });

@@ -28,7 +28,7 @@
         <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Conduce</dt><dd>{{ $container->conduce ?? '—' }}</dd></div>
         <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Responsable</dt><dd>{{ $container->responsible?->name ?? '—' }}</dd></div>
         <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Almacén</dt><dd>{{ $container->warehouse?->name }}</dd></div>
-        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Gasoil</dt><dd>{{ $container->fuel_gallons > 0 ? number_format($container->fuel_gallons, 1).' galones' : '—' }}</dd></div>
+        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Gasoil</dt><dd>{{ $container->fuel_gallons > 0 ? number_format($container->fuel_gallons, 1).' galones' : '—' }}@php $fuelDone = app(\App\Services\Fleet\ContainerFuel::class)->dispatched($container); @endphp @if($fuelDone > 0)<span class="block text-xs text-slate-500">Ya despachado: {{ number_format($fuelDone, 1) }} gal</span>@endif</dd></div>
         @if($container->closed_at)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Cerrado</dt><dd>{{ $container->closed_at->format('d/m/Y H:i') }} · {{ $container->closer?->name }}</dd></div>@endif
         @if($container->movement)<div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Movimiento de inventario</dt><dd><a href="{{ route('movements.show', $container->movement) }}" class="text-brand hover:underline">{{ $container->movement->number }}</a></dd></div>@endif
     </dl>

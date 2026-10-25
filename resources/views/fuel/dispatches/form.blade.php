@@ -3,7 +3,8 @@
 @section('content')
 <div class="mb-4"><a href="{{ route('fuel.index') }}" class="text-sm text-slate-500 hover:text-slate-800">← Combustible</a><h1 class="page-title">Nuevo despacho de gasoil</h1><p class="text-sm text-slate-500">Digitalización de la hoja «Control gasoil»: ficha, inicio, final, galones y kilometraje.</p></div>
 <form method="POST" action="{{ route('fuel.dispatches.store') }}" enctype="multipart/form-data" class="space-y-6"
-      x-data="{ s: '{{ old('reading_start', $lastReading) }}', e: '{{ old('reading_end') }}', reserve: {{ $tank->current_gallons }}, vehicles: @js($vehicles->mapWithKeys(fn ($v) => [$v->id => $v->odometer])), vehicle: '{{ old('vehicle_id', $selected ?: '') }}', km: '{{ old('odometer') }}',
+      x-data="{ s: '{{ old('reading_start', $lastReading) }}', e: '{{ old('reading_end') }}', reserve: {{ $tank->current_gallons }}, vehicles: @js($vehicles->mapWithKeys(fn ($v) => [$v->id => $v->odometer])), vehicle: '{{ old('vehicle_id', $selected ?: '') }}', km: '{{ old('odometer') }}', container: '{{ old('container_id', $selectedContainer ?: '') }}', cvehicles: @js($containers->mapWithKeys(fn ($c) => [$c->id => $c->vehicle_id])),
+        pickContainer() { const v = this.cvehicles[this.container]; if (v && !this.vehicle) { this.vehicle = String(v); this.km = ''; this.pick() } },
         get gal() { const g = parseFloat(this.e) - parseFloat(this.s); return isFinite(g) && g > 0 ? Math.round(g * 100) / 100 : 0 },
         get after() { return Math.round((this.reserve - this.gal) * 100) / 100 },
         pick() { if (this.vehicle && !this.km) this.km = this.vehicles[this.vehicle] || '' },
@@ -16,6 +17,12 @@
                 <label for="vehicle_id" class="label">Ficha (vehículo) <span class="text-red-500">*</span></label>
                 <select id="vehicle_id" name="vehicle_id" x-model="vehicle" @change="km = ''; pick()" class="input" required><option value="">Seleccione…</option>@foreach($vehicles as $v)<option value="{{ $v->id }}">{{ $v->ficha }}{{ $v->plate ? ' · '.$v->plate : '' }}</option>@endforeach</select>
                 @error('vehicle_id')<p class="field-error">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label for="container_id" class="label">Furgón (opcional)</label>
+                <select id="container_id" name="container_id" x-model="container" @change="pickContainer()" class="input"><option value="">Sin furgón</option>@foreach($containers as $c)<option value="{{ $c->id }}">#{{ $c->number }} · {{ $c->date->format('d/m/Y') }}{{ $c->vehicle ? ' · '.$c->vehicle->ficha : '' }}</option>@endforeach</select>
+                @error('container_id')<p class="field-error">{{ $message }}</p>@enderror
+                <p class="mt-1 text-xs text-slate-500">Si lo eliges, estos galones pasan a los datos del furgón y al cerrarlo solo se descuenta lo que falte.</p>
             </div>
             <div><label for="odometer" class="label">Kilometraje</label><input id="odometer" name="odometer" x-model="km" type="number" step="0.1" min="0" inputmode="decimal" class="input">@error('odometer')<p class="field-error">{{ $message }}</p>@enderror</div>
             <div><label for="reading_start" class="label">Lectura inicial (inicio) <span class="text-red-500">*</span></label><input id="reading_start" name="reading_start" x-model="s" type="number" step="0.1" min="0" inputmode="decimal" class="input" required>@error('reading_start')<p class="field-error">{{ $message }}</p>@enderror @if($lastReading !== null)<p class="mt-1 text-xs text-slate-500">Última lectura final registrada: {{ number_format($lastReading, 1) }}</p>@endif</div>

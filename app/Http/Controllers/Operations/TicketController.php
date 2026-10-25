@@ -76,7 +76,8 @@ class TicketController extends Controller
             return back()->with('error', $this->source($request) === 'used' ? 'Todavía no se ha descontado ningún material del inventario para este furgón (registre una salida hacia el furgón o ciérrelo).' : 'El furgón no tiene materiales registrados: agréguelos antes de emitir el ticket.')->withInput();
         }
 
-        $ticket = DB::transaction(function () use ($container, $type, $data, $items, $request) {
+        $fuelSync = null;
+        $ticket = DB::transaction(function () use ($container, $type, $data, $items, $request, &$fuelSync) {
             $ticket = Ticket::create([
                 'container_id' => $container->id, 'vehicle_id' => $container->vehicle_id, 'type' => $type,
                 'number' => app(DocumentNumbering::class)->next($type === Ticket::FUEL ? 'ticket_fuel' : 'ticket_materials'),
@@ -101,10 +102,17 @@ class TicketController extends Controller
                 'numero' => $ticket->number, 'furgon' => $container->number, 'lineas' => $ticket->items()->count(),
             ]);
 
+            // el gasoil del ticket pasa solo a los datos del furgón: al cerrarlo se descuenta lo que falte
+            if ($type === Ticket::FUEL) {
+                $fuelSync = app(\App\Services\Fleet\ContainerFuel::class)->syncFromTickets($container, $request->user());
+            }
+
             return $ticket;
         });
 
-        return redirect()->route('tickets.show', $ticket)->with('success', "{$ticket->type_label} {$ticket->number} emitido.");
+        $note = $fuelSync ? ' El gasoil del furgón quedó en '.rtrim(rtrim(number_format($fuelSync['new'], 2, '.', ''), '0'), '.').' gal; se descuenta de la reserva al cerrarlo.' : '';
+
+        return redirect()->route('tickets.show', $ticket)->with('success', "{$ticket->type_label} {$ticket->number} emitido.".$note);
     }
 
     public function show(Ticket $ticket)
