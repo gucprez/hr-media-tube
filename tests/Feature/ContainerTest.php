@@ -252,43 +252,42 @@ class ContainerTest extends TestCase
         $this->assertSame(183.0, $w['tape']->stockInWarehouse($w['wh']->id));
     }
 
-    public function test_void_closed_container_restores_stock_and_voids_tickets(): void
+    public function test_void_closed_container_returns_stock_and_deletes_the_container_and_its_tickets(): void
     {
         $w = $this->world();
         $c = $this->createContainer($w, [['product_id' => $w['tape']->id, 'boxes' => 2]]);
         $this->post("/operaciones/furgones/{$c->id}/cerrar");
         $this->post("/operaciones/furgones/{$c->id}/tickets", ['type' => 'materials', 'issued_at' => now()->toDateString()])->assertRedirect()->assertSessionHasNoErrors();
         $this->assertSame(116.0, $w['tape']->stockInWarehouse($w['wh']->id));
+        $this->assertSame(1, Ticket::count());
 
         $this->post("/operaciones/furgones/{$c->id}/anular", ['reason' => 'x'])->assertSessionHasErrors('reason');
-        $this->post("/operaciones/furgones/{$c->id}/anular", ['reason' => 'Error de digitación'])->assertRedirect()->assertSessionHasNoErrors();
+        $this->post("/operaciones/furgones/{$c->id}/anular", ['reason' => 'Error de digitación'])->assertRedirect(route('containers.index'))->assertSessionHasNoErrors()->assertSessionHas('success');
 
-        $c->refresh();
-        $this->assertSame('voided', $c->status);
-        $this->assertSame('Error de digitación', $c->void_reason);
-        $this->assertSame($w['user']->id, $c->voided_by);
-        $this->assertSame(188.0, $w['tape']->stockInWarehouse($w['wh']->id));
-        $void = InventoryMovement::findOrFail($c->void_movement_id);
-        $this->assertSame('void', $void->type);
-        $this->assertSame($c->movement_id, $void->reversal_of_id);
-        $this->assertNotNull(InventoryMovement::find($c->movement_id)->voided_at);   // el original se conserva, marcado
-        $ticket = Ticket::first();
-        $this->assertSame('voided', $ticket->status);
-        $this->assertStringContainsString('Furgón anulado', $ticket->void_reason);
+        $this->assertNull(Container::withTrashed()->find($c->id), 'el furgón se borra de verdad');
+        $this->assertSame(0, Ticket::count(), 'sus tickets también');
+        $this->assertSame(188.0, $w['tape']->stockInWarehouse($w['wh']->id), 'los materiales volvieron al inventario');
+        $this->assertSame(1, InventoryMovement::count(), 'solo queda la entrada inicial: ni el consumo ni su reverso');
         $this->assertCount(0, app(InventoryLedger::class)->discrepancies());
-        // consumo neto del furgón = 0 (cierre + anulación)
         $this->assertCount(0, app(ContainerConsumption::class)->byProduct([$c->id]));
-        $this->post("/operaciones/furgones/{$c->id}/anular", ['reason' => 'Otra vez'])->assertForbidden();
+        $audit = \App\Models\AuditLog::where('action', 'container.deleted')->firstOrFail();
+        $this->assertStringContainsString('Error de digitación', $audit->description);
+        $this->assertSame('0111', $audit->old_values['numero']);
+        $this->assertSame(1, \App\Models\AuditLog::where('action', 'ticket.deleted')->count());
+        $this->post("/operaciones/furgones/{$c->id}/anular", ['reason' => 'Otra vez'])->assertNotFound();
     }
 
-    public function test_void_open_container_has_no_stock_effect(): void
+    public function test_void_open_container_has_no_stock_effect_and_the_number_can_be_used_again(): void
     {
         $w = $this->world();
         $c = $this->createContainer($w, [['product_id' => $w['tape']->id, 'boxes' => 1]]);
         $this->post("/operaciones/furgones/{$c->id}/anular", ['reason' => 'Cancelado por el cliente'])->assertRedirect()->assertSessionHasNoErrors();
-        $this->assertSame('voided', $c->fresh()->status);
+        $this->assertNull(Container::withTrashed()->find($c->id));
         $this->assertSame(188.0, $w['tape']->stockInWarehouse($w['wh']->id));
         $this->assertSame(1, InventoryMovement::count());
+
+        $again = $this->createContainer($w, [['product_id' => $w['tape']->id, 'boxes' => 1]]);   // mismo número 0111: ya está libre
+        $this->assertSame('0111', $again->number);
     }
 
     public function test_void_closed_container_works_even_if_stock_was_used_up_afterwards(): void
@@ -299,8 +298,51 @@ class ContainerTest extends TestCase
         $this->post("/operaciones/furgones/{$c->id}/cerrar");                                     // filtros: 4 → 1
         app(StockService::class)->exit(['warehouse_id' => $w['wh']->id, 'destination' => 'X', 'reason' => 'Y'], [['product_id' => $w['filter']->id, 'units' => 1]], $w['user']); // → 0
         $this->post("/operaciones/furgones/{$c->id}/anular", ['reason' => 'Intento de anulación'])->assertSessionHas('success');
-        $this->assertSame('voided', $c->fresh()->status);
+        $this->assertNull(Container::withTrashed()->find($c->id));
         $this->assertSame(3.0, $w['filter']->stockInWarehouse($w['wh']->id));
+        $this->assertCount(0, app(InventoryLedger::class)->discrepancies());
+    }
+
+    public function test_voiding_a_container_keeps_the_exits_that_were_sent_to_it(): void
+    {
+        $w = $this->world();
+        $c = $this->createContainer($w, [['product_id' => $w['tape']->id, 'boxes' => 1]]);
+        $exit = app(StockService::class)->exit(['warehouse_id' => $w['wh']->id, 'destination' => 'Furgón 0111', 'requested_by' => 'Pedro Pérez', 'destination_type' => 'container', 'container_id' => $c->id, 'reason' => 'Carga'],
+            [['product_id' => $w['tape']->id, 'boxes' => 1]], $w['user']);
+        $this->assertSame(152.0, $w['tape']->stockInWarehouse($w['wh']->id));
+
+        $this->post("/operaciones/furgones/{$c->id}/anular", ['reason' => 'Furgón cancelado'])->assertSessionHas('success');
+
+        $kept = InventoryMovement::findOrFail($exit->id);
+        $this->assertNull($kept->container_id, 'pierde el enlace al furgón borrado');
+        $this->assertSame('Furgón 0111', $kept->destination, 'pero conserva el texto del destino');
+        $this->assertSame(152.0, $w['tape']->stockInWarehouse($w['wh']->id), 'el material sí salió: el stock no se devuelve');
+    }
+
+    public function test_purging_legacy_voided_containers_and_tickets(): void
+    {
+        $w = $this->world();
+        $c = $this->createContainer($w, [['product_id' => $w['tape']->id, 'boxes' => 2]]);
+        $this->post("/operaciones/furgones/{$c->id}/cerrar");
+        $this->post("/operaciones/furgones/{$c->id}/tickets", ['type' => 'materials', 'issued_at' => now()->toDateString()])->assertSessionHasNoErrors();
+        // estado que dejaba el sistema anterior: consumo anulado con su reverso, furgón y ticket marcados como anulados
+        $void = app(StockService::class)->reverse($c->fresh()->movement, 'Anulación del furgón 0111: prueba', $w['user']);
+        $c->forceFill(['status' => 'voided', 'voided_at' => now(), 'voided_by' => $w['user']->id, 'void_reason' => 'Prueba', 'void_movement_id' => $void->id])->save();
+        Ticket::first()->forceFill(['status' => 'voided', 'voided_at' => now(), 'voided_by' => $w['user']->id, 'void_reason' => 'Furgón anulado: Prueba'])->save();
+        $this->assertSame(188.0, $w['tape']->stockInWarehouse($w['wh']->id));
+
+        $removal = app(\App\Services\Operations\ContainerRemoval::class);
+        $dry = $removal->purgeVoided(true);
+        $this->assertSame(1, $dry['furgones']);
+        $this->assertSame(1, $dry['tickets']);
+        $this->assertNotNull(Container::find($c->id), 'el ensayo no borra nada');
+
+        $real = $removal->purgeVoided();
+        $this->assertSame(0, $real['omitidos']);
+        $this->assertNull(Container::withTrashed()->find($c->id));
+        $this->assertSame(0, Ticket::count());
+        $this->assertSame(1, InventoryMovement::count(), 'solo queda la entrada inicial');
+        $this->assertSame(188.0, $w['tape']->stockInWarehouse($w['wh']->id));
         $this->assertCount(0, app(InventoryLedger::class)->discrepancies());
     }
 

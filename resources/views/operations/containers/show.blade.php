@@ -107,15 +107,15 @@
     @endcan
     @endif
     @can('containers.void')
-    <form method="POST" action="{{ route('containers.void', $container) }}" class="card card-body space-y-3" @submit="if (!confirm('¿Anular el furgón? Esta acción queda registrada.')) $event.preventDefault()">
+    <form method="POST" action="{{ route('containers.void', $container) }}" class="card card-body space-y-3" @submit="if (!confirm('¿Anular el furgón? Se BORRARÁ con sus tickets y los materiales volverán al inventario. Solo queda constancia en la auditoría.')) $event.preventDefault()">
         @csrf
         <h2 class="font-semibold text-slate-900">Anular furgón</h2>
-        <p class="text-sm text-slate-500">{{ $container->status === 'closed' ? 'Se devolverán los materiales al inventario con un movimiento de anulación y se anularán sus tickets.' : 'Se anularán también sus tickets. No se borra nada.' }}</p>
+        <p class="text-sm text-slate-500">{{ $container->status === 'closed' ? 'Se devolverán los materiales al inventario y se BORRARÁN el furgón y sus tickets.' : 'Se BORRARÁN el furgón y sus tickets.' }} Solo queda constancia en la auditoría. Las salidas de almacén dirigidas a este furgón se conservan.</p>
         <x-field name="reason" label="Motivo de la anulación" required />
         @if($container->status === 'closed' && auth()->user()->hasPermission('inventory.negative') && $currentCompany->setting('allow_negative_stock'))
             <label class="flex items-start gap-2 text-sm text-red-700"><input type="checkbox" name="allow_negative" value="1" class="mt-0.5 rounded border-red-300"> Autorización especial (existencia negativa).</label>
         @endif
-        <button class="btn-danger">Anular furgón</button>
+        <button class="btn-danger">Anular y borrar furgón</button>
     </form>
     @endcan
 </div>

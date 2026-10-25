@@ -145,15 +145,19 @@ class TicketController extends Controller
         return $pdf->download('ticket-'.strtolower($ticket->type).'-'.$ticket->number.'.pdf');
     }
 
-    public function void(Request $request, Ticket $ticket)
+    /** Anula el ticket: se BORRA (queda solo en la auditoría). Su número no se reutiliza. */
+    public function void(Request $request, Ticket $ticket, \App\Services\Operations\ContainerRemoval $removal)
     {
         abort_if($ticket->isVoided(), 403, 'El ticket ya está anulado.');
         $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:200']], ['reason.required' => 'Indique el motivo de la anulación.', 'reason.min' => 'El motivo debe tener al menos 5 caracteres.']);
 
-        $ticket->forceFill(['status' => 'voided', 'voided_at' => now(), 'voided_by' => $request->user()->id, 'void_reason' => $data['reason']])->save();
-        Audit::log('ticket.voided', "{$ticket->type_label} {$ticket->number} anulado: {$data['reason']}", $ticket, ['status' => 'issued'], ['status' => 'voided', 'motivo' => $data['reason']]);
+        $label = "{$ticket->type_label} {$ticket->number}";
+        $container = $ticket->container_id ? \App\Models\Container::find($ticket->container_id) : null;
+        $removal->deleteTicket($ticket, $data['reason']);
 
-        return back()->with('success', "Ticket {$ticket->number} anulado (se conserva en el historial).");
+        $to = $container ? redirect()->route('containers.show', $container) : redirect()->route('tickets.index');
+
+        return $to->with('success', "{$label} anulado y borrado.");
     }
 
     // ---- internos --------------------------------------------------------------

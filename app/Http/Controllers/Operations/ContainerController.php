@@ -207,38 +207,20 @@ class ContainerController extends Controller
         return $lines;
     }
 
-    public function void(Request $request, Container $container, StockService $stock)
+    /** Anula el furgón: devuelve sus materiales al inventario y BORRA el furgón con sus tickets (queda solo en la auditoría). */
+    public function void(Request $request, Container $container, \App\Services\Operations\ContainerRemoval $removal)
     {
         abort_if($container->status === Container::VOIDED, 403, 'El furgón ya está anulado.');
         $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:200']], ['reason.required' => 'Indique el motivo de la anulación.', 'reason.min' => 'El motivo debe tener al menos 5 caracteres.']);
 
+        $returned = $container->status === Container::CLOSED && $container->movement_id;
         try {
-            DB::transaction(function () use ($container, $stock, $request, $data) {
-                $voidMovementId = null;
-                if ($container->status === Container::CLOSED && $container->movement_id) {
-                    $reverse = $stock->reverse($container->movement, 'Anulación del furgón '.$container->number.': '.$data['reason'], $request->user(), $request->boolean('allow_negative'));
-                    $voidMovementId = $reverse->id;
-                }
-                app(\App\Services\Fleet\ContainerFuel::class)->onVoid($container, $data['reason'], $request->user());
-
-                // los tickets del furgón se anulan con él (nunca se borran)
-                foreach (Ticket::where('container_id', $container->id)->where('status', '!=', 'voided')->get() as $ticket) {
-                    $ticket->forceFill(['status' => 'voided', 'voided_at' => now(), 'voided_by' => $request->user()->id, 'void_reason' => 'Furgón anulado: '.$data['reason']])->save();
-                    Audit::log('ticket.voided', "Ticket {$ticket->number} anulado por anulación del furgón {$container->number}", $ticket);
-                }
-
-                $old = $container->status;
-                $container->forceFill([
-                    'status' => Container::VOIDED, 'voided_at' => now(), 'voided_by' => $request->user()->id, 'void_reason' => $data['reason'],
-                    'void_movement_id' => $voidMovementId,
-                ])->save();
-                Audit::log('container.voided', "Furgón {$container->number} anulado: {$data['reason']}", $container, ['status' => $old], ['status' => Container::VOIDED, 'motivo' => $data['reason']]);
-            });
+            $removal->remove($container, $data['reason'], $request->user(), $request->boolean('allow_negative'));
         } catch (InventoryException|\App\Services\Fuel\FuelException $e) {
             return back()->with('error', $e->getMessage());
         }
 
-        return redirect()->route('containers.show', $container)->with('success', 'Furgón anulado'.($container->void_movement_id ? ' y materiales devueltos al inventario.' : '.'));
+        return redirect()->route('containers.index')->with('success', "Furgón {$container->number} anulado y borrado".($returned ? '; los materiales volvieron al inventario.' : '.'));
     }
 
     // ---- internos --------------------------------------------------------------

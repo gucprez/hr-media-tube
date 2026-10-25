@@ -151,36 +151,37 @@ class TicketTest extends TestCase
         $this->assertSame(0, Ticket::count());
     }
 
-    public function test_void_keeps_ticket_with_user_date_and_reason(): void
+    public function test_void_deletes_the_ticket_and_keeps_only_the_audit(): void
     {
         $w = $this->world();
         $t = $this->issue($w);
+        $number = $t->number;
+        $this->assertGreaterThan(0, \App\Models\TicketItem::where('ticket_id', $t->id)->count());
 
         $this->post("/operaciones/tickets/{$t->id}/anular", ['reason' => 'x'])->assertSessionHasErrors('reason');
-        $this->post("/operaciones/tickets/{$t->id}/anular", ['reason' => 'Se emitió con el chofer equivocado'])->assertSessionHasNoErrors();
+        $this->post("/operaciones/tickets/{$t->id}/anular", ['reason' => 'Se emitió con el chofer equivocado'])->assertSessionHasNoErrors()
+            ->assertRedirect(route('containers.show', $w['container']))->assertSessionHas('success');
 
-        $t->refresh();
-        $this->assertSame('voided', $t->status);
-        $this->assertSame($w['user']->id, $t->voided_by);
-        $this->assertNotNull($t->voided_at);
-        $this->assertSame('Se emitió con el chofer equivocado', $t->void_reason);
-        $this->assertSame(1, Ticket::count());                                  // no desaparece
-        $this->get('/operaciones/tickets')->assertOk()->assertSee('Anulado');
-        $this->get("/operaciones/tickets/{$t->id}")->assertOk()->assertSee('ANULADO')->assertSee('Se emitió con el chofer equivocado')->assertSee($w['user']->name);
-        $this->assertDatabaseHas('audit_logs', ['action' => 'ticket.voided', 'auditable_id' => $t->id]);
-        $this->post("/operaciones/tickets/{$t->id}/anular", ['reason' => 'Otra vez más'])->assertForbidden();
+        $this->assertSame(0, Ticket::count(), 'el ticket se borra');
+        $this->assertSame(0, \App\Models\TicketItem::where('ticket_id', $t->id)->count());
+        $this->assertSame(0, $this->get('/operaciones/tickets')->assertOk()->viewData('tickets')->count(), 'ya no aparece en la lista');
+        $audit = \App\Models\AuditLog::where('action', 'ticket.deleted')->firstOrFail();
+        $this->assertStringContainsString('Se emitió con el chofer equivocado', $audit->description);
+        $this->assertSame($number, $audit->old_values['numero'], 'la auditoría conserva el contenido');
+        $this->post("/operaciones/tickets/{$t->id}/anular", ['reason' => 'Otra vez más'])->assertNotFound();
         // el número no se reutiliza
         $this->assertSame('0002', $this->issue($w)->number);
     }
 
-    public function test_voided_ticket_cannot_be_printed_or_downloaded(): void
+    public function test_a_ticket_voided_with_the_old_system_cannot_be_printed_or_downloaded(): void
     {
         $w = $this->world();
         $t = $this->issue($w);
-        $this->post("/operaciones/tickets/{$t->id}/anular", ['reason' => 'Motivo de prueba']);
+        $t->forceFill(['status' => 'voided', 'voided_at' => now(), 'voided_by' => $w['user']->id, 'void_reason' => 'Motivo de prueba'])->save();
         $this->get("/operaciones/tickets/{$t->id}/imprimir")->assertRedirect("/operaciones/tickets/{$t->id}");
         $this->get("/operaciones/tickets/{$t->id}/pdf")->assertRedirect("/operaciones/tickets/{$t->id}");
         $this->assertSame(0, $t->fresh()->print_count);
+        $this->post("/operaciones/tickets/{$t->id}/anular", ['reason' => 'Ya estaba anulado'])->assertForbidden();
     }
 
     public function test_ticket_can_never_be_deleted(): void
@@ -308,7 +309,7 @@ class TicketTest extends TestCase
         $this->issue($w);
         $this->issue($w, 'fuel');
         $voided = $this->issue($w);
-        $this->post("/operaciones/tickets/{$voided->id}/anular", ['reason' => 'Prueba de filtro']);
+        $voided->forceFill(['status' => 'voided', 'voided_at' => now(), 'voided_by' => $w['user']->id, 'void_reason' => 'Prueba de filtro'])->save();   // anulado con el sistema anterior
 
         $count = fn (string $qs) => $this->get('/operaciones/tickets'.$qs)->assertOk()->viewData('tickets')->count();
         $this->assertSame(3, $count(''));

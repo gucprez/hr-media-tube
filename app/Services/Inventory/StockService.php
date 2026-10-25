@@ -170,7 +170,7 @@ class StockService
      * (quién, cuándo, motivo y el contenido del documento). Rechaza la anulación si en cualquier punto del historial el stock
      * quedaría negativo (el material ya se usó), salvo autorización especial.
      */
-    public function remove(Movement $movement, string $reason, ?User $user = null, bool $allowNegative = false): void
+    public function remove(Movement $movement, string $reason, ?User $user = null, bool $allowNegative = false, bool $fromSource = false): void
     {
         $reason = trim($reason);
         if (mb_strlen($reason) < 3) {
@@ -178,7 +178,7 @@ class StockService
         }
         $companyId = app(CurrentCompany::class)->id();
 
-        DB::transaction(function () use ($movement, $reason, $user, $allowNegative, $companyId) {
+        DB::transaction(function () use ($movement, $reason, $user, $allowNegative, $companyId, $fromSource) {
             $doc = Movement::lockForUpdate()->find($movement->id);
             if (! $doc) {
                 throw new InventoryException('El documento no existe o no pertenece a su empresa.');
@@ -186,7 +186,7 @@ class StockService
             if ($doc->type === Movement::TYPE_VOID || $doc->voided_at) {
                 throw new InventoryException('Este documento ya está anulado o es una anulación.');
             }
-            if ($doc->source_type !== null || in_array($doc->type, [Movement::TYPE_CONTAINER, Movement::TYPE_MAINTENANCE], true)) {
+            if (! $fromSource && ($doc->source_type !== null || in_array($doc->type, [Movement::TYPE_CONTAINER, Movement::TYPE_MAINTENANCE], true))) {
                 throw new InventoryException('Este documento se anula desde su origen (el furgón o el mantenimiento).');
             }
             $allowNegative = $this->negativeAllowed(Movement::TYPE_EXIT, ['allow_negative' => $allowNegative], $user);
@@ -422,19 +422,25 @@ class StockService
         ];
     }
 
-    /** Borra físicamente el encabezado, las líneas y las fotos/documentos de un documento (sin pasar por la protección de los modelos). */
-    protected function deleteDocumentRows(Movement $doc): void
+    /** Borra las fotos/documentos de un registro (y el archivo, si nadie más lo usa). */
+    public function purgeAttachments(\Illuminate\Database\Eloquent\Model $model): void
     {
-        foreach (DB::table('attachments')->where('attachable_type', $doc->getMorphClass())->where('attachable_id', $doc->id)->get() as $a) {
+        foreach (DB::table('attachments')->where('attachable_type', $model->getMorphClass())->where('attachable_id', $model->getKey())->get() as $a) {
             DB::table('attachments')->where('id', $a->id)->delete();
             if (! DB::table('attachments')->where('disk', $a->disk)->where('path', $a->path)->exists()) {
                 try {
                     \Illuminate\Support\Facades\Storage::disk($a->disk)->delete($a->path);
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     // el archivo ya no estaba: no es motivo para frenar la anulación
                 }
             }
         }
+    }
+
+    /** Borra físicamente el encabezado, las líneas y las fotos/documentos de un documento (sin pasar por la protección de los modelos). */
+    protected function deleteDocumentRows(Movement $doc): void
+    {
+        $this->purgeAttachments($doc);
         DB::table('inventory_movement_items')->where('movement_id', $doc->id)->delete();
         DB::table('inventory_movements')->where('id', $doc->id)->delete();
     }
@@ -447,16 +453,13 @@ class StockService
      */
     public function purgeVoided(bool $dryRun = false): array
     {
-        $companyId = app(CurrentCompany::class)->id();
         $out = ['borrados' => 0, 'omitidos' => 0, 'detalle' => []];
 
         foreach (Movement::whereNotNull('voided_at')->where('type', '!=', Movement::TYPE_VOID)->whereNull('source_type')->orderBy('id')->get() as $orig) {
             $voids = Movement::where('reversal_of_id', $orig->id)->get();
             $inUse = DB::table('containers')->where(fn ($q) => $q->where('movement_id', $orig->id)->orWhereIn('void_movement_id', $voids->pluck('id')->all() ?: [0]))->exists()
                 || DB::table('maintenance_records')->where('movement_id', $orig->id)->exists();
-            $ids = $voids->pluck('id')->push($orig->id)->all();
-            $net = Line::whereIn('movement_id', $ids)->get()->groupBy(fn ($l) => $l->warehouse_id.'-'.$l->product_id)->map(fn ($g) => round((float) $g->sum('delta_base'), 3));
-            if ($inUse || $net->contains(fn ($v) => $v != 0.0)) {
+            if ($inUse || ! $this->pairIsNeutral($orig, $voids)) {
                 $out['omitidos']++;
                 $out['detalle'][] = $orig->number.': omitido ('.($inUse ? 'pertenece a un furgón o mantenimiento' : 'su efecto neto no es cero').')';
                 continue;
@@ -467,22 +470,41 @@ class StockService
                 continue;
             }
 
-            DB::transaction(function () use ($orig, $voids, $ids, $companyId) {
-                $pairs = Line::whereIn('movement_id', $ids)->get(['warehouse_id', 'product_id'])->map(fn ($l) => [(int) $l->warehouse_id, (int) $l->product_id])->unique()->values();
-                $snapshot = $this->documentSnapshot($orig, Line::where('movement_id', $orig->id)->get());
-                DB::table('inventory_movements')->where('replaces_id', $orig->id)->update(['replaces_id' => null]);
-                foreach ($voids as $v) {
-                    $this->deleteDocumentRows($v);
-                }
-                $this->deleteDocumentRows($orig);
-                foreach ($pairs as [$wh, $pid]) {
-                    $this->rebuildChain($wh, $pid, $companyId);
-                }
-                Audit::log('inventory.purge', sprintf('Limpieza de documento anulado %s (y su reverso %s)', $orig->number, $voids->pluck('number')->implode(', ') ?: '—'), $orig, $snapshot, ['borrado' => true, 'motivo_original' => $orig->reason]);
-            });
+            $this->purgePair($orig, $voids);
         }
 
         return $out;
+    }
+
+    /** ¿El documento anulado y sus reversos se anulan entre sí (efecto neto cero en cada almacén/producto)? */
+    public function pairIsNeutral(Movement $orig, $voids): bool
+    {
+        $ids = collect($voids)->pluck('id')->push($orig->id)->all();
+
+        return ! Line::whereIn('movement_id', $ids)->get()->groupBy(fn ($l) => $l->warehouse_id.'-'.$l->product_id)->contains(fn ($g) => round((float) $g->sum('delta_base'), 3) != 0.0);
+    }
+
+    /** Borra un documento anulado y sus reversos y recalcula los saldos (el efecto neto es cero: el stock no cambia). */
+    public function purgePair(Movement $orig, $voids): void
+    {
+        $companyId = app(CurrentCompany::class)->id();
+        $voids = collect($voids);
+        DB::transaction(function () use ($orig, $voids, $companyId) {
+            $ids = $voids->pluck('id')->push($orig->id)->all();
+            $pairs = Line::whereIn('movement_id', $ids)->get(['warehouse_id', 'product_id'])->map(fn ($l) => [(int) $l->warehouse_id, (int) $l->product_id])->unique()->values();
+            $snapshot = $this->documentSnapshot($orig, Line::where('movement_id', $orig->id)->get());
+            DB::table('inventory_movements')->where('replaces_id', $orig->id)->update(['replaces_id' => null]);
+            DB::table('containers')->where('movement_id', $orig->id)->update(['movement_id' => null]);
+            DB::table('containers')->whereIn('void_movement_id', $voids->pluck('id')->all() ?: [0])->update(['void_movement_id' => null]);
+            foreach ($voids as $v) {
+                $this->deleteDocumentRows($v);
+            }
+            $this->deleteDocumentRows($orig);
+            foreach ($pairs as [$wh, $pid]) {
+                $this->rebuildChain($wh, $pid, $companyId);
+            }
+            Audit::log('inventory.purge', sprintf('Limpieza de documento anulado %s (y su reverso %s)', $orig->number, $voids->pluck('number')->implode(', ') ?: '—'), $orig, $snapshot, ['borrado' => true, 'motivo_original' => $orig->reason]);
+        });
     }
 
     /**

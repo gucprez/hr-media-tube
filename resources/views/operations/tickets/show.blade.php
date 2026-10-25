@@ -44,12 +44,12 @@
 
     <div class="space-y-4">
         @unless($ticket->isVoided())@can('tickets.void')
-        <form method="POST" action="{{ route('tickets.void', $ticket) }}" class="card card-body space-y-3" @submit="if (!confirm('¿Anular el ticket? Se conservará en el historial.')) $event.preventDefault()">
+        <form method="POST" action="{{ route('tickets.void', $ticket) }}" class="card card-body space-y-3" @submit="if (!confirm('¿Anular el ticket? Se BORRARÁ; su número no se vuelve a usar. Solo queda constancia en la auditoría.')) $event.preventDefault()">
             @csrf
             <h2 class="font-semibold text-slate-900">Anular ticket</h2>
             <p class="text-sm text-slate-500">El ticket no se elimina: queda como ANULADO con su usuario, fecha y motivo.</p>
             <x-field name="reason" label="Motivo" required />
-            <button class="btn-danger">Anular ticket</button>
+            <button class="btn-danger">Anular y borrar ticket</button>
         </form>
         @endcan @endunless
         <div class="card"><h2 class="border-b border-slate-100 px-4 py-3 font-semibold text-slate-900">Historial</h2>
