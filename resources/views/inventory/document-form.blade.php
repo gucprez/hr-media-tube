@@ -10,7 +10,7 @@ $cfg = [
 $editing = isset($movement) && $movement;
 if ($editing) {
     $cfg['title'] = 'Editar '.mb_strtolower($movement->type_label).' '.$movement->number;
-    $cfg['sub'] = 'Al guardar, este documento se anula y se crea uno nuevo con los datos corregidos. Los dos quedan ligados y el stock se ajusta solo por la diferencia.';
+    $cfg['sub'] = 'Al guardar se corrige este mismo documento: conserva su número y el stock se ajusta solo por la diferencia.';
     $cfg['action'] = route('movements.update', $movement);
     $cfg['button'] = 'Guardar cambios';
 }
@@ -77,7 +77,7 @@ if ($editing) {
 
     @if($editing)
     <div class="card card-body space-y-2 border-amber-300 bg-amber-50/60">
-        <x-field name="edit_reason" label="Motivo de la edición" required minlength="5" maxlength="200" hint="Obligatorio. Queda registrado en el documento anulado, en el nuevo y en la auditoría." />
+        <x-field name="edit_reason" label="Motivo de la edición" required minlength="5" maxlength="200" hint="Obligatorio. Queda registrado en la auditoría junto con lo que había antes." />
     </div>
     @endif
 

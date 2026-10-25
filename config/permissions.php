@@ -28,7 +28,7 @@ return [
             'inventory.adjust' => 'Registrar ajustes',
             'inventory.negative' => 'Autorizar stock negativo',
             'inventory.void' => 'Anular movimientos',
-            'inventory.edit' => 'Editar entradas y salidas (anula y reemplaza)',
+            'inventory.edit' => 'Editar entradas y salidas (corrige el mismo documento)',
         ],
         'Furgones' => [
             'containers.view' => 'Ver furgones',

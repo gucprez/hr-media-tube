@@ -69,7 +69,7 @@ class MovementController extends Controller
         return view('inventory.movements.show', ['movement' => $movement, 'converter' => $this->converter]);
     }
 
-    /** Anula un documento de inventario generando su reverso (nada se borra). Los consumos de furgón se anulan desde el furgón. */
+    /** Anula un documento de inventario: corrige el stock y BORRA el documento (queda solo en la auditoría). Los consumos de furgón se anulan desde el furgón. */
     public function void(Request $request, Movement $movement, StockService $stock)
     {
         $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:200']], ['reason.required' => 'Indique el motivo de la anulación.', 'reason.min' => 'El motivo debe tener al menos 5 caracteres.']);
@@ -81,13 +81,14 @@ class MovementController extends Controller
             return back()->with('error', 'El consumo de un furgón se anula desde el propio furgón.');
         }
 
+        $label = $movement->type_label.' '.$movement->number;
         try {
-            $reverse = $stock->reverse($movement, $data['reason'], $request->user(), $request->boolean('allow_negative'));
+            $stock->remove($movement, $data['reason'], $request->user(), $request->boolean('allow_negative'));
         } catch (InventoryException $e) {
             return back()->with('error', $e->getMessage());
         }
 
-        return redirect()->route('movements.show', $movement)->with('success', "Documento anulado con {$reverse->number}.");
+        return redirect()->route('movements.index')->with('success', "{$label} anulada y borrada; el stock quedó corregido.");
     }
 
     // ---- formularios -----------------------------------------------------------
@@ -128,7 +129,7 @@ class MovementController extends Controller
         return $this->post($request, 'adjustment', $data, fn () => $service->adjust($this->header($data, 'adjustment'), $data['lines'], $request->user()));
     }
 
-    // ---- editar = anular el original y crear uno nuevo corregido ----------------
+    // ---- editar = corregir el MISMO documento (conserva su número) --------------
 
     public function edit(Movement $movement)
     {
@@ -141,10 +142,8 @@ class MovementController extends Controller
     }
 
     /**
-     * El libro de inventario NUNCA se modifica: «editar» crea un documento nuevo con los datos corregidos y anula el original
-     * (ligados entre sí, con motivo y auditoría), todo en una sola transacción. Si algo falla no queda nada a medias.
-     * El orden evita falsos rechazos: en una ENTRADA se registra primero la nueva y luego se anula la original (solo importa la
-     * existencia final); en una SALIDA se anula primero la original (devuelve el stock) y luego se registra la nueva.
+     * «Editar» corrige el mismo documento: conserva su número, ajusta el stock solo por la diferencia y recalcula los saldos del
+     * historial, todo en una transacción. La auditoría guarda el antes y el después con el motivo de la edición.
      */
     public function update(Request $request, Movement $movement, StockService $service)
     {
@@ -158,34 +157,11 @@ class MovementController extends Controller
 
         $mode = $movement->type;
         $data = $this->validateDocument($request, $mode);
-        $header = $this->header($data, $mode) + ['replaces_id' => $movement->id];
+        $header = $this->header($data, $mode);
         $user = $request->user();
 
-        return $this->post($request, $mode, $data, function () use ($service, $movement, $mode, $header, $data, $why, $user) {
-            try {
-                if ($mode === Movement::TYPE_ENTRY) {
-                    $new = $service->entry($header, $data['lines'], $user);
-                    $service->reverse($movement, 'Edición: '.$why, $user, (bool) ($data['allow_negative'] ?? false));
-                } else {
-                    $service->reverse($movement, 'Edición: '.$why, $user, false);
-                    $new = $service->exit($header, $data['lines'], $user);
-                }
-            } catch (InventoryException $e) {
-                throw new InventoryException(str_replace('No se puede anular:', 'No se puede editar:', $e->getMessage()));
-            }
-
-            // Las fotos y documentos del original (conduce, factura) siguen con el documento corregido.
-            foreach ($movement->attachments as $a) {
-                Attachment::create([
-                    'attachable_type' => $new->getMorphClass(), 'attachable_id' => $new->id, 'collection' => $a->collection,
-                    'disk' => $a->disk, 'path' => $a->path, 'original_name' => $a->original_name, 'mime' => $a->mime, 'size' => $a->size, 'user_id' => $a->user_id,
-                ]);
-            }
-            Audit::log('inventory.edit', sprintf('Edición de %s %s: lo reemplaza %s — %s', $movement->type_label, $movement->number, $new->number, $why), $new,
-                ['documento_original' => $movement->number], ['documento_nuevo' => $new->number, 'motivo' => $why]);
-
-            return $new;
-        }, fn (Movement $new) => "{$movement->type_label} {$movement->number} editada: se anuló y se creó {$new->number} con los datos corregidos.");
+        return $this->post($request, $mode, $data, fn () => $service->amend($movement, $header, $data['lines'], $why, $user),
+            fn (Movement $m) => "{$m->type_label} {$m->number} corregida: conserva su número y el stock se ajustó por la diferencia.");
     }
 
     // ---- internos --------------------------------------------------------------

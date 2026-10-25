@@ -162,6 +162,329 @@ class StockService
         }, 3);
     }
 
+    // ---------------------------------------------------------------- anular (borrar) y editar en el mismo documento
+
+    /**
+     * ANULAR Y BORRAR una entrada, salida, ajuste o devolución hecha a mano: corrige el stock, borra el documento con sus líneas y
+     * fotos, y recalcula los saldos «antes/después» del historial de cada producto. Queda constancia SOLO en la auditoría
+     * (quién, cuándo, motivo y el contenido del documento). Rechaza la anulación si en cualquier punto del historial el stock
+     * quedaría negativo (el material ya se usó), salvo autorización especial.
+     */
+    public function remove(Movement $movement, string $reason, ?User $user = null, bool $allowNegative = false): void
+    {
+        $reason = trim($reason);
+        if (mb_strlen($reason) < 3) {
+            throw new InventoryException('Indique el motivo de la anulación.');
+        }
+        $companyId = app(CurrentCompany::class)->id();
+
+        DB::transaction(function () use ($movement, $reason, $user, $allowNegative, $companyId) {
+            $doc = Movement::lockForUpdate()->find($movement->id);
+            if (! $doc) {
+                throw new InventoryException('El documento no existe o no pertenece a su empresa.');
+            }
+            if ($doc->type === Movement::TYPE_VOID || $doc->voided_at) {
+                throw new InventoryException('Este documento ya está anulado o es una anulación.');
+            }
+            if ($doc->source_type !== null || in_array($doc->type, [Movement::TYPE_CONTAINER, Movement::TYPE_MAINTENANCE], true)) {
+                throw new InventoryException('Este documento se anula desde su origen (el furgón o el mantenimiento).');
+            }
+            $allowNegative = $this->negativeAllowed(Movement::TYPE_EXIT, ['allow_negative' => $allowNegative], $user);
+
+            $items = Line::where('movement_id', $doc->id)->get();
+            $warehouseId = (int) $doc->warehouse_id;
+            $productIds = $items->pluck('product_id')->unique()->sort()->values()->all();
+            $stocks = $this->lockStocks($warehouseId, $productIds, $companyId);
+            $products = Product::withTrashed()->with('unit')->whereIn('id', $productIds)->get()->keyBy('id');
+
+            foreach ($productIds as $pid) {
+                $deltas = $this->chainRows($warehouseId, $pid, $companyId)->reject(fn ($r) => (int) $r->movement_id === (int) $doc->id)->pluck('delta_base')->all();
+                if (! $allowNegative && $this->lowestBalance($deltas) < -0.0004) {
+                    throw new InventoryException(sprintf('No se puede anular: «%s» quedaría en negativo en el historial (el material ya fue utilizado).', $products[$pid]->name));
+                }
+            }
+
+            $snapshot = $this->documentSnapshot($doc, $items);
+            foreach ($productIds as $pid) {
+                $net = -1 * round((float) $items->where('product_id', $pid)->sum('delta_base'), 3);
+                $this->applyDelta($stocks[$pid], $net, $allowNegative, $products[$pid]);
+            }
+
+            $this->deleteDocumentRows($doc);
+            foreach ($productIds as $pid) {
+                $this->rebuildChain($warehouseId, $pid, $companyId);
+            }
+
+            Audit::log('inventory.delete', sprintf('Anulado y borrado %s %s: %s', $doc->type_label, $doc->number, $reason), $doc, $snapshot, ['motivo' => $reason, 'borrado' => true]);
+        }, 3);
+    }
+
+    /**
+     * EDITAR un documento en SU MISMO registro: conserva el número, ajusta el stock solo por la diferencia y recalcula los saldos
+     * del historial. Aplica a entradas y salidas hechas a mano. Si algo falla no queda nada a medias. La auditoría guarda el
+     * antes y el después con el motivo.
+     *
+     * @param  array  $header  igual que entry()/exit(): warehouse_id, occurred_at, supplier, document_no, destination…, allow_negative
+     * @param  array<int,array{product_id:int,boxes?:mixed,units?:mixed}>  $lines
+     */
+    public function amend(Movement $movement, array $header, array $lines, string $why, ?User $user = null): Movement
+    {
+        $why = trim($why);
+        if (mb_strlen($why) < 5) {
+            throw new InventoryException('Indique el motivo de la edición.');
+        }
+        $companyId = app(CurrentCompany::class)->id();
+        if (! $companyId) {
+            throw new InventoryException('No hay empresa activa.');
+        }
+        $specs = $this->quantityLines($lines);
+        if (! $specs) {
+            throw new InventoryException('Agregue al menos un producto.');
+        }
+        $warehouse = Warehouse::where('is_active', true)->find($header['warehouse_id'] ?? 0);
+        if (! $warehouse) {
+            throw new InventoryException('El almacén seleccionado no es válido.');
+        }
+        $occurredAt = $header['occurred_at'] ?? now();
+        if (! $occurredAt instanceof CarbonInterface) {
+            $occurredAt = now()->parse($occurredAt);
+        }
+
+        return DB::transaction(function () use ($movement, $header, $specs, $why, $user, $companyId, $warehouse, $occurredAt) {
+            $doc = Movement::lockForUpdate()->find($movement->id);
+            if (! $doc) {
+                throw new InventoryException('El documento no existe o no pertenece a su empresa.');
+            }
+            if ($reason = $doc->editBlockReason()) {
+                throw new InventoryException($reason);
+            }
+            $allowNegative = $this->negativeAllowed(Movement::TYPE_EXIT, $header, $user);
+            $sign = $doc->type === Movement::TYPE_ENTRY ? 1 : -1;
+
+            $oldItems = Line::where('movement_id', $doc->id)->get()->keyBy('product_id');
+            $oldWh = (int) $doc->warehouse_id;
+            $newWh = (int) $warehouse->id;
+            $newBase = collect($specs)->mapWithKeys(fn ($s) => [$s['product_id'] => (float) $s['base']]);
+            $allIds = $oldItems->keys()->merge($newBase->keys())->unique()->sort()->values();
+            $products = Product::withTrashed()->with('unit')->whereIn('id', $allIds)->get()->keyBy('id');
+            foreach ($newBase->keys() as $pid) {
+                if (! $products->has($pid) || $products[$pid]->trashed()) {
+                    throw new InventoryException('Uno de los productos no existe o no pertenece a su empresa.');
+                }
+                if ($doc->type === Movement::TYPE_ENTRY && ! $products[$pid]->is_active && ! $oldItems->has($pid)) {
+                    throw new InventoryException("«{$products[$pid]->name}» está desactivado y no admite entradas.");
+                }
+            }
+
+            // existencias bloqueadas en orden estable (almacén, producto)
+            $stocks = [];
+            foreach (collect([$oldWh, $newWh])->unique()->sort()->values() as $wh) {
+                $stocks[$wh] = $this->lockStocks($wh, $allIds->all(), $companyId);
+            }
+
+            // 1) validar contra TODO el historial de cada (almacén, producto) afectado
+            $newDelta = fn ($pid) => $sign * (float) $newBase[$pid];
+            $changes = [];   // [wh][pid] => ajuste neto al stock actual
+            foreach ($allIds as $pid) {
+                $old = $oldItems->has($pid) ? round((float) $oldItems[$pid]->delta_base, 3) : 0.0;
+                $new = $newBase->has($pid) ? round($newDelta($pid), 3) : 0.0;
+                if ($oldWh === $newWh) {
+                    $changes[$oldWh][$pid] = round($new - $old, 3);
+                } else {
+                    $changes[$oldWh][$pid] = round(-$old, 3);
+                    $changes[$newWh][$pid] = round($new, 3);
+                }
+            }
+            foreach ($changes as $wh => $perProduct) {
+                foreach ($perProduct as $pid => $net) {
+                    if ($net == 0.0 && $oldWh === $newWh) {
+                        continue;
+                    }
+                    $deltas = [];
+                    foreach ($this->chainRows((int) $wh, (int) $pid, $companyId) as $r) {
+                        if ((int) $r->movement_id === (int) $doc->id) {
+                            if ($oldWh === $newWh && $wh === $newWh && $newBase->has($pid)) {
+                                $deltas[] = round($newDelta($pid), 3);   // su línea, ya corregida, en la misma posición
+                            }
+                            continue;                                        // si cambió de almacén o de producto, esta línea sale de aquí
+                        }
+                        $deltas[] = (float) $r->delta_base;
+                    }
+                    if ($wh === $newWh && $newBase->has($pid) && ! ($oldWh === $newWh && $oldItems->has($pid))) {
+                        $deltas[] = round($newDelta($pid), 3);               // línea nueva en este historial: queda al final
+                    }
+                    if (! $allowNegative && $this->lowestBalance($deltas) < -0.0004) {
+                        throw new InventoryException(sprintf(
+                            'No se puede editar: «%s» quedaría en negativo en el historial (el material ya fue utilizado o no alcanza el stock).',
+                            $products[$pid]->name,
+                        ));
+                    }
+                }
+            }
+
+            // 2) aplicar: stock, encabezado y líneas
+            $before = $this->documentSnapshot($doc, $oldItems->values());
+            foreach ($changes as $wh => $perProduct) {
+                foreach ($perProduct as $pid => $net) {
+                    if ($net != 0.0) {
+                        $this->applyDelta($stocks[$wh][$pid], $net, $allowNegative, $products[$pid]);
+                    }
+                }
+            }
+
+            $negative = $allowNegative && InventoryStock::where('warehouse_id', $newWh)->whereIn('product_id', $newBase->keys()->all())->where('quantity_base', '<', 0)->exists();
+            $doc->forceFill([
+                'warehouse_id' => $newWh, 'branch_id' => $warehouse->branch_id, 'occurred_at' => $occurredAt,
+                'supplier' => $header['supplier'] ?? null, 'document_no' => $header['document_no'] ?? null,
+                'destination' => $header['destination'] ?? null, 'destination_type' => $header['destination_type'] ?? null,
+                'container_id' => $header['container_id'] ?? null, 'vehicle_id' => $header['vehicle_id'] ?? null,
+                'employee_name' => $header['employee_name'] ?? null, 'requested_by' => $header['requested_by'] ?? null,
+                'reason' => $header['reason'] ?? null, 'notes' => $header['notes'] ?? null,
+                'negative_override' => $negative, 'authorized_by' => $negative ? $user?->id : null,
+            ])->save();
+
+            $lineType = $doc->type === Movement::TYPE_ENTRY ? Line::ENTRY : Line::EXIT;
+            foreach ($oldItems as $pid => $item) {
+                if (! $newBase->has($pid)) {
+                    DB::table('inventory_movement_items')->where('id', $item->id)->delete();
+                }
+            }
+            foreach ($newBase as $pid => $base) {
+                $product = $products[$pid];
+                [$boxes, $units] = $this->converter->split($product, abs($base));
+                $row = [
+                    'branch_id' => $warehouse->branch_id, 'warehouse_id' => $newWh, 'occurred_at' => $occurredAt, 'type' => $lineType,
+                    'product_sku' => $product->sku, 'product_name' => $product->name, 'units_per_box' => $product->units_per_box,
+                    'boxes' => abs($boxes), 'units' => abs($units), 'delta_base' => round($newDelta($pid), 3),
+                ];
+                if ($oldItems->has($pid)) {
+                    DB::table('inventory_movement_items')->where('id', $oldItems[$pid]->id)->update($row + ['updated_at' => now()]);
+                } else {
+                    Line::create($row + ['company_id' => $companyId, 'movement_id' => $doc->id, 'product_id' => $pid, 'stock_before_base' => 0, 'balance_after_base' => 0]);
+                }
+            }
+            foreach ($changes as $wh => $perProduct) {
+                foreach (array_keys($perProduct) as $pid) {
+                    $this->rebuildChain((int) $wh, (int) $pid, $companyId);
+                }
+            }
+
+            $doc->load('items');
+            Audit::log('inventory.edit', sprintf('Edición de %s %s (conserva su número): %s', $doc->type_label, $doc->number, $why), $doc,
+                $before, $this->documentSnapshot($doc, $doc->items) + ['motivo' => $why]);
+
+            return $doc;
+        }, 3);
+    }
+
+    /** Líneas del historial de un producto en un almacén, en el orden en que se registraron. */
+    protected function chainRows(int $warehouseId, int $productId, int $companyId)
+    {
+        return DB::table('inventory_movement_items')->where('company_id', $companyId)->where('warehouse_id', $warehouseId)
+            ->where('product_id', $productId)->orderBy('id')->get(['id', 'movement_id', 'delta_base']);
+    }
+
+    /** Saldo más bajo que alcanza una sucesión de movimientos que parte de cero. */
+    protected function lowestBalance(array $deltas): float
+    {
+        $run = 0.0;
+        $low = 0.0;
+        foreach ($deltas as $d) {
+            $run = round($run + (float) $d, 3);
+            $low = min($low, $run);
+        }
+
+        return $low;
+    }
+
+    /** Recalcula «stock antes» y «saldo después» de todas las líneas de un producto en un almacén (suma acumulada desde cero). */
+    protected function rebuildChain(int $warehouseId, int $productId, int $companyId): void
+    {
+        $run = 0.0;
+        foreach (DB::table('inventory_movement_items')->where('company_id', $companyId)->where('warehouse_id', $warehouseId)
+            ->where('product_id', $productId)->orderBy('id')->get(['id', 'delta_base', 'stock_before_base', 'balance_after_base']) as $r) {
+            $before = round($run, 3);
+            $run = round($run + (float) $r->delta_base, 3);
+            if (abs($before - (float) $r->stock_before_base) > 0.0004 || abs($run - (float) $r->balance_after_base) > 0.0004) {
+                DB::table('inventory_movement_items')->where('id', $r->id)->update(['stock_before_base' => $before, 'balance_after_base' => $run]);
+            }
+        }
+    }
+
+    /** Contenido del documento para la auditoría (lo único que queda de un documento borrado). */
+    protected function documentSnapshot(Movement $doc, $items): array
+    {
+        return [
+            'numero' => $doc->number, 'tipo' => $doc->type_label, 'almacen_id' => $doc->warehouse_id, 'fecha' => optional($doc->occurred_at)->toDateTimeString(),
+            'solicitado_por' => $doc->requested_by, 'destino' => $doc->destination, 'empleado' => $doc->employee_name, 'proveedor' => $doc->supplier,
+            'documento' => $doc->document_no, 'motivo_documento' => $doc->reason, 'notas' => $doc->notes, 'registrado_por_id' => $doc->user_id,
+            'lineas' => collect($items)->map(fn ($i) => ['producto' => $i->product_name, 'cajas' => (float) $i->boxes, 'unidades' => (float) $i->units, 'delta' => (float) $i->delta_base])->values()->all(),
+        ];
+    }
+
+    /** Borra físicamente el encabezado, las líneas y las fotos/documentos de un documento (sin pasar por la protección de los modelos). */
+    protected function deleteDocumentRows(Movement $doc): void
+    {
+        foreach (DB::table('attachments')->where('attachable_type', $doc->getMorphClass())->where('attachable_id', $doc->id)->get() as $a) {
+            DB::table('attachments')->where('id', $a->id)->delete();
+            if (! DB::table('attachments')->where('disk', $a->disk)->where('path', $a->path)->exists()) {
+                try {
+                    \Illuminate\Support\Facades\Storage::disk($a->disk)->delete($a->path);
+                } catch (\Throwable) {
+                    // el archivo ya no estaba: no es motivo para frenar la anulación
+                }
+            }
+        }
+        DB::table('inventory_movement_items')->where('movement_id', $doc->id)->delete();
+        DB::table('inventory_movements')->where('id', $doc->id)->delete();
+    }
+
+    /**
+     * Limpieza ÚNICA de documentos que ya estaban anulados con el sistema anterior (original + su reverso): borra los pares cuyo
+     * efecto neto es cero y recalcula los saldos. Omite lo que pertenece a un furgón o mantenimiento. Devuelve un resumen.
+     *
+     * @return array{borrados:int,omitidos:int,detalle:array<int,string>}
+     */
+    public function purgeVoided(bool $dryRun = false): array
+    {
+        $companyId = app(CurrentCompany::class)->id();
+        $out = ['borrados' => 0, 'omitidos' => 0, 'detalle' => []];
+
+        foreach (Movement::whereNotNull('voided_at')->where('type', '!=', Movement::TYPE_VOID)->whereNull('source_type')->orderBy('id')->get() as $orig) {
+            $voids = Movement::where('reversal_of_id', $orig->id)->get();
+            $inUse = DB::table('containers')->where(fn ($q) => $q->where('movement_id', $orig->id)->orWhereIn('void_movement_id', $voids->pluck('id')->all() ?: [0]))->exists()
+                || DB::table('maintenance_records')->where('movement_id', $orig->id)->exists();
+            $ids = $voids->pluck('id')->push($orig->id)->all();
+            $net = Line::whereIn('movement_id', $ids)->get()->groupBy(fn ($l) => $l->warehouse_id.'-'.$l->product_id)->map(fn ($g) => round((float) $g->sum('delta_base'), 3));
+            if ($inUse || $net->contains(fn ($v) => $v != 0.0)) {
+                $out['omitidos']++;
+                $out['detalle'][] = $orig->number.': omitido ('.($inUse ? 'pertenece a un furgón o mantenimiento' : 'su efecto neto no es cero').')';
+                continue;
+            }
+            $out['detalle'][] = $orig->number.': '.($dryRun ? 'se borraría' : 'borrado').($voids->isNotEmpty() ? ' con '.$voids->pluck('number')->implode(', ') : '');
+            $out['borrados']++;
+            if ($dryRun) {
+                continue;
+            }
+
+            DB::transaction(function () use ($orig, $voids, $ids, $companyId) {
+                $pairs = Line::whereIn('movement_id', $ids)->get(['warehouse_id', 'product_id'])->map(fn ($l) => [(int) $l->warehouse_id, (int) $l->product_id])->unique()->values();
+                $snapshot = $this->documentSnapshot($orig, Line::where('movement_id', $orig->id)->get());
+                DB::table('inventory_movements')->where('replaces_id', $orig->id)->update(['replaces_id' => null]);
+                foreach ($voids as $v) {
+                    $this->deleteDocumentRows($v);
+                }
+                $this->deleteDocumentRows($orig);
+                foreach ($pairs as [$wh, $pid]) {
+                    $this->rebuildChain($wh, $pid, $companyId);
+                }
+                Audit::log('inventory.purge', sprintf('Limpieza de documento anulado %s (y su reverso %s)', $orig->number, $voids->pluck('number')->implode(', ') ?: '—'), $orig, $snapshot, ['borrado' => true, 'motivo_original' => $orig->reason]);
+            });
+        }
+
+        return $out;
+    }
+
     /**
      * Vista previa sin escribir ni bloquear: cantidades, existencia resultante y errores por línea.
      *

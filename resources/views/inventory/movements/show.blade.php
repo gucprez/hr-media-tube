@@ -65,11 +65,11 @@
     @endif
 
     @can('inventory.void')@unless($movement->isVoided() || $movement->type === 'void' || ($movement->type === 'container' && $movement->container_id))
-    <form method="POST" action="{{ route('movements.void', $movement) }}" class="no-print mt-6 grid gap-3 rounded-xl border border-red-200 bg-red-50/50 p-4 sm:grid-cols-[1fr_auto] sm:items-end" @submit="if (!confirm('¿Anular este documento? Se generará un movimiento inverso.')) $event.preventDefault()">
+    <form method="POST" action="{{ route('movements.void', $movement) }}" class="no-print mt-6 grid gap-3 rounded-xl border border-red-200 bg-red-50/50 p-4 sm:grid-cols-[1fr_auto] sm:items-end" @submit="if (!confirm('¿Anular este documento? Se BORRARÁ y el stock quedará corregido. Solo queda constancia en la auditoría.')) $event.preventDefault()">
         @csrf
         <x-field name="reason" label="Anular este documento (motivo obligatorio)" required />
-        <button class="btn-danger">Anular documento</button>
-        <p class="text-xs text-slate-500 sm:col-span-2">Se crea un documento de anulación que devuelve cada línea a su existencia anterior; el original se conserva marcado como anulado.</p>
+        <button class="btn-danger">Anular y borrar</button>
+        <p class="text-xs text-slate-500 sm:col-span-2">El documento se borra y cada línea devuelve el stock a lo que había antes. Solo queda constancia en la auditoría (quién, cuándo y por qué).</p>
     </form>
     @endunless @endcan
 

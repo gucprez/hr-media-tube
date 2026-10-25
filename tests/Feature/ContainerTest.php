@@ -386,8 +386,8 @@ class ContainerTest extends TestCase
         $exit = InventoryMovement::where('type', 'exit')->first();
         $this->post("/inventario/movimientos/{$exit->id}/anular", ['reason' => 'Salida registrada por error'])->assertRedirect()->assertSessionHasNoErrors()->assertSessionHas('success');
         $this->assertSame(4.0, $w['filter']->stockInWarehouse($w['wh']->id));
-        $this->assertNotNull($exit->fresh()->voided_at);
-        $this->post("/inventario/movimientos/{$exit->id}/anular", ['reason' => 'Otra vez'])->assertSessionHas('error');
+        $this->assertNull(InventoryMovement::find($exit->id), 'anular borra el documento');
+        $this->post("/inventario/movimientos/{$exit->id}/anular", ['reason' => 'Otra vez'])->assertNotFound();
         $this->assertCount(0, app(InventoryLedger::class)->discrepancies());
     }
 
