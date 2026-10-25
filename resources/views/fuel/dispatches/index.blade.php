@@ -18,7 +18,8 @@
             <td class="text-right text-xs text-slate-500">{{ number_format($d->reserve_before, 1) }} → {{ number_format($d->reserve_after, 1) }}</td>
             <td class="text-xs">@if($d->container)<a href="{{ route('containers.show', $d->container) }}" class="text-brand hover:underline">Furgón #{{ $d->container->number }}</a>@else Control manual @endif</td>
             <td class="text-xs">{{ $d->user?->name }}</td>
-            <td>@can('fuel.void')@unless($d->isVoided())@if($d->origin !== 'container')
+            <td>@can('fuel.edit')@unless($d->isVoided())@if($d->origin !== 'container')<a href="{{ route('fuel.dispatches.edit', $d) }}" class="btn-secondary btn-sm mb-1">Editar</a>@endif @endunless @endcan
+            @can('fuel.void')@unless($d->isVoided())@if($d->origin !== 'container')
                 <form method="POST" action="{{ route('fuel.dispatches.void', $d) }}" class="flex gap-1" @submit="if (!confirm('¿Anular el despacho? La reserva se restituye.')) $event.preventDefault()">@csrf<input name="reason" placeholder="Motivo" class="input !min-h-8 !w-32 !py-1 text-xs" required minlength="5" aria-label="Motivo"><button class="btn-danger btn-sm">Anular</button></form>
             @endif @endunless @endcan</td>
         </tr>

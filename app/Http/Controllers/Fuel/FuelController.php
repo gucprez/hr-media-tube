@@ -123,6 +123,117 @@ class FuelController extends Controller
         return $this->doVoid($request, $receipt);
     }
 
+    // ---- editar en el mismo registro --------------------------------------------
+
+    public function editReceipt(FuelReceipt $receipt)
+    {
+        if ($receipt->isVoided()) {
+            return redirect()->route('fuel.receipts.show', $receipt)->with('error', 'La recepción está anulada y no se puede editar.');
+        }
+
+        return view('fuel.receipts.form', ['tank' => $this->fuel->tank(), 'nextNumber' => $receipt->receipt_number, 'photoTypes' => self::RECEIPT_PHOTOS, 'receipt' => $receipt]);
+    }
+
+    public function updateReceipt(Request $request, FuelReceipt $receipt)
+    {
+        if ($receipt->isVoided()) {
+            return redirect()->route('fuel.receipts.show', $receipt)->with('error', 'La recepción está anulada y no se puede editar.');
+        }
+        $data = $request->validate([
+            'edit_reason' => ['required', 'string', 'min:5', 'max:200'],
+            'received_at' => ['required', 'date', 'before_or_equal:today'],
+            'meter_start' => ['required', 'numeric', 'min:0', 'max:999999999999'],
+            'meter_end' => ['required', 'numeric', 'gt:meter_start', 'max:999999999999'],
+            'supplier' => ['nullable', 'string', 'max:150'],
+            'truck_plate' => ['nullable', 'string', 'max:20'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ] + $this->photoRules(array_keys(self::RECEIPT_PHOTOS)), ['meter_end.gt' => 'El metro final debe ser mayor que el metro inicial.', 'edit_reason.required' => 'Indique el motivo de la edición.', 'edit_reason.min' => 'El motivo debe tener al menos 5 caracteres.']);
+
+        $stored = [];
+        try {
+            DB::transaction(function () use ($data, $request, $receipt, &$stored) {
+                $this->fuel->amendReceipt($receipt, $data, $data['edit_reason'], $request->user());
+                $this->attach($request, $receipt, array_keys(self::RECEIPT_PHOTOS), $stored);
+            });
+        } catch (FuelException $e) {
+            $this->cleanup($stored);
+
+            return back()->withInput()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->cleanup($stored);
+            throw $e;
+        }
+
+        return redirect()->route('fuel.receipts.show', $receipt)->with('success', 'Recepción '.$receipt->receipt_number.' corregida: conserva su número y la reserva se recalculó.');
+    }
+
+    public function editDispatch(FuelDispatch $dispatch)
+    {
+        if ($reason = $this->dispatchEditBlock($dispatch)) {
+            return redirect()->route('fuel.dispatches.index')->with('error', $reason);
+        }
+
+        return view('fuel.dispatches.form', [
+            'tank' => $this->fuel->tank(),
+            'vehicles' => Vehicle::where('status', '!=', 'inactive')->orWhere('id', $dispatch->vehicle_id)->orderBy('ficha')->get(),
+            'lastReading' => $this->lastReading(),
+            'selected' => $dispatch->vehicle_id,
+            'containers' => \App\Models\Container::with('vehicle')->where(fn ($q) => $q->whereIn('status', ['open', 'in_progress'])->orWhere('id', $dispatch->container_id))->orderByDesc('date')->orderByDesc('id')->get(),
+            'selectedContainer' => $dispatch->container_id,
+            'dispatch' => $dispatch,
+        ]);
+    }
+
+    public function updateDispatch(Request $request, FuelDispatch $dispatch)
+    {
+        if ($reason = $this->dispatchEditBlock($dispatch)) {
+            return redirect()->route('fuel.dispatches.index')->with('error', $reason);
+        }
+        $cid = app(CurrentCompany::class)->id();
+        $data = $request->validate([
+            'edit_reason' => ['required', 'string', 'min:5', 'max:200'],
+            'dispatched_at' => ['required', 'date', 'before_or_equal:today'],
+            'vehicle_id' => ['required', Rule::exists('vehicles', 'id')->where('company_id', $cid)->whereNull('deleted_at')],
+            'container_id' => ['nullable', Rule::exists('containers', 'id')->where('company_id', $cid)->whereNull('deleted_at')->where(fn ($q) => $q->whereIn('status', ['open', 'in_progress'])->orWhere('id', $dispatch->container_id))],
+            'reading_start' => ['required', 'numeric', 'min:0', 'max:999999999999'],
+            'reading_end' => ['required', 'numeric', 'gt:reading_start', 'max:999999999999'],
+            'odometer' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ] + $this->photoRules(['photos']), ['reading_end.gt' => 'La lectura final debe ser mayor que la lectura inicial.', 'vehicle_id.required' => 'Seleccione el vehículo (ficha).', 'edit_reason.required' => 'Indique el motivo de la edición.', 'edit_reason.min' => 'El motivo debe tener al menos 5 caracteres.']);
+
+        $stored = [];
+        try {
+            DB::transaction(function () use ($data, $request, $dispatch, &$stored) {
+                $d = $this->fuel->amendDispatch($dispatch, $data, $data['edit_reason'], $request->user());
+                $this->attach($request, $d, ['photos'], $stored, 'photo');
+                if (! empty($data['container_id']) && ($container = \App\Models\Container::find($data['container_id'])) && $container->isEditable()) {
+                    app(\App\Services\Fleet\ContainerFuel::class)->afterDispatch($container, $d, $request->user());
+                }
+            });
+        } catch (FuelException $e) {
+            $this->cleanup($stored);
+
+            return back()->withInput()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->cleanup($stored);
+            throw $e;
+        }
+
+        return redirect()->route('fuel.dispatches.index')->with('success', 'Despacho corregido: la reserva se recalculó.');
+    }
+
+    protected function dispatchEditBlock(FuelDispatch $dispatch): ?string
+    {
+        if ($dispatch->isVoided()) {
+            return 'El despacho está anulado y no se puede editar.';
+        }
+        if ($dispatch->origin === 'container') {
+            return 'Este despacho nació del cierre de un furgón: se corrige desde el furgón.';
+        }
+
+        return null;
+    }
+
     // ---- despachos ---------------------------------------------------------------
 
     public function dispatches(Request $request)

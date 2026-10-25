@@ -47,6 +47,7 @@ return [
             'fuel.receive' => 'Registrar recepciones de gasoil',
             'fuel.dispatch' => 'Registrar despachos de gasoil',
             'fuel.void' => 'Anular recepciones / despachos',
+            'fuel.edit' => 'Editar recepciones y despachos de gasoil (corrige el mismo registro)',
             'fuel.adjust' => 'Ajustar la reserva de gasoil (medición física)',
         ],
         'Flotilla' => [

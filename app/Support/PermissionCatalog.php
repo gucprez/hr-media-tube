@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 class PermissionCatalog
 {
     /** Permisos sensibles: nunca se otorgan por comodín (`inventory.*`); solo explícitos o con '*' (administrador). */
-    public const SENSITIVE = ['reports.audit.view', 'inventory.negative', 'inventory.edit'];
+    public const SENSITIVE = ['reports.audit.view', 'inventory.negative', 'inventory.edit', 'fuel.edit'];
 
     /** @return array<string,array<string,string>> group => [key => label] */
     public static function groups(): array

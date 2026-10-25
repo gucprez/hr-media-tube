@@ -141,8 +141,14 @@ Route::middleware('auth')->group(function () {
                 Route::get('despachos/nuevo', [FuelController::class, 'createDispatch'])->name('fuel.dispatches.create');
                 Route::post('despachos', [FuelController::class, 'storeDispatch'])->name('fuel.dispatches.store');
             });
+            Route::middleware('permission:fuel.edit')->group(function () {
+                Route::get('recepciones/{receipt}/editar', [FuelController::class, 'editReceipt'])->name('fuel.receipts.edit');
+                Route::put('recepciones/{receipt}', [FuelController::class, 'updateReceipt'])->name('fuel.receipts.update');
+                Route::get('despachos/{dispatch}/editar', [FuelController::class, 'editDispatch'])->name('fuel.dispatches.edit');
+                Route::put('despachos/{dispatch}', [FuelController::class, 'updateDispatch'])->name('fuel.dispatches.update');
+            });
             Route::middleware('permission:fuel.void')->group(function () {
-                Route::post('recepciones/{receipt}/anular', [FuelController::class, 'voidReceipt'])->name('fuel.receipts.void');
+                Route::post('recepciones/{receipt}/anular',[FuelController::class, 'voidReceipt'])->name('fuel.receipts.void');
                 Route::post('despachos/{dispatch}/anular', [FuelController::class, 'voidDispatch'])->name('fuel.dispatches.void');
             });
             Route::middleware('permission:fuel.adjust')->group(function () {

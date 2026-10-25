@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Recepción '.$receipt->receipt_number)
 @section('content')
-<div class="no-print mb-3 flex items-center justify-between"><a href="{{ route('fuel.receipts.index') }}" class="text-sm text-slate-500 hover:text-slate-800">← Recepciones</a><button type="button" @click="window.print()" class="btn-secondary btn-sm"><x-icon name="printer" class="h-4 w-4" /> Imprimir</button></div>
+<div class="no-print mb-3 flex items-center justify-between"><a href="{{ route('fuel.receipts.index') }}" class="text-sm text-slate-500 hover:text-slate-800">← Recepciones</a><span class="flex gap-2">@can('fuel.edit')@unless($receipt->isVoided())<a href="{{ route('fuel.receipts.edit', $receipt) }}" class="btn-secondary btn-sm">Editar</a>@endunless @endcan<button type="button" @click="window.print()" class="btn-secondary btn-sm"><x-icon name="printer" class="h-4 w-4" /> Imprimir</button></span></div>
 <div class="card card-body">
     <x-report-header title="Recepción de gasoil" :subtitle="'No. '.$receipt->receipt_number" :meta="['Fecha' => $receipt->received_at->format('d/m/Y')]" />
     <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">

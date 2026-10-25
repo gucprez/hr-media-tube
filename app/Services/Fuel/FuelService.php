@@ -176,6 +176,158 @@ class FuelService
         }, 3);
     }
 
+    // ---- editar en el mismo registro ------------------------------------------
+
+    /**
+     * EDITAR una recepción en su MISMO registro (conserva su número): corrige metros, fecha, suplidor, camión y notas. Los galones se
+     * recalculan, la reserva de TODO el historial se vuelve a calcular y se rechaza si en algún punto quedaría negativa o por encima
+     * de la capacidad del tanque. La auditoría guarda el antes y el después con el motivo.
+     *
+     * @param  array{received_at:mixed,meter_start:mixed,meter_end:mixed,supplier?:?string,truck_plate?:?string,notes?:?string}  $d
+     */
+    public function amendReceipt(FuelReceipt $receipt, array $d, string $why, ?User $user = null): FuelReceipt
+    {
+        $why = $this->editReason($why);
+        $start = $this->num($d['meter_start'] ?? null);
+        $end = $this->num($d['meter_end'] ?? null);
+        if ($end <= $start) {
+            throw new FuelException('El metro final debe ser mayor que el metro inicial.');
+        }
+        $gallons = round($end - $start, 2);
+
+        return DB::transaction(function () use ($receipt, $d, $why, $start, $end, $gallons) {
+            $record = FuelReceipt::lockForUpdate()->findOrFail($receipt->id);
+            if ($record->voided_at) {
+                throw new FuelException('La recepción está anulada y no se puede editar.');
+            }
+            $tank = $this->lockedTank($record->fuel_tank_id);
+            $before = ['fecha' => $record->received_at->toDateString(), 'metro_inicial' => (float) $record->meter_start, 'metro_final' => (float) $record->meter_end, 'galones' => (float) $record->gallons_received,
+                'suplidor' => $record->supplier, 'camion' => $record->truck_plate, 'notas' => $record->notes];
+
+            $this->reflow($tank, $record, $gallons, $d['received_at']);
+            $record->forceFill([
+                'received_at' => $d['received_at'], 'meter_start' => $start, 'meter_end' => $end, 'gallons_received' => $gallons,
+                'supplier' => $d['supplier'] ?? null, 'truck_plate' => $d['truck_plate'] ?? null, 'notes' => $d['notes'] ?? null,
+            ])->save();
+
+            Audit::log('fuel.receipt_edit', sprintf('Edición de recepción %s (conserva su número): %s gal → %s gal. Motivo: %s', $record->receipt_number, $this->g($before['galones']), $this->g($gallons), $why), $record,
+                $before, ['fecha' => $record->received_at->toDateString(), 'metro_inicial' => $start, 'metro_final' => $end, 'galones' => $gallons, 'suplidor' => $record->supplier, 'camion' => $record->truck_plate, 'notas' => $record->notes, 'motivo' => $why]);
+
+            return $record->refresh();
+        }, 3);
+    }
+
+    /**
+     * EDITAR un despacho hecho a mano en su MISMO registro: ficha, furgón, lecturas (galones = final − inicial), kilometraje, fecha y notas.
+     * El kilometraje del vehículo solo sube, nunca baja. Los despachos que nacen del cierre de un furgón se corrigen desde el furgón.
+     *
+     * @param  array{dispatched_at:mixed,vehicle_id:mixed,container_id?:mixed,reading_start:mixed,reading_end:mixed,odometer?:mixed,notes?:?string}  $d
+     */
+    public function amendDispatch(FuelDispatch $dispatch, array $d, string $why, ?User $user = null): FuelDispatch
+    {
+        $why = $this->editReason($why);
+        $start = $this->num($d['reading_start'] ?? null);
+        $end = $this->num($d['reading_end'] ?? null);
+        if ($end <= $start) {
+            throw new FuelException('La lectura final debe ser mayor que la lectura inicial.');
+        }
+        $gallons = round($end - $start, 2);
+        $odometer = isset($d['odometer']) && $d['odometer'] !== '' ? $this->num($d['odometer']) : null;
+
+        return DB::transaction(function () use ($dispatch, $d, $why, $start, $end, $gallons, $odometer) {
+            $record = FuelDispatch::lockForUpdate()->findOrFail($dispatch->id);
+            if ($record->voided_at) {
+                throw new FuelException('El despacho está anulado y no se puede editar.');
+            }
+            if ($record->origin === 'container') {
+                throw new FuelException('Este despacho nació del cierre de un furgón: se corrige desde el furgón.');
+            }
+            $vehicle = Vehicle::lockForUpdate()->find($d['vehicle_id'] ?? 0);
+            if (! $vehicle) {
+                throw new FuelException('El vehículo no existe o no pertenece a su empresa.');
+            }
+            $tank = $this->lockedTank($record->fuel_tank_id);
+            $before = ['fecha' => $record->dispatched_at->toDateString(), 'ficha' => $record->vehicle?->ficha, 'furgon_id' => $record->container_id, 'lectura_inicial' => $record->reading_start,
+                'lectura_final' => $record->reading_end, 'galones' => (float) $record->gallons, 'kilometraje' => $record->odometer, 'notas' => $record->notes];
+
+            $this->reflow($tank, $record, -$gallons, $d['dispatched_at'], $vehicle->id);
+            $record->forceFill([
+                'dispatched_at' => $d['dispatched_at'], 'vehicle_id' => $vehicle->id, 'container_id' => ! empty($d['container_id']) ? $d['container_id'] : null,
+                'reading_start' => $start, 'reading_end' => $end, 'gallons' => $gallons, 'odometer' => $odometer, 'notes' => $d['notes'] ?? null,
+            ])->save();
+            if ($odometer !== null && $odometer > (float) $vehicle->odometer) {
+                $vehicle->forceFill(['odometer' => $odometer])->save();
+            }
+
+            Audit::log('fuel.dispatch_edit', sprintf('Edición de despacho a %s: %s gal → %s gal. Motivo: %s', $vehicle->ficha, $this->g($before['galones']), $this->g($gallons), $why), $record,
+                $before, ['fecha' => $record->dispatched_at->toDateString(), 'ficha' => $vehicle->ficha, 'furgon_id' => $record->container_id, 'lectura_inicial' => $start, 'lectura_final' => $end, 'galones' => $gallons, 'kilometraje' => $odometer, 'notas' => $record->notes, 'motivo' => $why]);
+
+            return $record->refresh();
+        }, 3);
+    }
+
+    /**
+     * Cambia el efecto de UN registro (recepción/despacho) sobre la reserva y recalcula «antes/después» de todo lo que vino después.
+     * Rechaza si en algún punto desde ese registro la reserva quedaría negativa o superaría la capacidad. Escribe con UPDATE directo.
+     */
+    protected function reflow(FuelTank $tank, FuelReceipt|FuelDispatch $record, float $newDelta, $occurredAt, ?int $vehicleId = null): void
+    {
+        $type = $record instanceof FuelReceipt ? 'receipt' : 'dispatch';
+        $line = FuelLedger::where('fuel_tank_id', $tank->id)->where('type', $type)->where('source_type', $record->getMorphClass())->where('source_id', $record->id)->first();
+        if (! $line) {
+            throw new FuelException('No se encontró el renglón del libro de este registro.');
+        }
+
+        $capacity = $tank->capacity_gallons ? (float) $tank->capacity_gallons : null;
+        $run = 0.0;
+        $plan = [];
+        $reached = false;
+        foreach (DB::table('fuel_ledger')->where('fuel_tank_id', $tank->id)->orderBy('id')->get(['id', 'type', 'delta_gallons', 'source_id', 'reserve_before', 'reserve_after']) as $r) {
+            $reached = $reached || (int) $r->id === (int) $line->id;
+            $delta = (int) $r->id === (int) $line->id ? round($newDelta, 2) : (float) $r->delta_gallons;
+            $b = round($run, 2);
+            $run = round($run + $delta, 2);
+            if ($reached && $run < -0.0001) {
+                throw new FuelException(sprintf('No se puede editar: la reserva quedaría en negativo en el historial (%s gal; el gasoil ya fue despachado).', $this->g($run)));
+            }
+            if ($reached && $capacity !== null && $run > $capacity + 0.005) {
+                throw new FuelException(sprintf('No se puede editar: la reserva superaría la capacidad del tanque (%s gal) en el historial.', $this->g($capacity)));
+            }
+            $plan[] = [$r, $delta, $b, $run];
+        }
+
+        foreach ($plan as [$r, $delta, $b, $a]) {
+            $isLine = (int) $r->id === (int) $line->id;
+            if (! $isLine && abs($b - (float) $r->reserve_before) < 0.005 && abs($a - (float) $r->reserve_after) < 0.005) {
+                continue;
+            }
+            $set = ['delta_gallons' => $delta, 'reserve_before' => $b, 'reserve_after' => $a];
+            if ($isLine) {
+                $set['occurred_at'] = $this->when($occurredAt);
+                if ($vehicleId !== null) {
+                    $set['vehicle_id'] = $vehicleId;
+                }
+            }
+            DB::table('fuel_ledger')->where('id', $r->id)->update($set);
+            $table = $r->type === 'receipt' ? 'fuel_receipts' : ($r->type === 'dispatch' ? 'fuel_dispatches' : null);
+            if ($table && $r->source_id) {
+                DB::table($table)->where('id', $r->source_id)->update(['reserve_before' => $b, 'reserve_after' => $a]);
+            }
+        }
+        DB::table('fuel_tanks')->where('id', $tank->id)->update(['current_gallons' => $run, 'updated_at' => now()]);
+        $tank->setRawAttributes(array_merge($tank->getAttributes(), ['current_gallons' => $run]), true);
+    }
+
+    protected function editReason(string $why): string
+    {
+        $why = trim($why);
+        if (mb_strlen($why) < 5) {
+            throw new FuelException('Indique el motivo de la edición (mín. 5 caracteres).');
+        }
+
+        return $why;
+    }
+
     /** Ajuste de reserva por medición física (también sirve para fijar la reserva inicial). */
     public function adjust(float $physicalGallons, string $reason, ?User $user = null, $occurredAt = null): FuelLedger
     {
