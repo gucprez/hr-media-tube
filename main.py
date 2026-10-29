@@ -1,7 +1,10 @@
 from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse
 
-app = FastAPI(title="HR Media Tube")
+from hrgi.service import lifespan, router
+
+app = FastAPI(title="HR Media Tube", lifespan=lifespan)
+app.include_router(router)
 
 @app.get("/", response_class=HTMLResponse)
 def home():
