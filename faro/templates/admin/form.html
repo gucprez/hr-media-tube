@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% block titulo %}{{ e.singular|capitalize }}{% endblock %}
+{% block contenido %}
+<h1>{% if fila.id %}Editar{% else %}Nueva{% endif %} {{ e.singular }}</h1>
+<form class="tarjeta" method="post" enctype="multipart/form-data"
+      action="/admin/{{ ent }}/{% if fila.id %}{{ fila.id }}{% elif ent == 'noticias' %}nueva{% else %}nuevo{% endif %}">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% for campo, etiqueta, tipo, obligatorio in e.campos %}
+  {% if tipo == "check" %}
+    <label class="check"><input type="checkbox" name="{{ campo }}" value="1" {% if fila[campo] %}checked{% endif %}> {{ etiqueta }}</label>
+  {% elif tipo == "imagen" %}
+    <label for="f-{{ campo }}">{{ etiqueta }}</label>
+    {% if fila.imagen %}<img class="miniatura" src="/uploads/{{ fila.imagen }}" alt="Foto actual">
+    <label class="check"><input type="checkbox" name="quitar_imagen" value="1"> Quitar la foto actual</label>{% endif %}
+    <input id="f-{{ campo }}" type="file" name="imagen_archivo" accept="image/jpeg,image/png,image/webp">
+  {% else %}
+    <label for="f-{{ campo }}">{{ etiqueta }}{% if obligatorio %} *{% endif %}</label>
+    {% if tipo == "area" %}<textarea id="f-{{ campo }}" name="{{ campo }}" rows="9">{{ fila[campo] or "" }}</textarea>
+    {% elif tipo == "area_corta" %}<textarea id="f-{{ campo }}" name="{{ campo }}" rows="3">{{ fila[campo] or "" }}</textarea>
+    {% else %}<input id="f-{{ campo }}" name="{{ campo }}" type="{{ 'date' if tipo == 'date' else 'text' }}" value="{{ fila[campo] or '' }}" {% if obligatorio %}required{% endif %}>{% endif %}
+  {% endif %}
+  {% endfor %}
+  <p class="ayuda">Deja una línea en blanco para separar párrafos.</p>
+  <div class="fila"><button class="btn">Guardar</button><a class="btn btn--gris" href="/admin/{{ ent }}">Cancelar</a></div>
+</form>
+{% endblock %}

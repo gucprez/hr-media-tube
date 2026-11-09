@@ -1,0 +1,20 @@
+{% extends "admin/base.html" %}
+{% block titulo %}{{ e.titulo }}{% endblock %}
+{% block contenido %}
+<div class="fila"><h1>{{ e.titulo }}</h1>
+  <a class="btn" href="/admin/{{ ent }}/{% if ent == 'noticias' %}nueva{% else %}nuevo{% endif %}">+ Nueva {{ e.singular }}</a></div>
+{% if filas %}
+<table class="tabla">
+  <thead><tr><th>Fecha</th><th>Título</th><th>Estado</th><th><span class="solo-lector">Acciones</span></th></tr></thead>
+  <tbody>
+  {% for f in filas %}
+  <tr><td>{{ f.fecha }}</td><td>{{ f.titulo }}</td>
+    <td>{% if f[e.estado] %}Visible{% else %}Borrador{% endif %}</td>
+    <td class="acciones"><a href="/admin/{{ ent }}/{{ f.id }}">Editar</a>
+      <form method="post" action="/admin/{{ ent }}/{{ f.id }}/borrar" onsubmit="return confirm('¿Eliminar «{{ f.titulo|replace("'", "") }}»? No se puede deshacer.')">
+        <input type="hidden" name="csrf" value="{{ csrf }}"><button class="enlace enlace--peligro">Eliminar</button></form></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="vacio">Todavía no hay nada aquí.</p>{% endif %}
+{% endblock %}

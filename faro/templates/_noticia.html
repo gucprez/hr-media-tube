@@ -1,0 +1,9 @@
+<article class="noticia">
+  {% if n.imagen %}<a class="noticia__img" href="/noticias/{{ n.id }}" tabindex="-1" aria-hidden="true"><img src="/uploads/{{ n.imagen }}" alt="" loading="lazy"></a>{% endif %}
+  <div class="noticia__cuerpo">
+    <time datetime="{{ n.fecha }}">{{ n.fecha|fecha_larga }}</time>
+    <h3><a href="/noticias/{{ n.id }}">{{ n.titulo }}</a></h3>
+    {% if n.resumen %}<p>{{ n.resumen }}</p>{% endif %}
+    <a class="noticia__mas" href="/noticias/{{ n.id }}">Leer más<span class="solo-lector">: {{ n.titulo }}</span> →</a>
+  </div>
+</article>

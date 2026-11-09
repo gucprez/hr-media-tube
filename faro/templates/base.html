@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block titulo %}Faro de Luz Radio · Iglesia Faro de Luz — Asambleas de Dios{% endblock %}</title>
+<meta name="description" content="{% block descripcion %}Iglesia Faro de Luz — Asambleas de Dios y Faro de Luz Radio, próximamente: actividades semanales, Palabra de Dios y un espacio para tus peticiones de oración.{% endblock %}">
+<meta name="theme-color" content="#0b2545">
+<link rel="icon" type="image/png" href="/static/img/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Nunito+Sans:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="/static/css/estilos.css">
+</head>
+<body>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+
+<div class="franja">
+  <p>«Yo soy la luz del mundo» <strong>Juan 8:12</strong></p>
+</div>
+
+<header class="cabecera" id="inicio">
+  <div class="contenedor cabecera__fila">
+    <a class="marca" href="/" aria-label="Iglesia Faro de Luz — Asambleas de Dios, inicio">
+      <img src="/static/img/logo-sm.webp" width="420" height="234" alt="Logo de la Iglesia Faro de Luz, Asambleas de Dios">
+    </a>
+    <button class="menu-boton" id="menu-boton" aria-expanded="false" aria-controls="menu">
+      <span class="menu-boton__barras" aria-hidden="true"></span><span>Menú</span>
+    </button>
+    <nav class="menu" id="menu" aria-label="Principal">
+      <ul>
+        <li><a href="/">Inicio</a></li>
+        <li><a href="/#radio">Radio</a></li>
+        <li><a href="/#actividades">Actividades</a></li>
+        <li><a href="/#mensajes">Mensajes</a></li>
+        <li><a href="/#pastor">Pastor</a></li>
+        <li><a href="/biblia">La Biblia</a></li>
+        <li><a href="/#iglesia">Quiénes somos</a></li>
+        <li><a href="/#noticias">Noticias</a></li>
+        <li><a href="/#contacto">Contacto</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="contenido">
+{% block contenido %}{% endblock %}
+</main>
+
+<footer class="pie">
+  <div class="contenedor pie__fila">
+    <img src="/static/img/logo-sm.webp" width="420" height="234" alt="Iglesia Faro de Luz — Asambleas de Dios" loading="lazy">
+    <p class="pie__verso">«Yo soy la luz del mundo» <strong>Juan 8:12</strong></p>
+    <p>{{ aj.correo }}{% if aj.direccion %}<br>{{ aj.direccion }}{% endif %}{% if aj.telefono %}<br>{{ aj.telefono }}{% endif %}</p>
+  </div>
+  <p class="pie__copy">© <span id="anio">2026</span> Iglesia Faro de Luz — Asambleas de Dios · <a href="#inicio">Volver arriba ↑</a></p>
+</footer>
+<script src="/static/js/app.js" defer></script>
+</body>
+</html>

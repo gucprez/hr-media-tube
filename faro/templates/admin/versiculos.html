@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% block titulo %}Versículos{% endblock %}
+{% block contenido %}
+<h1>Versículos de la portada</h1>
+<p class="ayuda">El primero se muestra destacado. Se muestran en el orden en que fueron agregados.</p>
+<table class="tabla"><tbody>
+{% for f in filas %}<tr><td>{{ f.texto }}</td><td><strong>{{ f.referencia }}</strong></td>
+  <td class="acciones"><form method="post" action="/admin/quitar-versiculo/{{ f.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="enlace enlace--peligro">Quitar</button></form></td></tr>{% endfor %}
+</tbody></table>
+<form method="post" action="/admin/versiculos" class="tarjeta">
+  <h2>Añadir versículo</h2>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label for="texto">Texto</label><textarea id="texto" name="texto" rows="3" required maxlength="400"></textarea>
+  <label for="ref">Referencia (ej.: Juan 3:16)</label><input id="ref" name="referencia" required maxlength="60">
+  <button class="btn">Añadir</button>
+</form>
+{% endblock %}

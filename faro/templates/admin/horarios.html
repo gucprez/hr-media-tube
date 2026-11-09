@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% block titulo %}Horarios{% endblock %}
+{% block contenido %}
+<h1>Actividades de la semana</h1>
+<p class="ayuda">Si dejas el horario vacío, la web muestra «Por confirmar». Escribe, por ejemplo: «7:00 p. m.».</p>
+<form method="post" action="/admin/horarios" class="tarjeta">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% for f in filas %}
+  <fieldset><legend>{{ f.dia_nombre }}</legend>
+    <label for="a{{ f.dia }}">Actividad</label><input id="a{{ f.dia }}" name="actividad_{{ f.dia }}" value="{{ f.actividad }}" required maxlength="150">
+    <label for="d{{ f.dia }}">Descripción corta</label><input id="d{{ f.dia }}" name="descripcion_{{ f.dia }}" value="{{ f.descripcion }}" maxlength="300">
+    <label for="h{{ f.dia }}">Horario</label><input id="h{{ f.dia }}" name="hora_{{ f.dia }}" value="{{ f.hora }}" maxlength="60" placeholder="Por confirmar">
+  </fieldset>
+  {% endfor %}
+  <button class="btn">Guardar horarios</button>
+</form>
+{% endblock %}

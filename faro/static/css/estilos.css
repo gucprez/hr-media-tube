@@ -189,3 +189,37 @@ td:last-child{color:var(--apagado);white-space:nowrap}
   .acciones .boton{width:100%}
   .franja{font-size:.78rem}
 }
+
+/* Noticias, mensajes, lectura, Biblia */
+.noticias-grid,.mensajes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:24px}
+.noticia,.mensaje{background:#fff;border:1px solid var(--linea);border-radius:var(--radio);overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--sombra)}
+.noticia__img img{width:100%;aspect-ratio:16/10;object-fit:cover}
+.noticia__cuerpo,.mensaje__texto{padding:22px;display:flex;flex-direction:column;flex:1}
+.noticia time,.mensaje time,.lectura__fecha{font-size:.82rem;font-weight:700;color:#8a5f0a;text-transform:uppercase;letter-spacing:.08em}
+.noticia h3,.mensaje h3{font-size:1.3rem;margin:.4em 0}
+.noticia h3 a{text-decoration:none}.noticia h3 a:hover{color:var(--celeste)}
+.noticia__mas{margin-top:auto;font-weight:800;color:var(--celeste);text-decoration:none}
+.mensaje__video{aspect-ratio:16/9;background:#000}.mensaje__video iframe{width:100%;height:100%;border:0}
+.ver-todo{margin-top:26px;font-weight:800}.ver-todo a{color:var(--celeste)}
+.radio__iframe{width:min(420px,100%);height:120px;border:0;border-radius:12px;background:var(--suave)}
+.lectura{max-width:760px}
+.lectura h1{font-size:clamp(2rem,5vw,3rem)}
+.lectura__img{width:100%;border-radius:var(--radio);margin:18px 0;max-height:440px;object-fit:cover}
+.lectura__resumen{font:600 1.2rem/1.5 var(--serif);color:var(--marino-2)}
+.lectura a:not(.boton){color:var(--celeste)}
+.buscador{display:flex;gap:12px;margin-bottom:28px;max-width:560px}
+.buscador input{flex:1;font:inherit;padding:12px 16px;border:2px solid #c4d0de;border-radius:999px;min-width:0}
+.resultados ul{padding-left:0;list-style:none}.resultados li{padding:10px 0;border-bottom:1px solid var(--linea)}
+.resultados a{color:var(--celeste)}
+.biblia__tes{margin-top:2.2rem}
+.libros{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;align-items:start}
+.libros details{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:10px 14px}
+.libros summary{cursor:pointer;font-weight:800;color:var(--marino)}
+.capitulos{list-style:none;margin:12px 0 4px;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.capitulos a{display:grid;place-items:center;min-width:40px;height:40px;border-radius:10px;background:var(--suave);text-decoration:none;font-weight:700;color:var(--marino)}
+.capitulos a:hover{background:var(--marino);color:#fff}
+.biblia__nav{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:20px 0}
+.biblia__texto{font:1.15rem/1.85 var(--serif)}
+.biblia__texto p{margin:0 0 .5em}
+.biblia__texto sup{font:800 .7rem var(--sans);color:#8a5f0a;margin-right:4px}
+.biblia__texto p:target{background:#fff3d6;border-radius:6px}

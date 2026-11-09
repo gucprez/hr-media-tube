@@ -1,0 +1,398 @@
+[
+ {
+  "slug": "genesis",
+  "nombre": "Génesis",
+  "capitulos": 50,
+  "testamento": "AT"
+ },
+ {
+  "slug": "exodo",
+  "nombre": "Éxodo",
+  "capitulos": 40,
+  "testamento": "AT"
+ },
+ {
+  "slug": "levitico",
+  "nombre": "Levítico",
+  "capitulos": 27,
+  "testamento": "AT"
+ },
+ {
+  "slug": "numeros",
+  "nombre": "Números",
+  "capitulos": 36,
+  "testamento": "AT"
+ },
+ {
+  "slug": "deuteronomio",
+  "nombre": "Deuteronomio",
+  "capitulos": 34,
+  "testamento": "AT"
+ },
+ {
+  "slug": "josue",
+  "nombre": "Josué",
+  "capitulos": 24,
+  "testamento": "AT"
+ },
+ {
+  "slug": "jueces",
+  "nombre": "Jueces",
+  "capitulos": 21,
+  "testamento": "AT"
+ },
+ {
+  "slug": "rut",
+  "nombre": "Rut",
+  "capitulos": 4,
+  "testamento": "AT"
+ },
+ {
+  "slug": "1-samuel",
+  "nombre": "1 Samuel",
+  "capitulos": 31,
+  "testamento": "AT"
+ },
+ {
+  "slug": "2-samuel",
+  "nombre": "2 Samuel",
+  "capitulos": 24,
+  "testamento": "AT"
+ },
+ {
+  "slug": "1-reyes",
+  "nombre": "1 Reyes",
+  "capitulos": 22,
+  "testamento": "AT"
+ },
+ {
+  "slug": "2-reyes",
+  "nombre": "2 Reyes",
+  "capitulos": 25,
+  "testamento": "AT"
+ },
+ {
+  "slug": "1-cronicas",
+  "nombre": "1 Crónicas",
+  "capitulos": 29,
+  "testamento": "AT"
+ },
+ {
+  "slug": "2-cronicas",
+  "nombre": "2 Crónicas",
+  "capitulos": 36,
+  "testamento": "AT"
+ },
+ {
+  "slug": "esdras",
+  "nombre": "Esdras",
+  "capitulos": 10,
+  "testamento": "AT"
+ },
+ {
+  "slug": "nehemias",
+  "nombre": "Nehemías",
+  "capitulos": 13,
+  "testamento": "AT"
+ },
+ {
+  "slug": "ester",
+  "nombre": "Ester",
+  "capitulos": 10,
+  "testamento": "AT"
+ },
+ {
+  "slug": "job",
+  "nombre": "Job",
+  "capitulos": 42,
+  "testamento": "AT"
+ },
+ {
+  "slug": "salmos",
+  "nombre": "Salmos",
+  "capitulos": 150,
+  "testamento": "AT"
+ },
+ {
+  "slug": "proverbios",
+  "nombre": "Proverbios",
+  "capitulos": 31,
+  "testamento": "AT"
+ },
+ {
+  "slug": "eclesiastes",
+  "nombre": "Eclesiastés",
+  "capitulos": 12,
+  "testamento": "AT"
+ },
+ {
+  "slug": "cantares",
+  "nombre": "Cantares",
+  "capitulos": 8,
+  "testamento": "AT"
+ },
+ {
+  "slug": "isaias",
+  "nombre": "Isaías",
+  "capitulos": 66,
+  "testamento": "AT"
+ },
+ {
+  "slug": "jeremias",
+  "nombre": "Jeremías",
+  "capitulos": 52,
+  "testamento": "AT"
+ },
+ {
+  "slug": "lamentaciones",
+  "nombre": "Lamentaciones",
+  "capitulos": 5,
+  "testamento": "AT"
+ },
+ {
+  "slug": "ezequiel",
+  "nombre": "Ezequiel",
+  "capitulos": 48,
+  "testamento": "AT"
+ },
+ {
+  "slug": "daniel",
+  "nombre": "Daniel",
+  "capitulos": 12,
+  "testamento": "AT"
+ },
+ {
+  "slug": "oseas",
+  "nombre": "Oseas",
+  "capitulos": 14,
+  "testamento": "AT"
+ },
+ {
+  "slug": "joel",
+  "nombre": "Joel",
+  "capitulos": 3,
+  "testamento": "AT"
+ },
+ {
+  "slug": "amos",
+  "nombre": "Amós",
+  "capitulos": 9,
+  "testamento": "AT"
+ },
+ {
+  "slug": "abdias",
+  "nombre": "Abdías",
+  "capitulos": 1,
+  "testamento": "AT"
+ },
+ {
+  "slug": "jonas",
+  "nombre": "Jonás",
+  "capitulos": 4,
+  "testamento": "AT"
+ },
+ {
+  "slug": "miqueas",
+  "nombre": "Miqueas",
+  "capitulos": 7,
+  "testamento": "AT"
+ },
+ {
+  "slug": "nahum",
+  "nombre": "Nahúm",
+  "capitulos": 3,
+  "testamento": "AT"
+ },
+ {
+  "slug": "habacuc",
+  "nombre": "Habacuc",
+  "capitulos": 3,
+  "testamento": "AT"
+ },
+ {
+  "slug": "sofonias",
+  "nombre": "Sofonías",
+  "capitulos": 3,
+  "testamento": "AT"
+ },
+ {
+  "slug": "hageo",
+  "nombre": "Hageo",
+  "capitulos": 2,
+  "testamento": "AT"
+ },
+ {
+  "slug": "zacarias",
+  "nombre": "Zacarías",
+  "capitulos": 14,
+  "testamento": "AT"
+ },
+ {
+  "slug": "malaquias",
+  "nombre": "Malaquías",
+  "capitulos": 4,
+  "testamento": "AT"
+ },
+ {
+  "slug": "mateo",
+  "nombre": "Mateo",
+  "capitulos": 28,
+  "testamento": "NT"
+ },
+ {
+  "slug": "marcos",
+  "nombre": "Marcos",
+  "capitulos": 16,
+  "testamento": "NT"
+ },
+ {
+  "slug": "lucas",
+  "nombre": "Lucas",
+  "capitulos": 24,
+  "testamento": "NT"
+ },
+ {
+  "slug": "juan",
+  "nombre": "Juan",
+  "capitulos": 21,
+  "testamento": "NT"
+ },
+ {
+  "slug": "hechos",
+  "nombre": "Hechos",
+  "capitulos": 28,
+  "testamento": "NT"
+ },
+ {
+  "slug": "romanos",
+  "nombre": "Romanos",
+  "capitulos": 16,
+  "testamento": "NT"
+ },
+ {
+  "slug": "1-corintios",
+  "nombre": "1 Corintios",
+  "capitulos": 16,
+  "testamento": "NT"
+ },
+ {
+  "slug": "2-corintios",
+  "nombre": "2 Corintios",
+  "capitulos": 13,
+  "testamento": "NT"
+ },
+ {
+  "slug": "galatas",
+  "nombre": "Gálatas",
+  "capitulos": 6,
+  "testamento": "NT"
+ },
+ {
+  "slug": "efesios",
+  "nombre": "Efesios",
+  "capitulos": 6,
+  "testamento": "NT"
+ },
+ {
+  "slug": "filipenses",
+  "nombre": "Filipenses",
+  "capitulos": 4,
+  "testamento": "NT"
+ },
+ {
+  "slug": "colosenses",
+  "nombre": "Colosenses",
+  "capitulos": 4,
+  "testamento": "NT"
+ },
+ {
+  "slug": "1-tesalonicenses",
+  "nombre": "1 Tesalonicenses",
+  "capitulos": 5,
+  "testamento": "NT"
+ },
+ {
+  "slug": "2-tesalonicenses",
+  "nombre": "2 Tesalonicenses",
+  "capitulos": 3,
+  "testamento": "NT"
+ },
+ {
+  "slug": "1-timoteo",
+  "nombre": "1 Timoteo",
+  "capitulos": 6,
+  "testamento": "NT"
+ },
+ {
+  "slug": "2-timoteo",
+  "nombre": "2 Timoteo",
+  "capitulos": 4,
+  "testamento": "NT"
+ },
+ {
+  "slug": "tito",
+  "nombre": "Tito",
+  "capitulos": 3,
+  "testamento": "NT"
+ },
+ {
+  "slug": "filemon",
+  "nombre": "Filemón",
+  "capitulos": 1,
+  "testamento": "NT"
+ },
+ {
+  "slug": "hebreos",
+  "nombre": "Hebreos",
+  "capitulos": 13,
+  "testamento": "NT"
+ },
+ {
+  "slug": "santiago",
+  "nombre": "Santiago",
+  "capitulos": 5,
+  "testamento": "NT"
+ },
+ {
+  "slug": "1-pedro",
+  "nombre": "1 Pedro",
+  "capitulos": 5,
+  "testamento": "NT"
+ },
+ {
+  "slug": "2-pedro",
+  "nombre": "2 Pedro",
+  "capitulos": 3,
+  "testamento": "NT"
+ },
+ {
+  "slug": "1-juan",
+  "nombre": "1 Juan",
+  "capitulos": 5,
+  "testamento": "NT"
+ },
+ {
+  "slug": "2-juan",
+  "nombre": "2 Juan",
+  "capitulos": 1,
+  "testamento": "NT"
+ },
+ {
+  "slug": "3-juan",
+  "nombre": "3 Juan",
+  "capitulos": 1,
+  "testamento": "NT"
+ },
+ {
+  "slug": "judas",
+  "nombre": "Judas",
+  "capitulos": 1,
+  "testamento": "NT"
+ },
+ {
+  "slug": "apocalipsis",
+  "nombre": "Apocalipsis",
+  "capitulos": 22,
+  "testamento": "NT"
+ }
+]

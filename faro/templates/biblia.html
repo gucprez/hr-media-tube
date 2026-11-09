@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}La Biblia · Faro de Luz{% endblock %}
+{% block descripcion %}Lee la Biblia en línea, Reina-Valera 1909, libro por libro o busca una palabra.{% endblock %}
+{% block contenido %}
+<section class="seccion"><div class="contenedor">
+  <header class="seccion__encabezado"><p class="sobretitulo">La Biblia</p><h1>Lámpara es a mis pies tu palabra.</h1>
+    <p>Reina-Valera 1909 (dominio público). Elige un libro o busca una palabra.</p></header>
+  <form class="buscador" role="search" action="/biblia" method="get">
+    <label for="q" class="solo-lector">Buscar en la Biblia</label>
+    <input id="q" name="q" type="search" value="{{ q }}" placeholder="Ej.: luz del mundo" minlength="3" maxlength="80">
+    <button class="boton boton--azul" type="submit">Buscar</button>
+  </form>
+  {% if resultados is not none %}
+  <section class="resultados" aria-live="polite">
+    <h2>{% if resultados %}Resultados para «{{ q }}»{% else %}Sin resultados para «{{ q }}»{% endif %}</h2>
+    {% if resultados|length >= 60 %}<p class="nota">Se muestran los primeros 60 resultados.</p>{% endif %}
+    <ul>{% for r in resultados %}<li><a href="/biblia/{{ r.slug }}/{{ r.cap }}#v{{ r.ver }}"><strong>{{ r.libro }} {{ r.cap }}:{{ r.ver }}</strong></a> {{ r.texto }}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+  {% for tes, nombre in (("AT", "Antiguo Testamento"), ("NT", "Nuevo Testamento")) %}
+  <h2 class="biblia__tes">{{ nombre }}</h2>
+  <ul class="libros">
+    {% for l in libros if l.testamento == tes %}
+    <li><details><summary>{{ l.nombre }}</summary>
+      <ul class="capitulos">{% for c in range(1, l.capitulos + 1) %}<li><a href="/biblia/{{ l.slug }}/{{ c }}" aria-label="{{ l.nombre }} capítulo {{ c }}">{{ c }}</a></li>{% endfor %}</ul>
+    </details></li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+  <p class="nota">Texto: La Santa Biblia, Reina-Valera 1909 (dominio público).</p>
+</div></section>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block titulo %}{{ n.titulo }} · Faro de Luz{% endblock %}
+{% block descripcion %}{{ n.resumen or n.titulo }}{% endblock %}
+{% block contenido %}
+<article class="seccion"><div class="contenedor lectura">
+  <p class="sobretitulo"><a href="/noticias">← Noticias</a></p>
+  <h1>{{ n.titulo }}</h1>
+  <time class="lectura__fecha" datetime="{{ n.fecha }}">{{ n.fecha|fecha_larga }}</time>
+  {% if n.imagen %}<img class="lectura__img" src="/uploads/{{ n.imagen }}" alt="">{% endif %}
+  {% if n.resumen %}<p class="lectura__resumen">{{ n.resumen }}</p>{% endif %}
+  {{ n.cuerpo|parrafos }}
+</div></article>
+{% endblock %}

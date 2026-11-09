@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>{% block titulo %}Panel{% endblock %} · Faro de Luz</title>
+<link rel="icon" type="image/png" href="/static/img/icon.png">
+<link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+<header class="barra">
+  <a class="barra__marca" href="/admin"><img src="/static/img/icon.png" alt="" width="36" height="36"> Panel de Faro de Luz</a>
+  {% if csrf %}
+  <nav aria-label="Panel">
+    <a href="/admin/noticias">Noticias</a><a href="/admin/mensajes">Mensajes del pastor</a><a href="/admin/horarios">Horarios</a>
+    <a href="/admin/versiculos">Versículos</a><a href="/admin/ajustes">Ajustes</a><a href="/" target="_blank" rel="noopener">Ver la web ↗</a>
+  </nav>
+  <form method="post" action="/admin/salir"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn--gris">Salir</button></form>
+  {% endif %}
+</header>
+<main class="caja">
+{% if mensaje %}<p class="aviso aviso--ok" role="status">{{ mensaje }}</p>{% endif %}
+{% if errores %}<div class="aviso aviso--error" role="alert"><ul>{% for e in errores %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+{% block contenido %}{% endblock %}
+</main>
+</body>
+</html>

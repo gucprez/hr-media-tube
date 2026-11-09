@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titulo %}{{ info.nombre }} {{ cap }} · Biblia · Faro de Luz{% endblock %}
+{% block contenido %}
+<article class="seccion"><div class="contenedor lectura">
+  <p class="sobretitulo"><a href="/biblia">← La Biblia</a></p>
+  <h1>{{ info.nombre }} {{ cap }}</h1>
+  <nav class="biblia__nav" aria-label="Capítulos de {{ info.nombre }}">
+    {% if ant %}<a class="boton boton--claro" href="/biblia/{{ ant[0] }}/{{ ant[1] }}">← {{ nombres[ant[0]] }} {{ ant[1] }}</a>{% endif %}
+    {% if sig %}<a class="boton boton--claro" href="/biblia/{{ sig[0] }}/{{ sig[1] }}">{{ nombres[sig[0]] }} {{ sig[1] }} →</a>{% endif %}
+  </nav>
+  <div class="biblia__texto">
+    {% for v in versos %}<p id="v{{ loop.index }}"><sup>{{ loop.index }}</sup> {{ v }}</p>{% endfor %}
+  </div>
+  <nav class="biblia__nav" aria-label="Navegación inferior">
+    {% if ant %}<a class="boton boton--claro" href="/biblia/{{ ant[0] }}/{{ ant[1] }}">← {{ nombres[ant[0]] }} {{ ant[1] }}</a>{% endif %}
+    {% if sig %}<a class="boton boton--claro" href="/biblia/{{ sig[0] }}/{{ sig[1] }}">{{ nombres[sig[0]] }} {{ sig[1] }} →</a>{% endif %}
+  </nav>
+  <p class="nota">Reina-Valera 1909 (dominio público).</p>
+</div></article>
+{% endblock %}

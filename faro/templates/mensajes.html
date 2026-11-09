@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titulo %}Mensajes del pastor · Faro de Luz{% endblock %}
+{% block contenido %}
+<section class="seccion"><div class="contenedor">
+  <header class="seccion__encabezado"><p class="sobretitulo">Mensajes del pastor</p><h1>Enseñanza que nos acerca a Dios.</h1></header>
+  {% if mensajes %}<div class="mensajes-grid">{% for m in mensajes %}{% include "_mensaje.html" %}{% endfor %}</div>
+  {% else %}<div class="vacio vacio--ancho"><span aria-hidden="true">▶</span><p>Aún no hay mensajes publicados.</p></div>{% endif %}
+  <p class="ver-todo"><a href="/">← Volver al inicio</a></p>
+</div></section>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% block titulo %}Ajustes{% endblock %}
+{% block contenido %}
+<h1>Ajustes del sitio</h1>
+<form method="post" action="/admin/ajustes" class="tarjeta">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label for="correo">Correo de contacto</label><input id="correo" name="correo" type="email" value="{{ aj.correo }}">
+  <label for="direccion">Dirección</label><input id="direccion" name="direccion" value="{{ aj.direccion }}">
+  <label for="telefono">Teléfono (vacío = no se muestra)</label><input id="telefono" name="telefono" value="{{ aj.telefono }}" inputmode="tel">
+  <label for="pastor_nombre">Nombre del pastor (opcional)</label><input id="pastor_nombre" name="pastor_nombre" value="{{ aj.pastor_nombre }}">
+  <label for="radio_url">Reproductor de la radio (dirección https://… del reproductor para incrustar)</label>
+  <input id="radio_url" name="radio_url" value="{{ aj.radio_url }}" placeholder="Vacío = «Próximamente»">
+  <p class="ayuda">Mientras esté vacío, la web dice «Próximamente · En preparación». Llénalo solo cuando la radio transmita de verdad.</p>
+  <label for="quienes_somos">Texto de «Quiénes somos»</label><textarea id="quienes_somos" name="quienes_somos" rows="8">{{ aj.quienes_somos }}</textarea>
+  <button class="btn">Guardar</button>
+</form>
+{% endblock %}

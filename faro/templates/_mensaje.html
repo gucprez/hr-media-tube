@@ -1,0 +1,10 @@
+<article class="mensaje">
+  {% if m.youtube %}
+  <div class="mensaje__video"><iframe src="https://www.youtube-nocookie.com/embed/{{ m.youtube }}" title="{{ m.titulo }}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+  {% endif %}
+  <div class="mensaje__texto">
+    <time datetime="{{ m.fecha }}">{{ m.fecha|fecha_larga }}</time>
+    <h3>{{ m.titulo }}</h3>
+    {{ m.descripcion|parrafos }}
+  </div>
+</article>

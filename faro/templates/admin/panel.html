@@ -1,0 +1,11 @@
+{% extends "admin/base.html" %}
+{% block contenido %}
+<h1>¿Qué quieres hacer?</h1>
+<div class="atajos">
+  <a class="tarjeta" href="/admin/noticias/nueva"><strong>Publicar una noticia</strong><span>{{ cuentas.noticias }} guardadas</span></a>
+  <a class="tarjeta" href="/admin/mensajes/nuevo"><strong>Añadir mensaje del pastor</strong><span>{{ cuentas.mensajes }} guardados</span></a>
+  <a class="tarjeta" href="/admin/horarios"><strong>Poner horarios de la semana</strong><span>Actividades de lunes a domingo</span></a>
+  <a class="tarjeta" href="/admin/versiculos"><strong>Versículos de la portada</strong><span>{{ cuentas.versiculos }} guardados</span></a>
+  <a class="tarjeta" href="/admin/ajustes"><strong>Ajustes</strong><span>Teléfono, dirección, reproductor de la radio, «Quiénes somos»</span></a>
+</div>
+{% endblock %}

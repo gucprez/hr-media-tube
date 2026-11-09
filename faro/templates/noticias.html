@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titulo %}Noticias · Faro de Luz{% endblock %}
+{% block contenido %}
+<section class="seccion"><div class="contenedor">
+  <header class="seccion__encabezado"><p class="sobretitulo">Noticias y actividades de la iglesia</p><h1>Lo que vive nuestra comunidad.</h1></header>
+  {% if noticias %}<div class="noticias-grid">{% for n in noticias %}{% include "_noticia.html" %}{% endfor %}</div>
+  {% else %}<div class="vacio vacio--ancho"><span aria-hidden="true">✦</span><p>Aún no hay noticias publicadas.</p></div>{% endif %}
+  <p class="ver-todo"><a href="/">← Volver al inicio</a></p>
+</div></section>
+{% endblock %}
