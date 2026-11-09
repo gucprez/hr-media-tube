@@ -1,0 +1,95 @@
+package com.hrmediasports.studio.ui.components
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FiberManualRecord
+import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.hrmediasports.studio.ui.RecordingState
+import com.hrmediasports.studio.ui.StreamingState
+import com.hrmediasports.studio.ui.theme.HrColors
+import com.hrmediasports.studio.ui.theme.HrDimens
+
+private data class ButtonLook(
+    val label: String,
+    val icon: ImageVector,
+    val content: Color,
+    val container: Color,
+    val border: Color,
+    val stateText: String,
+)
+
+@Composable
+private fun OutputButton(look: ButtonLook, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier
+            .heightIn(min = HrDimens.MinTouch)
+            .widthIn(min = HrDimens.MinTouch)
+            .semantics { stateDescription = look.stateText },
+        colors = ButtonDefaults.outlinedButtonColors(containerColor = look.container, contentColor = look.content),
+        border = BorderStroke(2.dp, look.border),
+    ) {
+        Icon(look.icon, contentDescription = null, modifier = Modifier.size(18.dp))
+        Text(look.label, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, modifier = Modifier.padding(start = 6.dp), maxLines = 1)
+    }
+}
+
+/**
+ * Cada estado se distingue por texto + icono + estilo (no solo por color):
+ * no disponible (apagado), detenido (contorno blanco), grabando (relleno oscuro con "DETENER"),
+ * error (ámbar).
+ */
+@Composable
+fun RecordButton(state: RecordingState, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val look = when (state) {
+        RecordingState.Unavailable -> ButtonLook("GRABAR", Icons.Filled.FiberManualRecord, HrColors.TextMuted, Color.Transparent, HrColors.Outline, "No disponible")
+        RecordingState.Stopped -> ButtonLook("GRABAR", Icons.Filled.FiberManualRecord, HrColors.TextPrimary, Color.Transparent, HrColors.TextPrimary, "Detenida")
+        RecordingState.Recording -> ButtonLook("DETENER GRABACIÓN", Icons.Filled.Stop, Color.White, Color(0xFF3A1416), HrColors.OnAirRed, "Grabando")
+        RecordingState.Error -> ButtonLook("GRABACIÓN CON ERROR", Icons.Filled.FiberManualRecord, HrColors.Amber, Color.Transparent, HrColors.Amber, "Error")
+    }
+    OutputButton(look, onClick, modifier)
+}
+
+@Composable
+fun StreamButton(state: StreamingState, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val look = when (state) {
+        StreamingState.Unavailable -> ButtonLook("TRANSMITIR", Icons.Filled.Sensors, HrColors.TextMuted, Color.Transparent, HrColors.Outline, "No disponible")
+        StreamingState.Offline -> ButtonLook("TRANSMITIR", Icons.Filled.Sensors, Color.Black, HrColors.Orange, HrColors.Orange, "Sin transmitir")
+        StreamingState.Connecting -> ButtonLook("CONECTANDO…", Icons.Filled.Sensors, HrColors.Orange, Color.Transparent, HrColors.Orange, "Conectando")
+        StreamingState.Live -> ButtonLook("EN VIVO · DETENER", Icons.Filled.Stop, Color.White, HrColors.OnAirRed, HrColors.OnAirRed, "Transmitiendo")
+        StreamingState.Error -> ButtonLook("TRANSMISIÓN CON ERROR", Icons.Filled.Sensors, HrColors.Amber, Color.Transparent, HrColors.Amber, "Error")
+    }
+    OutputButton(look, onClick, modifier)
+}
+
+@Composable
+fun OutputControls(
+    recording: RecordingState,
+    streaming: StreamingState,
+    onRecord: () -> Unit,
+    onStream: () -> Unit,
+) {
+    Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+        RecordButton(recording, onRecord)
+        StreamButton(streaming, onStream)
+    }
+}
