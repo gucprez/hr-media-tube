@@ -39,7 +39,8 @@ object DemoMediaEngine : MediaEngine {
 
 /** Foto del estado de la pizarra entregada por una fuente (capa 4 → UI). */
 data class ScoreboardSnapshot(
-    val match: MatchState,
+    /** null si nunca se recibió ningún dato. */
+    val match: MatchState?,
     val origin: ReadingOrigin,
     val link: LinkState,
     /** Instante de recepción de la última lectura; null si nunca hubo. */

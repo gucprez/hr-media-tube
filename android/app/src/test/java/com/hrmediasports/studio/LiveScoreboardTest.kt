@@ -7,7 +7,12 @@ import com.hrmediasports.studio.engine.ScoreboardSource
 import com.hrmediasports.studio.protocol.LinkState
 import com.hrmediasports.studio.protocol.ReadingOrigin
 import com.hrmediasports.studio.protocol.isStale
+import com.hrmediasports.studio.ui.MonitorView
+import com.hrmediasports.studio.ui.SOURCE_BREAK
+import com.hrmediasports.studio.ui.StudioPanel
 import com.hrmediasports.studio.ui.StudioViewModel
+import com.hrmediasports.studio.ui.dataLabel
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -51,11 +56,11 @@ class LiveScoreboardTest {
     @Test fun newSnapshotUpdatesScoreboard() {
         val source = FakeSource(snap(10))
         val vm = vm(source)
-        assertEquals(10, vm.state.value.scoreboard.match.homePoints)
+        assertEquals(10, vm.state.value.scoreboard.match!!.homePoints)
         now = 10_200
         source.flow.value = snap(12, receivedAt = 10_100L)
         val sb = vm.state.value.scoreboard
-        assertEquals(12, sb.match.homePoints)
+        assertEquals(12, sb.match!!.homePoints)
         assertEquals(100L, sb.ageMillis)
         assertEquals(ReadingOrigin.Remote, sb.origin)
     }
@@ -90,12 +95,12 @@ class LiveScoreboardTest {
         now = 10_500
         source.flow.value = snap(15, receivedAt = 10_400L)
         val sb = vm.state.value.scoreboard
-        assertEquals(77, sb.match.homePoints)            // la corrección se mantiene
+        assertEquals(77, sb.match!!.homePoints)            // la corrección se mantiene
         assertEquals(ReadingOrigin.Manual, sb.origin)
         assertTrue(sb.newerReadingAvailable)             // y se avisa que hay datos nuevos
 
         vm.discardCorrection()
-        assertEquals(15, vm.state.value.scoreboard.match.homePoints)
+        assertEquals(15, vm.state.value.scoreboard.match!!.homePoints)
         assertFalse(vm.state.value.scoreboard.newerReadingAvailable)
     }
 
@@ -105,5 +110,48 @@ class LiveScoreboardTest {
         vm.openCorrection()
         vm.applyCorrection()
         assertFalse(vm.state.value.scoreboard.newerReadingAvailable)
+    }
+
+    @Test fun neverReceivedShowsNoMatchAndNoLabel() {
+        val vm = vm(FakeSource(ScoreboardSnapshot(null, ReadingOrigin.Remote, LinkState.NotConnected, null, null)))
+        val sb = vm.state.value.scoreboard
+        assertNull(sb.match)
+        assertNull(sb.ageMillis)
+        assertNull(sb.dataLabel())
+    }
+
+    @Test fun lostConnectionKeepsLastDataAndWarns() {
+        val source = FakeSource(snap(10))
+        val vm = vm(source)
+        now = 15_000
+        source.flow.value = snap(10, link = LinkState.NotConnected, receivedAt = 10_000L)
+        val sb = vm.state.value.scoreboard
+        assertEquals(10, sb.match!!.homePoints)           // se conservan los últimos datos
+        assertEquals("DESACTUALIZADO", sb.dataLabel())    // y se advierte
+    }
+
+    @Test fun demoAndManualAreLabeled() {
+        val demo = StudioViewModel(DemoMediaEngine, com.hrmediasports.studio.engine.DemoScoreboardSource, { 0L }, emptyFlow())
+        assertEquals("DATOS DEMO", demo.state.value.scoreboard.dataLabel())
+        demo.openCorrection(); demo.applyCorrection()
+        assertEquals("CORREGIDO A MANO", demo.state.value.scoreboard.dataLabel())
+    }
+
+    @Test fun layoutStateActions() {
+        val vm = vm(FakeSource(snap(10)))
+        assertEquals(MonitorView.Program, vm.state.value.monitorView)
+        vm.setMonitorView(MonitorView.Preview)
+        assertEquals(MonitorView.Preview, vm.state.value.monitorView)
+        vm.selectSource(SOURCE_BREAK)
+        vm.takeToAir()                                      // al poner al aire se vuelve a ver la salida
+        assertEquals(MonitorView.Program, vm.state.value.monitorView)
+
+        assertFalse(vm.state.value.replaysTrayOpen)
+        vm.toggleReplaysTray()
+        assertTrue(vm.state.value.replaysTrayOpen)
+        vm.openPanel(StudioPanel.Replays)
+        assertEquals(StudioPanel.Replays, vm.state.value.openPanel)
+        vm.closePanel()
+        assertNull(vm.state.value.openPanel)
     }
 }

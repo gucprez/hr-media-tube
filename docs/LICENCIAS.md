@@ -13,6 +13,8 @@ Revisión hecha al incorporar cada dependencia. Fuente: metadatos de licencia pu
 | androidx.lifecycle (viewmodel‑compose, runtime‑compose) | 2.8.7 | Apache‑2.0 |
 | kotlinx‑coroutines‑test (solo pruebas) | 1.9.0 | Apache‑2.0 |
 | JUnit (solo pruebas) | 4.13.2 | EPL‑1.0 |
+| Robolectric (solo pruebas, capturas) | 4.14.1 | MIT |
+| androidx.compose.ui:ui-test-junit4 / ui-test-manifest (solo pruebas) | BOM 2024.12.01 | Apache‑2.0 |
 | Gradle Wrapper | 8.10.2 | Apache‑2.0 |
 
 Notas:

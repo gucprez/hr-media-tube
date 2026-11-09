@@ -88,12 +88,12 @@ class StudioViewModelTest {
         vm.applyCorrection()
         val s = vm.state.value
         assertNull(s.correctionDraft)
-        assertEquals(50, s.scoreboard.match.homePoints)
-        assertEquals(130, s.scoreboard.match.clockSeconds)
+        assertEquals(50, s.scoreboard.match!!.homePoints)
+        assertEquals(130, s.scoreboard.match!!.clockSeconds)
         assertEquals(ReadingOrigin.Manual, s.scoreboard.origin)
 
         vm.discardCorrection()
-        assertEquals(48, vm.state.value.scoreboard.match.homePoints)
+        assertEquals(48, vm.state.value.scoreboard.match!!.homePoints)
         assertEquals(ReadingOrigin.Demo, vm.state.value.scoreboard.origin)
     }
 
@@ -103,6 +103,6 @@ class StudioViewModelTest {
         vm.updateDraft { it.copy(home = 99, clockText = "xx") }
         vm.applyCorrection()
         assertNotNull(vm.state.value.correctionDraft)
-        assertEquals(48, vm.state.value.scoreboard.match.homePoints)
+        assertEquals(48, vm.state.value.scoreboard.match!!.homePoints)
     }
 }

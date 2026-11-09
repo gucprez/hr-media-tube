@@ -49,8 +49,25 @@ La APK de debug está firmada con la clave de depuración y sirve solo para prue
 
 El logotipo está definido una sola vez (`HrLogo`) y se muestra solo desde la barra de marca común (`HrBrandBar`), por lo que es idéntico en todas las pantallas. Los controles táctiles miden al menos 48 dp (`HrDimens.MinTouch`).
 
+## Adaptación a distintos tamaños (Estudio)
+El layout se decide con el espacio real del área de contenido (sin barras del sistema ni navegación) y con la escala de texto, no con dimensiones fijas:
+- **Ancho**: monitores Vista previa y Al aire siempre arriba; fuentes compactas debajo; bandeja de repeticiones desplegable (abierta, su lista reemplaza la fila de fuentes y los monitores no se achican); marcador compacto a la derecha.
+- **Bajo** (p. ej. celular horizontal): prioriza Al aire; si no caben ambos monitores, pestañas PREVIA / AL AIRE; repeticiones y marcador completo se abren en paneles aparte (con corrección manual).
+- Controles táctiles ≥ 48 dp en todos los casos; el logotipo y los gráficos de los monitores no escalan con la fuente.
+- Etiquetas: **PREVIA** (naranja) = fuente preparada; **AL AIRE** (rojo) = fuente en la salida.
+- Marcador: «DATOS DEMO» en modo demostración, «—» si nunca se recibieron datos, y si se pierde una conexión se conservan los últimos datos con «DESACTUALIZADO».
+
+Capturas verificadas (generadas con Robolectric, no con un dispositivo): [`../docs/capturas/`](../docs/capturas). Para regenerarlas:
+```bash
+./gradlew testDebugUnitTest -Pscreenshots --rerun --tests '*ScreenshotTest*'   # salida en app/build/screenshots
+```
+(requiere red para descargar los jars de Robolectric, o la variable `ROBOLECTRIC_DEPS` con una carpeta local).
+
 ## Limitaciones conocidas
 - La orientación depende del modo: horizontal en Estudio, vertical en Lector.
 - El arrastre de zonas no se ha probado en un dispositivo táctil.
+- La escala de texto del sistema se limita al 130 % en esta interfaz: por encima, en ventanas pequeñas ya no caben texto y monitores a la vez. En 640×360 dp con 130 % la columna derecha necesita desplazarse.
+- Los paneles específicos (repeticiones y marcador en ventana baja) y los diálogos no están incluidos en las capturas; no se revisaron visualmente.
+- Con ventanas intermedias (p. ej. 853×480 dp) los monitores quedan centrados con espacio libre arriba y abajo.
 - Textos en español dentro del código (sin `strings.xml` traducible todavía).
 - El diseño no se ha comprobado visualmente en un dispositivo ni emulador (ver nota de entrega).

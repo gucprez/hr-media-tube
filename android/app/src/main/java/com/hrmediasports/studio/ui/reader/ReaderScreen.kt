@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
@@ -138,6 +141,9 @@ fun ReaderContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 LinkPill(state.link)
+                if (state.isDemo) {
+                    StatusChip("SIN CÁMARA · MODO DEMOSTRACIÓN", HrColors.Amber, dense = true)
+                }
                 CameraFrame(state, onSelectZone, onMove)
                 Text(
                     if (state.editing) "Toca una zona y arrástrala; usa − y + para cambiar su tamaño."
@@ -200,7 +206,7 @@ private fun OrangeOutlined(text: String, icon: androidx.compose.ui.graphics.vect
         border = BorderStroke(2.dp, HrColors.Orange),
     ) {
         Icon(icon, contentDescription = null, tint = HrColors.TextPrimary)
-        Text(text, color = HrColors.TextPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp), maxLines = 1)
+        Text(text, color = HrColors.TextPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp), textAlign = TextAlign.Center)
     }
 }
 
@@ -247,11 +253,7 @@ private fun CameraFrame(state: ReaderUiState, onSelectZone: (ZoneId) -> Unit, on
                 drawLine(line, Offset(0f, size.height * i / 3f), Offset(size.width, size.height * i / 3f))
             }
         }
-        Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("SIN CÁMARA", color = HrColors.TextMuted, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-            Text("Modo demostración", color = HrColors.TextMuted, fontSize = 12.sp)
-        }
-
+        // Capa 1: recuadros de las zonas (arrastrables en modo ajuste).
         ZoneId.entries.forEach { id ->
             val rect = state.zones[id]
             val selected = state.editing && state.selectedZone == id
@@ -261,6 +263,7 @@ private fun CameraFrame(state: ReaderUiState, onSelectZone: (ZoneId) -> Unit, on
                     .offset { IntOffset((rect.left * widthPx).toInt(), (rect.top * heightPx).toInt()) }
                     .size(with(density) { (rect.width * widthPx).toDp() }, with(density) { (rect.height * heightPx).toDp() })
                     .background(color.copy(alpha = if (selected) 0.18f else 0.06f))
+                    .border(BorderStroke(if (selected) 3.dp else 2.dp, color))
                     .selectable(selected = selected, enabled = state.editing, role = Role.RadioButton, onClick = { onSelectZone(id) })
                     .pointerInput(state.editing, state.selectedZone, id) {
                         if (state.editing && state.selectedZone == id) {
@@ -270,31 +273,43 @@ private fun CameraFrame(state: ReaderUiState, onSelectZone: (ZoneId) -> Unit, on
                             }
                         }
                     },
-            ) {
-                Box(Modifier.fillMaxSize().border(BorderStroke(if (selected) 3.dp else 2.dp, color)))
-                StatusChip(id.label, HrColors.Orange, Modifier.align(Alignment.TopStart).offset(y = (-14).dp), filled = true)
-            }
+            )
+        }
+        // Capa 2: rótulos fuera del recuadro, para que nunca los recorte el tamaño de la zona.
+        ZoneId.entries.forEach { id ->
+            val rect = state.zones[id]
+            val labelHeightPx = with(density) { 22.dp.toPx() }
+            Box(
+                Modifier.offset {
+                    IntOffset(
+                        (rect.left * widthPx).toInt(),
+                        (rect.top * heightPx - labelHeightPx).coerceAtLeast(0f).toInt(),
+                    )
+                },
+            ) { StatusChip(id.label, HrColors.Orange, filled = true, dense = true) }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DetectedPanel(state: ReaderUiState) {
     PanelFrame(
         title = "DATOS DETECTADOS",
-        badge = { StatusChip(if (state.canRecognize) "LECTURA" else "EJEMPLO", HrColors.Amber) },
+        badge = { StatusChip(if (state.canRecognize) "LECTURA" else "DATOS DEMO", HrColors.Amber) },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val m = state.sample
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                StatCell("LOCAL", m.homePoints.toString(), Modifier.weight(1f))
-                StatCell("VISITA", m.awayPoints.toString(), Modifier.weight(1f))
-                StatCell("TIEMPO", formatClock(m.clockSeconds), Modifier.weight(1.4f))
-                StatCell("CUARTO", m.period.toString(), Modifier.weight(1f))
-                StatCell("POSESIÓN", m.possessionSeconds.toString(), Modifier.weight(1.2f))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                val cell = Modifier.weight(1f).widthIn(min = 84.dp)
+                StatCell("LOCAL", m?.homePoints?.toString() ?: "—", cell)
+                StatCell("VISITA", m?.awayPoints?.toString() ?: "—", cell)
+                StatCell("TIEMPO", m?.let { formatClock(it.clockSeconds) } ?: "—", cell)
+                StatCell("CUARTO", m?.period?.toString() ?: "—", cell)
+                StatCell("POSESIÓN", m?.possessionSeconds?.toString() ?: "—", cell)
             }
             Text(
-                if (state.canRecognize) "Vista previa local" else "Valores de ejemplo: no se está leyendo ninguna pizarra.",
+                if (state.canRecognize) "Vista previa local" else "Datos demo: no se está leyendo ninguna pizarra.",
                 color = HrColors.TextMuted,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,

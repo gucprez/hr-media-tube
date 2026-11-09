@@ -23,7 +23,7 @@ data class ReaderUiState(
     val editing: Boolean,
     val templateStatus: TemplateStatus,
     /** Valores de ejemplo: no hay reconocimiento real. */
-    val sample: MatchState,
+    val sample: MatchState?,
     val canRecognize: Boolean,
     val canSend: Boolean,
     val link: LinkState,

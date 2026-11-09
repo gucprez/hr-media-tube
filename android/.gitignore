@@ -8,3 +8,4 @@ captures/
 *.aab
 *.jks
 *.keystore
+.kotlin/

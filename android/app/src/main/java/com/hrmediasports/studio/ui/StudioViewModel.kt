@@ -108,8 +108,16 @@ class StudioViewModel(
 
     /** Acción explícita: envía a la salida lo que está en Vista previa. */
     fun takeToAir() = _state.update { s ->
-        if (s.canTakeToAir) s.copy(programSourceId = s.previewSourceId) else s
+        if (s.canTakeToAir) s.copy(programSourceId = s.previewSourceId, monitorView = MonitorView.Program) else s
     }
+
+    fun setMonitorView(view: MonitorView) = _state.update { it.copy(monitorView = view) }
+
+    fun toggleReplaysTray() = _state.update { it.copy(replaysTrayOpen = !it.replaysTrayOpen) }
+
+    fun openPanel(panel: StudioPanel) = _state.update { it.copy(openPanel = panel) }
+
+    fun closePanel() = _state.update { it.copy(openPanel = null) }
 
     fun onRecordClick() {
         if (!engine.capabilities.canRecord) {

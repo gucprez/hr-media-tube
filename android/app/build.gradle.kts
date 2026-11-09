@@ -30,6 +30,18 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+        unitTests.all { test ->
+            // Las capturas (Robolectric) son opcionales: ./gradlew testDebugUnitTest -Pscreenshots
+            if (!project.hasProperty("screenshots")) test.exclude("**/shots/**")
+            // Opcional: carpeta local con los jars de Robolectric para trabajar sin red.
+            System.getenv("ROBOLECTRIC_DEPS")?.let {
+                test.systemProperty("robolectric.dependency.dir", it)
+                test.systemProperty("robolectric.offline", "true")
+            }
+        }
+    }
     buildFeatures {
         compose = true
     }
@@ -47,5 +59,9 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
     testImplementation(libs.kotlinx.coroutines.test)
 }

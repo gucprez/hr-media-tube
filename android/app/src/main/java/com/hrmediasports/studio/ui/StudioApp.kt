@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,6 +56,10 @@ fun StudioApp(viewModel: StudioViewModel = viewModel()) {
             onSaveReplay = viewModel::onSaveReplayClick,
             onManualCorrection = viewModel::openCorrection,
             onDiscardCorrection = viewModel::discardCorrection,
+            onSetMonitorView = viewModel::setMonitorView,
+            onToggleReplaysTray = viewModel::toggleReplaysTray,
+            onOpenPanel = viewModel::openPanel,
+            onClosePanel = viewModel::closePanel,
         ),
         onNavigate = viewModel::navigate,
         onRecord = viewModel::onRecordClick,
@@ -95,13 +100,17 @@ fun StudioAppContent(
     ) { padding ->
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
             val expanded = maxWidth >= HrDimens.ExpandedBreakpoint
+            // En ventanas bajas se quita la barra de estado inferior para dejar alto a los monitores;
+            // el estado de la pizarra sigue visible en su panel.
+            val shortWindow = maxHeight < 400.dp
+            val iconOnlyOutputs = !expanded && LocalDensity.current.fontScale > 1.15f
             Column(Modifier.fillMaxSize()) {
-                HrTopBar(state, expanded, onRecord, onStream)
+                HrTopBar(state, expanded, iconOnlyOutputs, onRecord, onStream)
                 if (state.isDemo) DemoBanner()
                 Row(Modifier.weight(1f)) {
-                    NavRail(state.destination, onNavigate, compact = !expanded)
+                    NavRail(state.destination, onNavigate, compact = !expanded || shortWindow)
                     when (state.destination) {
-                        Destination.Studio -> StudioScreen(state, actions, expanded, Modifier.weight(1f))
+                        Destination.Studio -> StudioScreen(state, actions, Modifier.weight(1f))
                         Destination.Cameras -> CamerasScreen(state, Modifier.weight(1f))
                         Destination.Graphics -> GraphicsScreen(
                             state,
@@ -115,11 +124,13 @@ fun StudioAppContent(
                         Destination.Settings -> SettingsScreen(state, Modifier.weight(1f))
                     }
                 }
-                ConnectionStatusBar(
-                    connectedCameras = state.connectedCameras,
-                    scoreboardConnected = state.scoreboard.link == LinkState.Connected,
-                    versionLabel = "v0.1.0-demo",
-                )
+                if (!shortWindow) {
+                    ConnectionStatusBar(
+                        connectedCameras = state.connectedCameras,
+                        scoreboardConnected = state.scoreboard.link == LinkState.Connected,
+                        versionLabel = "v0.1.0-demo",
+                    )
+                }
             }
         }
     }
@@ -131,9 +142,9 @@ fun StudioAppContent(
 
 /** Barra superior del Estudio: marca común + estado demo + controles de salida. */
 @Composable
-private fun HrTopBar(state: StudioUiState, expanded: Boolean, onRecord: () -> Unit, onStream: () -> Unit) {
+private fun HrTopBar(state: StudioUiState, expanded: Boolean, iconOnly: Boolean, onRecord: () -> Unit, onStream: () -> Unit) {
     HrBrandBar(title = if (expanded) state.destination.title else null, compact = !expanded) {
         if (state.isDemo) StatusChip("DEMO", HrColors.Amber, filled = false)
-        OutputControls(state.recording, state.streaming, onRecord, onStream)
+        OutputControls(state.recording, state.streaming, onRecord, onStream, iconOnly)
     }
 }
