@@ -24,6 +24,8 @@ Leyenda:
 | Búfer de repeticiones (últimos 20 s) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Pruebas técnicas requeridas (todas pendientes)
+Procedimiento detallado: [`PRUEBAS-TECNICAS.md`](PRUEBAS-TECNICAS.md).
+
 Deben ejecutarse **antes** de construir las funciones completas. Cada una produce un registro con dispositivo, versión de SO, medición y veredicto, que actualiza la matriz.
 
 | ID | Prueba | Criterio de aceptación propuesto (a confirmar con el responsable) | Estado |

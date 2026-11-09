@@ -17,4 +17,6 @@ App de producción de básquetbol en desarrollo, de código abierto.
 - Funciones verificadas por plataforma (hoy: ninguna en dispositivo): [`docs/MATRIZ-FUNCIONES.md`](docs/MATRIZ-FUNCIONES.md)
 - Protocolo de pizarra v1: [`docs/protocolo-pizarra.md`](docs/protocolo-pizarra.md)
 - Licencias de dependencias: [`docs/LICENCIAS.md`](docs/LICENCIAS.md)
+- Procedimiento de pruebas técnicas: [`docs/PRUEBAS-TECNICAS.md`](docs/PRUEBAS-TECNICAS.md)
+- Licencia: Apache-2.0 ([`LICENSE`](LICENSE))
 - App Android (demo de interfaz) e instrucciones de APK: [`android/README.md`](android/README.md)

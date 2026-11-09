@@ -35,7 +35,10 @@ import com.hrmediasports.studio.ui.components.ManualCorrectionDialog
 import com.hrmediasports.studio.ui.components.NavRail
 import com.hrmediasports.studio.ui.components.OutputControls
 import com.hrmediasports.studio.ui.components.StatusChip
-import com.hrmediasports.studio.ui.screens.PlaceholderScreen
+import com.hrmediasports.studio.ui.screens.CamerasScreen
+import com.hrmediasports.studio.ui.screens.GraphicsScreen
+import com.hrmediasports.studio.ui.screens.ReplaysScreen
+import com.hrmediasports.studio.ui.screens.SettingsScreen
 import com.hrmediasports.studio.ui.screens.StudioActions
 import com.hrmediasports.studio.ui.screens.StudioScreen
 import com.hrmediasports.studio.ui.theme.HrColors
@@ -99,7 +102,17 @@ fun StudioAppContent(
                     NavRail(state.destination, onNavigate, compact = !expanded)
                     when (state.destination) {
                         Destination.Studio -> StudioScreen(state, actions, expanded, Modifier.weight(1f))
-                        else -> PlaceholderScreen(state.destination, Modifier.weight(1f))
+                        Destination.Cameras -> CamerasScreen(state, Modifier.weight(1f))
+                        Destination.Graphics -> GraphicsScreen(
+                            state,
+                            onPrepare = { id ->
+                                actions.onSelectSource(id)
+                                onNavigate(Destination.Studio)
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                        Destination.Replays -> ReplaysScreen(state, Modifier.weight(1f))
+                        Destination.Settings -> SettingsScreen(state, Modifier.weight(1f))
                     }
                 }
                 ConnectionStatusBar(

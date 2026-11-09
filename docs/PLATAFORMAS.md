@@ -43,5 +43,5 @@ No se presupone ningún servidor de pago. Opciones a evaluar, de menor a mayor c
 Los costos de TURN y de cualquier alojamiento no se calcularon: dependen del proveedor y del volumen de video.
 
 ## Código abierto
-- El repositorio **aún no tiene archivo de licencia**. Elegir una (p. ej. Apache‑2.0, MIT, GPL‑3.0) es decisión del titular del proyecto; sin ella el código no es legalmente de uso libre. Pendiente.
+- Licencia del proyecto: **Apache-2.0** (archivo `LICENSE`). Se eligió por ser la misma de todas las dependencias incorporadas y por incluir concesión de patentes; si el titular prefiere otra (MIT, GPL‑3.0), debe cambiarse antes de aceptar contribuciones externas.
 - Revisión de dependencias: `LICENCIAS.md`.

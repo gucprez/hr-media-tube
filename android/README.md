@@ -6,7 +6,7 @@ Pantalla **Estudio** en Kotlin + Jetpack Compose. **Es un modo demostración**: 
 - Seleccionar una fuente (Cámara 1, Cámara 2, Descanso, Resultado) la prepara en **Vista previa** (borde naranja).
 - **Poner al aire** envía la fuente de Vista previa a **Al aire** (borde rojo). Es solo estado de interfaz: no hay salida de video.
 - Panel de marcador con datos de **ejemplo** (no hay pizarra conectada) y **corrección manual** operativa.
-- Navegación: Estudio, Cámaras, Gráficos, Repeticiones y Ajustes (las cuatro últimas son marcadores de posición declarados).
+- Navegación: Estudio, Cámaras, Gráficos, Repeticiones y Ajustes. Las cuatro últimas muestran el estado real de esta versión (sin cámaras conectadas, sin búfer de repeticiones, sin preferencias editables).
 - Grabar, Transmitir y «Guardar últimos 20 s» aparecen como **no disponibles** y explican por qué al pulsarlos.
 - Cámaras: placeholders rotulados «Sin video». «Descanso» y «Resultado» son gráficos dibujados por la app.
 

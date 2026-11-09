@@ -33,4 +33,4 @@ Verificar licencia **antes** de añadirlas:
 | Códecs H.264/AAC | Grabación/transmisión | Pueden requerir licencias de patentes según plataforma: revisar |
 
 ## Licencia del proyecto
-Pendiente de decisión del titular (ver `PLATAFORMAS.md`). Debe ser compatible con las dependencias incorporadas; todas las actuales lo son con Apache‑2.0, MIT y GPL‑3.0.
+Apache-2.0 (archivo `LICENSE` en la raíz). Compatible con todas las dependencias incorporadas. Las candidatas con copyleft (FFmpeg compilado con GPL) exigirían revisar esta elección antes de enlazarlas.
