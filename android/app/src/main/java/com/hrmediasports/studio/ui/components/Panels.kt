@@ -203,8 +203,14 @@ private fun ScoreboardConnection(state: ScoreboardUiState) {
         state.link == LinkState.Connecting -> "Conectando con la pizarra…" to HrColors.Amber
         else -> "Pizarra sin conexión" to HrColors.TextMuted
     }
+    ConnectionPill(text, color)
+}
+
+/** Franja de estado de conexión; el texto dice el estado, el color lo refuerza. */
+@Composable
+fun ConnectionPill(text: String, color: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(color.copy(alpha = 0.14f))
@@ -218,7 +224,7 @@ private fun ScoreboardConnection(state: ScoreboardUiState) {
 }
 
 @Composable
-private fun StatCell(label: String, value: String, modifier: Modifier = Modifier, big: Boolean = false, accent: Boolean = false) {
+fun StatCell(label: String, value: String, modifier: Modifier = Modifier, big: Boolean = false, accent: Boolean = false) {
     Column(
         modifier
             .clip(RoundedCornerShape(8.dp))

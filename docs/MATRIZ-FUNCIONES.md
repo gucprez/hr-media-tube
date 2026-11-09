@@ -12,6 +12,7 @@ Leyenda:
 |---------|---------------|----------------|---------|-------|--------------|------------|
 | Interfaz Estudio (demo, datos de ejemplo) | 🔧 | 🔧 | ⬜ | ⬜ | ⬜ | ⬜ |
 | Reglas y estado del partido (`MatchState`) | 🔧 | 🔧 | ⬜ | ⬜ | ⬜ | ⬜ |
+| Plantilla de zonas del lector (ajustar y guardar localmente) | 🔧 | 🔧 | ⬜ | ⬜ | ⬜ | ⬜ |
 | Recepción de datos de pizarra (protocolo v1) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | Envío de datos de pizarra | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | Reconocimiento de pizarra (cámara) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |

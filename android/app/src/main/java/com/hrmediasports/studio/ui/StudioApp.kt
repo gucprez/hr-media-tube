@@ -30,7 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hrmediasports.studio.protocol.LinkState
 import com.hrmediasports.studio.ui.components.ConnectionStatusBar
 import com.hrmediasports.studio.ui.components.DemoBanner
-import com.hrmediasports.studio.ui.components.HrLogo
+import com.hrmediasports.studio.ui.components.HrBrandBar
 import com.hrmediasports.studio.ui.components.ManualCorrectionDialog
 import com.hrmediasports.studio.ui.components.NavRail
 import com.hrmediasports.studio.ui.components.OutputControls
@@ -129,24 +129,10 @@ fun StudioAppContent(
     }
 }
 
-/** Barra superior común a todas las pantallas: único lugar donde se muestra el logotipo. */
+/** Barra superior del Estudio: marca común + estado demo + controles de salida. */
 @Composable
 private fun HrTopBar(state: StudioUiState, expanded: Boolean, onRecord: () -> Unit, onStream: () -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .background(HrColors.Panel)
-            .heightIn(min = 64.dp)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        HrLogo(compact = !expanded)
-        if (expanded) {
-            Text("|", color = HrColors.Outline, fontSize = 28.sp)
-            Text(state.destination.title.uppercase(), color = HrColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Medium)
-        }
-        Row(Modifier.weight(1f)) {}
+    HrBrandBar(title = if (expanded) state.destination.title else null, compact = !expanded) {
         if (state.isDemo) StatusChip("DEMO", HrColors.Amber, filled = false)
         OutputControls(state.recording, state.streaming, onRecord, onStream)
     }

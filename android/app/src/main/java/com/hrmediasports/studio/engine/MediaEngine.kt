@@ -17,6 +17,8 @@ data class EngineCapabilities(
     val canRecord: Boolean,
     val canStream: Boolean,
     val canBufferReplays: Boolean,
+    val canRecognizeScoreboard: Boolean,
+    val canSendScoreboard: Boolean,
 )
 
 interface MediaEngine {
@@ -30,6 +32,8 @@ object DemoMediaEngine : MediaEngine {
         canRecord = false,
         canStream = false,
         canBufferReplays = false,
+        canRecognizeScoreboard = false,
+        canSendScoreboard = false,
     )
 }
 

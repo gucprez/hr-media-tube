@@ -188,7 +188,10 @@ private fun Destination.icon(): ImageVector = when (this) {
 
 /** Franja permanente que identifica el modo demostración en todas las pantallas. */
 @Composable
-fun DemoBanner(modifier: Modifier = Modifier) {
+fun DemoBanner(
+    modifier: Modifier = Modifier,
+    text: String = "Interfaz de muestra: no hay cámaras, transmisión, grabación ni repeticiones reales.",
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -199,7 +202,7 @@ fun DemoBanner(modifier: Modifier = Modifier) {
     ) {
         Text("MODO DEMOSTRACIÓN", color = Color.Black, fontWeight = FontWeight.Black, fontSize = 12.sp)
         Text(
-            "Interfaz de muestra: no hay cámaras, transmisión, grabación ni repeticiones reales.",
+            text,
             color = Color.Black,
             fontSize = 12.sp,
             maxLines = 2,
@@ -238,5 +241,42 @@ fun ConnectionStatusBar(
         )
         Spacer(Modifier.weight(1f))
         Text(versionLabel, color = HrColors.TextMuted, fontSize = 12.sp)
+    }
+}
+
+/**
+ * Barra superior de marca, común a Estudio, Lector y selector de modo: el logotipo se dibuja
+ * solo aquí, por lo que no puede diferir entre pantallas.
+ */
+@Composable
+fun HrBrandBar(
+    title: String?,
+    compact: Boolean,
+    modifier: Modifier = Modifier,
+    trailing: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {},
+) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .background(HrColors.Panel)
+            .heightIn(min = 64.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        HrLogo(compact = compact)
+        if (title != null) {
+            Text("|", color = HrColors.Outline, fontSize = if (compact) 22.sp else 28.sp)
+            Text(
+                title.uppercase(),
+                color = HrColors.TextPrimary,
+                fontSize = if (compact) 16.sp else 20.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+        }
+        Spacer(Modifier.weight(1f))
+        trailing()
     }
 }

@@ -2,7 +2,12 @@
 
 Pantalla **Estudio** en Kotlin + Jetpack Compose. **Es un modo demostración**: no hay cámaras, cámaras remotas, grabación, transmisión ni repeticiones reales. La interfaz lo indica con una franja ámbar permanente, una etiqueta DEMO y mensajes en los controles no disponibles. Contexto multiplataforma: [`../docs/PLATAFORMAS.md`](../docs/PLATAFORMAS.md).
 
-## Qué funciona en esta versión
+## Modos
+Al abrir la app eliges el rol del dispositivo (el botón Atrás vuelve a esta pantalla):
+- **Estudio** (horizontal): ver abajo.
+- **Lector de pizarra** (celular vertical): marco de cámara con las cinco zonas (Local, Tiempo, Visita, Cuarto, Posesión). **Ajustar zonas** permite mover (arrastrando) y redimensionar (− / +) la zona seleccionada, y **Guardar plantilla** la guarda en el dispositivo y se recupera al reabrir. Lo demás es demo: no hay cámara, reconocimiento ni conexión con el estudio. Los «datos detectados» son valores de ejemplo rotulados y **Iniciar envío** aparece como no disponible.
+
+## Qué funciona en el Estudio (demo)
 - Seleccionar una fuente (Cámara 1, Cámara 2, Descanso, Resultado) la prepara en **Vista previa** (borde naranja).
 - **Poner al aire** envía la fuente de Vista previa a **Al aire** (borde rojo). Es solo estado de interfaz: no hay salida de video.
 - Panel de marcador con datos de **ejemplo** (no hay pizarra conectada) y **corrección manual** operativa.
@@ -39,11 +44,13 @@ La APK de debug está firmada con la clave de depuración y sirve solo para prue
 | `domain` | Reglas y estado del partido (Kotlin puro) |
 | `protocol` | Estado de enlace y reglas de antigüedad del protocolo de pizarra v1 ([especificación](../docs/protocolo-pizarra.md)) |
 | `engine` | Interfaces `MediaEngine` y `ScoreboardSource` + implementaciones demo |
-| `ui` | Compose: tema, componentes, pantallas y `StudioViewModel` |
+| `data` | Persistencia local (plantilla de zonas en SharedPreferences) |
+| `ui` | Compose: tema, componentes, pantallas (`StudioViewModel`, `ReaderViewModel`, `AppViewModel`) |
 
-El logotipo está definido una sola vez (`HrLogo`) y se muestra solo desde la barra superior común, por lo que es idéntico en todas las pantallas. Los controles táctiles miden al menos 48 dp (`HrDimens.MinTouch`).
+El logotipo está definido una sola vez (`HrLogo`) y se muestra solo desde la barra de marca común (`HrBrandBar`), por lo que es idéntico en todas las pantallas. Los controles táctiles miden al menos 48 dp (`HrDimens.MinTouch`).
 
 ## Limitaciones conocidas
-- La orientación está fijada en horizontal.
+- La orientación depende del modo: horizontal en Estudio, vertical en Lector.
+- El arrastre de zonas no se ha probado en un dispositivo táctil.
 - Textos en español dentro del código (sin `strings.xml` traducible todavía).
 - El diseño no se ha comprobado visualmente en un dispositivo ni emulador (ver nota de entrega).
