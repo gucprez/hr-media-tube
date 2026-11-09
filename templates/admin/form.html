@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ 'Nuevo' if is_new else 'Editar' }} — {{ section_label }}{% endblock %}
+{% block content %}
+<div class="admin-top">
+  <h1>{{ 'Agregar' if is_new else 'Editar' }} — {{ section_label }}</h1>
+  <a class="btn btn--ghost" href="/admin/{{ section }}">← Volver</a>
+</div>
+
+<div class="admin-card">
+  <form method="post" action="{{ '/admin/%s/nuevo' % section if is_new else '/admin/%s/%s/editar' % (section, item.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% for name, label, type in fields %}
+    <div class="field">
+      <label for="f-{{ name }}">{{ label }}</label>
+      {% if type == 'textarea' %}
+      <textarea id="f-{{ name }}" name="{{ name }}">{{ item.get(name, '') }}</textarea>
+      {% else %}
+      <input type="text" id="f-{{ name }}" name="{{ name }}" value="{{ item.get(name, '') }}">
+      {% endif %}
+    </div>
+    {% endfor %}
+    <button class="btn btn--gold" type="submit">Guardar</button>
+  </form>
+</div>
+{% endblock %}

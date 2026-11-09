@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ section_label }}{% endblock %}
+{% block content %}
+<div class="admin-top">
+  <div>
+    <h1>{{ section_label }}</h1>
+    <p style="color:var(--ink-dim);margin:0">{{ items|length }} elemento(s)</p>
+  </div>
+  <a class="btn btn--gold" href="/admin/{{ section }}/nuevo">+ Agregar</a>
+</div>
+
+<div class="admin-card">
+  {% if items %}
+  <table>
+    <thead>
+      <tr>
+        <th>{{ field_labels.get(title_field, "Título") }}</th>
+        {% for col in columns %}<th>{{ field_labels.get(col, col) }}</th>{% endfor %}
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item[title_field] }}</td>
+        {% for col in columns %}<td>{{ item[col] }}</td>{% endfor %}
+        <td>
+          <div class="row-actions">
+            <a href="/admin/{{ section }}/{{ item.id }}/editar">Editar</a>
+            <form method="post" action="/admin/{{ section }}/{{ item.id }}/eliminar" onsubmit="return confirm('¿Eliminar este elemento?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;font-family:inherit">Eliminar</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:var(--ink-dim)">Todavía no hay nada aquí. Usa "+ Agregar" para crear el primero.</p>
+  {% endif %}
+</div>
+{% endblock %}

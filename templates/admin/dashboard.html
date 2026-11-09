@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% block title %}Resumen{% endblock %}
+{% block content %}
+<div class="admin-top">
+  <div>
+    <h1>Hola, {{ admin_user }}</h1>
+    <p style="color:var(--ink-dim);margin:0">Esto es lo que hay publicado ahora mismo en el sitio.</p>
+  </div>
+</div>
+
+<div class="counts">
+  {% for key, label in sections.items() %}
+  <a class="count-card" href="/admin/{{ key }}" style="text-decoration:none">
+    <strong>{{ counts[key] }}</strong>
+    <span>{{ label }}</span>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="admin-card" style="margin-top:24px">
+  <h2>Otros ajustes</h2>
+  <p style="color:var(--ink-dim)">Teléfono, correo, dirección, redes sociales y URL de transmisión en vivo.</p>
+  <a class="btn btn--ghost" href="/admin/config/ajustes">Editar ajustes</a>
+</div>
+{% endblock %}

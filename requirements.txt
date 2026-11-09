@@ -2,3 +2,5 @@ fastapi
 uvicorn[standard]
 python-multipart
 jinja2
+bcrypt
+itsdangerous

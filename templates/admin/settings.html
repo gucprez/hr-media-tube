@@ -1,0 +1,48 @@
+{% extends "admin/base.html" %}
+{% block title %}Ajustes{% endblock %}
+{% block content %}
+<div class="admin-top">
+  <h1>Ajustes</h1>
+</div>
+
+{% if saved %}<div class="alert alert--ok">Cambios guardados.</div>{% endif %}
+
+<form method="post" action="/admin/config/ajustes">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+  <div class="admin-card">
+    <h2>Contacto</h2>
+    <div class="grid2">
+      <div class="field"><label>Teléfono</label><input type="text" name="phone" value="{{ contact.phone }}"></div>
+      <div class="field"><label>WhatsApp</label><input type="text" name="whatsapp" value="{{ contact.whatsapp }}"></div>
+      <div class="field"><label>Correo</label><input type="text" name="email" value="{{ contact.email }}"></div>
+      <div class="field"><label>Dirección</label><input type="text" name="address" value="{{ contact.address }}"></div>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <h2>Redes sociales</h2>
+    <div class="grid2">
+      <div class="field"><label>Facebook</label><input type="text" name="facebook" value="{{ social.facebook }}"></div>
+      <div class="field"><label>Instagram</label><input type="text" name="instagram" value="{{ social.instagram }}"></div>
+      <div class="field"><label>YouTube</label><input type="text" name="youtube" value="{{ social.youtube }}"></div>
+      <div class="field"><label>TikTok</label><input type="text" name="tiktok" value="{{ social.tiktok }}"></div>
+      <div class="field"><label>WhatsApp (enlace de comunidad)</label><input type="text" name="social_whatsapp" value="{{ social.whatsapp }}"></div>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <h2>Radio y transmisiones</h2>
+    <div class="field">
+      <label>URL de audio del stream (.mp3 / .aac)</label>
+      <input type="text" name="stream_audio_url" value="{{ stream_audio_url }}">
+    </div>
+    <div class="field">
+      <label>URL de transmisión en vivo de YouTube</label>
+      <input type="text" name="youtube_live_url" value="{{ youtube_live_url }}">
+    </div>
+  </div>
+
+  <button class="btn btn--gold" type="submit">Guardar cambios</button>
+</form>
+{% endblock %}

@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from datetime import date, datetime
 from pathlib import Path
@@ -12,13 +13,11 @@ from fastapi.responses import (
 )
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 
-from data.schedule import SCHEDULE
+import admin
+from data import content_store as store
 from data.verses import verse_of_day
-from data.messages import MESSAGES
-from data.news import NEWS
-from data.activities import ACTIVITIES
-from data.hosts import HOSTS
 from data.icons import ICONS
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -37,54 +36,37 @@ SITE_DESCRIPTION = (
     "programación semanal, transmisiones y actividades."
 )
 
-# TODO: reemplazar por los enlaces reales de redes sociales de la iglesia.
-# Se buscaron cuentas públicas y no fue posible confirmar con certeza
-# cuáles pertenecen a esta iglesia (hay varias "Faro de Luz" distintas).
-SOCIAL_LINKS = {
-    "facebook": "",
-    "instagram": "",
-    "youtube": "",
-    "tiktok": "",
-    "whatsapp": "",
-}
-
-# El stream detectado en el sitio actual (Shoutcast) responde 404 — no hay
-# una transmisión en vivo funcional en este momento. Actualiza esta URL con
-# el stream real (.mp3/.aac o servidor Icecast/Shoutcast vigente) en cuanto
-# la iglesia lo confirme.
-STREAM_AUDIO_URL = ""
-STREAM_IS_LIVE = bool(STREAM_AUDIO_URL)
-
-# TODO: confirmar teléfono, WhatsApp y correo reales de la iglesia.
-# La dirección sí fue provista y se usa tal cual.
-CONTACT = {
-    "phone": "",
-    "whatsapp": "",
-    "email": "",
-    "address": "Calle Principal #9, Padre Granero, Puerto Plata, República Dominicana",
-}
-
-# TODO: enlace real al canal/transmisión de YouTube de la iglesia.
-YOUTUBE_LIVE_URL = ""
-
 app = FastAPI(title=SITE_NAME)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=store.get_session_secret(),
+    session_cookie="faro_admin_session",
+    same_site="lax",
+    # En producción (Railway, dominio con HTTPS) define la variable de
+    # entorno SESSION_HTTPS_ONLY=1 para exigir cookies solo por HTTPS.
+    https_only=bool(os.environ.get("SESSION_HTTPS_ONLY")),
+)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+app.include_router(admin.router)
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 
 def base_context(request: Request, **extra) -> dict:
+    data = store.load()
+    social = data.get("social", {})
+    stream_audio_url = data.get("stream_audio_url", "")
     context = {
         "request": request,
         "site_name": SITE_NAME,
         "site_url": SITE_URL,
         "site_tagline": SITE_TAGLINE,
         "site_description": SITE_DESCRIPTION,
-        "social": SOCIAL_LINKS,
-        "social_urls": [v for v in SOCIAL_LINKS.values() if v],
-        "stream_audio_url": STREAM_AUDIO_URL,
-        "stream_is_live": STREAM_IS_LIVE,
-        "youtube_live_url": YOUTUBE_LIVE_URL,
-        "contact": CONTACT,
+        "social": social,
+        "social_urls": [v for v in social.values() if v],
+        "stream_audio_url": stream_audio_url,
+        "stream_is_live": bool(stream_audio_url),
+        "youtube_live_url": data.get("youtube_live_url", ""),
+        "contact": data.get("contact", {}),
         "current_year": datetime.now().year,
         "path": request.url.path,
         "icons": ICONS,
@@ -104,10 +86,10 @@ def home(request: Request):
             title=f"{SITE_NAME} | Radio Cristiana en Puerto Plata",
             description=SITE_DESCRIPTION,
             og_image="/static/img/og-image.svg",
-            schedule=SCHEDULE[:3],
+            schedule=(store.get_section("schedule") or [])[:3],
             verse=verse,
-            activities=ACTIVITIES[:3],
-            hosts=HOSTS[:6],
+            activities=(store.get_section("activities") or [])[:3],
+            hosts=(store.get_section("hosts") or [])[:6],
             canonical=f"{SITE_URL}/",
         ),
     )
@@ -143,7 +125,7 @@ def en_vivo(request: Request):
                 "especiales de Faro de Luz, y escucha la radio en vivo."
             ),
             canonical=f"{SITE_URL}/en-vivo",
-            messages=MESSAGES,
+            messages=store.get_section("messages") or [],
         ),
     )
 
@@ -161,7 +143,7 @@ def programacion(request: Request):
                 "cultos, vigilias, estudios bíblicos y actividades para "
                 "toda la familia, todos los días de la semana."
             ),
-            schedule=SCHEDULE,
+            schedule=store.get_section("schedule") or [],
             canonical=f"{SITE_URL}/programacion",
         ),
     )
@@ -180,7 +162,7 @@ def mensajes(request: Request):
                 "pastor de Faro de Luz Radio."
             ),
             canonical=f"{SITE_URL}/mensajes",
-            messages=MESSAGES,
+            messages=store.get_section("messages") or [],
         ),
     )
 
@@ -214,7 +196,7 @@ def noticias(request: Request):
             title=f"Noticias — {SITE_NAME}",
             description="Últimas noticias, novedades y anuncios de Faro de Luz Radio y nuestra iglesia.",
             canonical=f"{SITE_URL}/noticias",
-            news=NEWS,
+            news=store.get_section("news") or [],
         ),
     )
 
@@ -229,7 +211,7 @@ def actividades(request: Request):
             title=f"Actividades — {SITE_NAME}",
             description="Actividades y eventos de Faro de Luz: jóvenes, damas, estudios bíblicos y más.",
             canonical=f"{SITE_URL}/actividades",
-            activities=ACTIVITIES,
+            activities=store.get_section("activities") or [],
         ),
     )
 
@@ -337,6 +319,7 @@ def robots_txt():
     return (
         "User-agent: *\n"
         "Allow: /\n"
+        "Disallow: /admin\n"
         f"Sitemap: {SITE_URL}/sitemap.xml\n"
     )
 
