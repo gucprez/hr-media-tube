@@ -6,9 +6,11 @@
   <div class="photo-feature__scrim"></div>
   <div class="container">
     <div class="photo-feature__content reveal is-in">
+      <img src="/static/img/logo-radio-full.png" alt="Faro de Luz Radio" style="width:120px;margin-bottom:18px">
       <span class="eyebrow">Radio</span>
       <h1 style="font-size:clamp(2.4rem,6vw,4rem);color:#fff">Faro de Luz <span style="color:var(--gold)">Radio</span></h1>
       <p>Una radio creada para llevar música, palabra, adoración y esperanza a cada hogar.</p>
+      <p class="hero__verse">«Yo soy la luz del mundo» — <cite>Juan 8:12</cite></p>
     </div>
   </div>
 </section>
@@ -16,14 +18,19 @@
 <section class="sec-light section-tight">
   <div class="container">
     <div class="panel panel--pad reveal" style="text-align:center">
-      <span class="badge-live {{ '' if stream_is_live else 'is-off' }}" style="justify-content:center">
-        <span class="dot-live" style="{{ '' if stream_is_live else 'background:var(--fg-faint);box-shadow:none' }}"></span>
-        {{ "En vivo ahora" if stream_is_live else "Fuera del aire por el momento" }}
+      {% if stream_is_live %}
+      <span class="badge-live" style="justify-content:center">
+        <span class="dot-live"></span> En vivo ahora
       </span>
       <div class="waveform is-paused" style="margin:22px auto" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
       <button class="btn btn--gold" type="button" data-player-toggle style="margin-top:6px">{{ icons.play|safe }} Escuchar en vivo</button>
-      {% if not stream_is_live %}
-      <p style="margin-top:18px;font-size:.85rem;color:var(--fg-faint)">Estamos actualizando nuestra transmisión en vivo. Vuelve pronto.</p>
+      {% else %}
+      <span class="badge-live is-off" style="justify-content:center">
+        <span class="dot-live" style="background:var(--fg-faint);box-shadow:none"></span> En preparación
+      </span>
+      <div class="waveform is-paused" style="margin:22px auto" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <p style="margin-top:6px;color:var(--fg-dim)">Todavía no tenemos una señal en vivo. Estamos preparando nuestra transmisión por internet para compartir música, palabra y adoración contigo.</p>
+      <a class="btn btn--outline" href="/contacto" style="margin-top:6px">{{ icons.mail|safe }} Avísenme cuando esté lista</a>
       {% endif %}
     </div>
   </div>
@@ -54,10 +61,10 @@
     <div class="cta-band reveal">
       <div>
         <span class="badge">{{ icons.calendar|safe }} No te lo pierdas</span>
-        <h2>Consulta la programación semanal</h2>
+        <h2>Consulta la agenda semanal de la iglesia</h2>
         <p>Cada día tiene su propio espacio: vigilias, estudios bíblicos, cultos y más.</p>
       </div>
-      <a class="btn btn--gold" href="/programacion">Ver programación {{ icons.arrow|safe }}</a>
+      <a class="btn btn--gold" href="/programacion">Ver agenda {{ icons.arrow|safe }}</a>
     </div>
   </div>
 </section>

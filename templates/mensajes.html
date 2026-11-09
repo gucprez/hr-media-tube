@@ -3,9 +3,9 @@
 
 <section class="sec-dark section-tight">
   <div class="container reveal is-in">
-    <span class="eyebrow">Mensajes</span>
-    <h1 style="font-size:clamp(2.4rem,6vw,3.6rem);color:#fff;margin-top:16px">Mensajes y <span style="color:var(--gold)">Prédicas</span></h1>
-    <p style="color:var(--fg-dim)">Escucha, comparte y vuelve a los mensajes que han edificado a nuestra comunidad.</p>
+    <span class="eyebrow">{{ eyebrow }}</span>
+    <h1 style="font-size:clamp(2.4rem,6vw,3.6rem);color:#fff;margin-top:16px">{{ heading_html|safe }}</h1>
+    <p style="color:var(--fg-dim)">{{ intro }}</p>
   </div>
 </section>
 
@@ -33,9 +33,9 @@
     </div>
     {% else %}
     <div class="empty-state reveal">
-      <h3>Nuestros mensajes, aquí pronto</h3>
-      <p>Estamos preparando esta sección con las prédicas y mensajes bíblicos del pastor. Mientras tanto, síguenos en nuestras redes o escúchanos en vivo.</p>
-      <button class="btn btn--gold" type="button" data-player-toggle>{{ icons.play|safe }} Escuchar en vivo</button>
+      <h3>{{ empty_title }}</h3>
+      <p>{{ empty_text }}</p>
+      <a class="btn btn--outline" href="/contacto">Contáctanos</a>
     </div>
     {% endif %}
   </div>

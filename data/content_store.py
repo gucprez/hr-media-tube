@@ -59,8 +59,8 @@ def _default_content() -> dict:
         "contact": {
             "phone": "",
             "whatsapp": "",
-            "email": "",
-            "address": "Calle Principal #9, Padre Granero, Puerto Plata, República Dominicana",
+            "email": "farodeluzradio.com@gmail.com",
+            "address": "C/ Principal Padre Granero, No. 10, Puerto Plata, República Dominicana",
         },
         "social": {
             "facebook": "",

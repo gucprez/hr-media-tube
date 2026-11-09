@@ -22,9 +22,12 @@
         {% if youtube_live_url %}
         <p>Sigue la transmisión en vivo de nuestro culto ahora mismo.</p>
         <a class="btn btn--gold" href="{{ youtube_live_url }}" target="_blank" rel="noopener" style="align-self:flex-start">{{ icons.youtube|safe }} Ver transmisión</a>
-        {% else %}
-        <p>Ahora mismo no hay una transmisión activa. Cuando la iglesia esté en vivo, la verás aquí — mientras tanto, sigue escuchando la radio.</p>
+        {% elif stream_is_live %}
+        <p>Ahora mismo no hay una transmisión de video activa — mientras tanto, sigue escuchando la radio.</p>
         <button class="btn btn--gold" type="button" data-player-toggle style="align-self:flex-start">{{ icons.play|safe }} Escuchar radio</button>
+        {% else %}
+        <p>Ahora mismo no hay una transmisión activa. Cuando la iglesia esté en vivo, la verás aquí.</p>
+        <a class="btn btn--outline" href="/contacto" style="align-self:flex-start">{{ icons.mail|safe }} Avísenme de la próxima transmisión</a>
         {% endif %}
       </div>
     </div>
@@ -60,7 +63,9 @@
     <div class="empty-state reveal">
       <h3>Nuestras transmisiones pasadas, aquí pronto</h3>
       <p>En cuanto tengamos cultos y mensajes grabados disponibles, los encontrarás en esta sección.</p>
-      <a class="btn btn--outline" href="{{ social.youtube or '#' }}">{{ icons.youtube|safe }} Visitar canal de YouTube</a>
+      {% if social.youtube %}
+      <a class="btn btn--outline" href="{{ social.youtube }}" target="_blank" rel="noopener">{{ icons.youtube|safe }} Visitar canal de YouTube</a>
+      {% endif %}
     </div>
   </div>
 </section>

@@ -24,7 +24,8 @@
 <meta name="twitter:description" content="{{ description }}">
 <meta name="twitter:image" content="{{ site_url }}{{ og_image or '/static/img/og-image.svg' }}">
 
-<link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/static/img/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
@@ -36,7 +37,7 @@
   "@type": ["RadioStation", "ReligiousOrganization"],
   "name": "{{ site_name }}",
   "url": "{{ site_url }}",
-  "logo": "{{ site_url }}/static/img/logo.svg",
+  "logo": "{{ site_url }}/static/img/logo-mark.png",
   "description": "{{ site_description }}",
   {% if contact.address %}
   "address": {
@@ -57,7 +58,7 @@
 <header class="site-header" id="site-header">
   <div class="container site-header__inner">
     <a href="/" class="brand" aria-label="{{ site_name }} — Inicio">
-      <img src="/static/img/logo.svg" alt="{{ site_name }}" class="brand__logo" width="38" height="38">
+      <img src="/static/img/logo-mark-200.png" alt="{{ site_name }}" class="brand__logo" width="38" height="38">
       <span class="brand__name">Faro de Luz<span class="brand__radio">Radio</span></span>
     </a>
 
@@ -69,13 +70,19 @@
       <a href="/" class="{{ 'is-active' if path == '/' }}">Inicio</a>
       <a href="/radio" class="{{ 'is-active' if path == '/radio' }}">Radio</a>
       <a href="/programacion" class="{{ 'is-active' if path == '/programacion' }}">Programación</a>
-      <a href="/en-vivo" class="{{ 'is-active' if path == '/en-vivo' }}">En Vivo</a>
-      <a href="/iglesia" class="{{ 'is-active' if path == '/iglesia' }}">Iglesia</a>
-      <a href="/actividades" class="{{ 'is-active' if path == '/actividades' }}">Actividades</a>
+      <a href="/mensajes-biblicos" class="{{ 'is-active' if path == '/mensajes-biblicos' }}">Mensajes Bíblicos</a>
+      <a href="/mensajes-del-pastor" class="{{ 'is-active' if path == '/mensajes-del-pastor' }}">Mensajes del Pastor</a>
+      <a href="/la-biblia" class="{{ 'is-active' if path == '/la-biblia' }}">La Biblia</a>
+      <a href="/iglesia" class="{{ 'is-active' if path == '/iglesia' }}">Quiénes Somos</a>
+      <a href="/noticias" class="{{ 'is-active' if path == '/noticias' }}">Noticias</a>
       <a href="/contacto" class="{{ 'is-active' if path == '/contacto' }}">Contacto</a>
-      <button class="btn btn--live btn--sm nav-cta" type="button" data-player-toggle aria-label="Reproducir">
-        <span class="dot-live" style="background:#fff;box-shadow:none"></span> Escuchar en vivo
+      {% if stream_is_live %}
+      <button class="btn btn--gold btn--sm nav-cta" type="button" data-player-toggle aria-label="Reproducir">
+        <span class="dot-live"></span> Escuchar en vivo
       </button>
+      {% else %}
+      <a class="btn btn--outline btn--sm nav-cta" href="/radio">{{ icons.worship|safe }} Radio: en preparación</a>
+      {% endif %}
     </nav>
   </div>
 </header>
@@ -88,7 +95,7 @@
   <div class="container footer-grid">
     <div>
       <a href="/" class="brand brand--footer">
-        <img src="/static/img/logo.svg" alt="{{ site_name }}" width="34" height="34">
+        <img src="/static/img/logo-mark-200.png" alt="{{ site_name }}" width="34" height="34">
         <span class="brand__name">Faro de Luz<span class="brand__radio">Radio</span></span>
       </a>
       <p class="footer-tagline">{{ site_tagline }}.</p>
@@ -106,14 +113,15 @@
       <a href="/radio">Radio</a>
       <a href="/programacion">Programación</a>
       <a href="/en-vivo">En Vivo</a>
-      <a href="/mensajes">Mensajes</a>
+      <a href="/mensajes-biblicos">Mensajes Bíblicos</a>
+      <a href="/mensajes-del-pastor">Mensajes del Pastor</a>
       <a href="/la-biblia">La Biblia</a>
       <a href="/noticias">Noticias</a>
     </div>
 
     <div>
       <h3 class="footer-heading">Iglesia</h3>
-      <a href="/iglesia">Nuestra Iglesia</a>
+      <a href="/iglesia">Quiénes Somos</a>
       <a href="/actividades">Actividades</a>
       <a href="/contacto">Contacto</a>
     </div>
@@ -137,12 +145,13 @@
 
 <div class="player">
   <audio id="player-audio" data-src="{{ stream_audio_url }}" preload="none"></audio>
+{% if stream_is_live %}
   <div class="player__inner">
     <div class="player__track">
       <div class="player__art">{{ icons.play|safe }}</div>
       <div class="player__meta">
         <strong>Faro de Luz Radio</strong>
-        <span class="player__status" data-player-status>{{ "En vivo" if stream_is_live else "Transmisión no disponible" }}</span>
+        <span class="player__status" data-player-status>En vivo</span>
       </div>
     </div>
     <div class="player__center">
@@ -154,6 +163,18 @@
       <input type="range" min="0" max="100" value="80" data-player-volume aria-label="Volumen">
     </div>
   </div>
+{% else %}
+  <div class="player__inner player__inner--soon">
+    <div class="player__track">
+      <div class="player__art">{{ icons.worship|safe }}</div>
+      <div class="player__meta">
+        <strong>Faro de Luz Radio</strong>
+        <span class="player__status">En preparación — muy pronto en vivo</span>
+      </div>
+    </div>
+    <a class="link-arrow" href="/radio">Más info {{ icons.arrow|safe }}</a>
+  </div>
+{% endif %}
 </div>
 
 <script src="/static/js/main.js"></script>

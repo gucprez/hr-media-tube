@@ -4,20 +4,25 @@
 <section class="hero sec-dark">
   <div class="container hero__inner">
     <div class="reveal is-in">
-      <span class="eyebrow">Radio cristiana · Puerto Plata · En vivo 24/7</span>
+      <span class="eyebrow">Radio cristiana · Puerto Plata</span>
       <h1 class="hero__kicker">FARO DE LUZ<br><span class="accent">RADIO</span></h1>
       <p class="hero__tagline">Radio que ilumina tu camino</p>
       <p class="hero__sub"><span>Música</span> · <span>Palabra</span> · <span>Adoración</span> · <span>Esperanza</span></p>
+      <p class="hero__verse">«Yo soy la luz del mundo» — <cite>Juan 8:12</cite></p>
       <div class="hero__actions">
+        {% if stream_is_live %}
         <button class="btn btn--gold" type="button" data-player-toggle>
           <span class="dot-live"></span> Escuchar en vivo
         </button>
-        <a class="btn btn--outline" href="/en-vivo">{{ icons.youtube|safe }} Ver transmisión</a>
+        {% else %}
+        <a class="btn btn--gold" href="/radio">{{ icons.worship|safe }} Nuestra radio: en preparación</a>
+        {% endif %}
+        <a class="btn btn--outline" href="/en-vivo">{{ icons.youtube|safe }} Ver transmisiones</a>
       </div>
 
       <div class="hero__meta reveal is-in">
-        <div><strong>24/7</strong><span>En el aire</span></div>
-        <div><strong>7 días</strong><span>Programación semanal</span></div>
+        <div><strong>{{ "24/7" if stream_is_live else "Próximamente" }}</strong><span>{{ "En el aire" if stream_is_live else "Nuestra radio en vivo" }}</span></div>
+        <div><strong>7 días</strong><span>Actividades semanales</span></div>
         <div><strong>Puerto Plata, RD</strong><span>Nuestra casa</span></div>
       </div>
     </div>
@@ -31,11 +36,11 @@
   </div>
 </section>
 
+{% if stream_is_live %}
 <section class="sec-mid player-showcase">
   <div class="container">
-    <span class="badge-live {{ '' if stream_is_live else 'is-off' }}">
-      <span class="dot-live" style="{{ '' if stream_is_live else 'background:var(--fg-faint);box-shadow:none' }}"></span>
-      {{ "En vivo ahora" if stream_is_live else "Fuera del aire por el momento" }}
+    <span class="badge-live">
+      <span class="dot-live"></span> En vivo ahora
     </span>
     <h2>Estás escuchando<br>Faro de Luz Radio</h2>
     <p style="max-width:420px;margin:0 auto">{{ site_tagline }}.</p>
@@ -50,6 +55,21 @@
     </p>
   </div>
 </section>
+{% else %}
+<section class="sec-mid player-showcase">
+  <div class="container">
+    <span class="badge-live is-off">
+      <span class="dot-live" style="background:var(--fg-faint);box-shadow:none"></span> En preparación
+    </span>
+    <h2>Muy pronto estarás escuchando<br>Faro de Luz Radio</h2>
+    <p style="max-width:460px;margin:0 auto">Estamos preparando nuestra señal por internet para compartir música, palabra y adoración contigo. Todavía no está disponible.</p>
+    <div class="waveform is-paused" style="margin:28px auto 0" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <p style="margin-top:24px">
+      <a class="btn btn--outline" href="/contacto">{{ icons.mail|safe }} Avísenme cuando esté lista</a>
+    </p>
+  </div>
+</section>
+{% endif %}
 
 <section class="sec-soft section-tight">
   <div class="container">
@@ -79,12 +99,12 @@
 <section class="sec-light">
   <div class="container">
     <div class="panel radio-block reveal">
-      <div class="radio-block__icon">{{ icons.play|safe }}</div>
+      <div class="radio-block__icon">{{ icons.worship|safe }}</div>
       <div>
         <h3 style="margin-bottom:6px">Faro de Luz Radio</h3>
         <p style="margin:0">Una radio creada para llevar música, palabra, adoración y esperanza a cada hogar.</p>
       </div>
-      <a class="btn btn--gold" href="/radio">{{ icons.play|safe }} Escuchar radio</a>
+      <a class="btn btn--gold" href="/radio">{{ icons.arrow|safe }} Conoce más</a>
     </div>
   </div>
 </section>
@@ -94,9 +114,10 @@
     <div class="section-top reveal">
       <div class="section-head">
         <span class="eyebrow">Cada día un espacio</span>
-        <h2>Programación semanal</h2>
+        <h2>Actividades de la iglesia</h2>
+        <p style="margin-top:8px">Nuestra agenda semanal de encuentros — aún no son transmisiones de radio confirmadas.</p>
       </div>
-      <a class="link-arrow" href="/programacion">Ver programación completa {{ icons.arrow|safe }}</a>
+      <a class="link-arrow" href="/programacion">Ver agenda completa {{ icons.arrow|safe }}</a>
     </div>
     <div class="reveal" data-carousel>
       <div class="schedule-carousel__track" data-carousel-track>

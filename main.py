@@ -31,9 +31,9 @@ SITE_NAME = "Faro de Luz Radio"
 SITE_URL = "https://farodeluzradio.com"
 SITE_TAGLINE = "Radio que ilumina tu camino"
 SITE_DESCRIPTION = (
-    "Faro de Luz Radio es la radio cristiana de nuestra iglesia en Puerto "
-    "Plata: música, palabra, adoración y esperanza en vivo, además de "
-    "programación semanal, transmisiones y actividades."
+    "Faro de Luz Radio es la radio cristiana de la Iglesia Faro de Luz — "
+    "Asambleas de Dios, en Puerto Plata: música, palabra, adoración y "
+    "esperanza, además de nuestra agenda semanal y actividades."
 )
 
 app = FastAPI(title=SITE_NAME)
@@ -102,10 +102,11 @@ def radio(request: Request):
         "radio.html",
         base_context(
             request,
-            title=f"Radio en vivo — {SITE_NAME}",
+            title=f"Radio — {SITE_NAME}",
             description=(
-                "Escucha Faro de Luz Radio en vivo: música, palabra, "
-                "adoración y esperanza para cada hogar."
+                "Faro de Luz Radio: música, palabra, adoración y esperanza "
+                "para cada hogar. Nuestra transmisión en vivo está en "
+                "preparación."
             ),
             canonical=f"{SITE_URL}/radio",
         ),
@@ -119,10 +120,10 @@ def en_vivo(request: Request):
         "en-vivo.html",
         base_context(
             request,
-            title=f"Transmisiones en vivo — {SITE_NAME}",
+            title=f"Transmisiones — {SITE_NAME}",
             description=(
-                "Sigue las transmisiones en vivo de cultos y eventos "
-                "especiales de Faro de Luz, y escucha la radio en vivo."
+                "Sigue las transmisiones de cultos y eventos especiales de "
+                "Faro de Luz."
             ),
             canonical=f"{SITE_URL}/en-vivo",
             messages=store.get_section("messages") or [],
@@ -150,18 +151,45 @@ def programacion(request: Request):
 
 
 @app.get("/mensajes")
-def mensajes(request: Request):
+def mensajes_redirect():
+    return RedirectResponse(url="/mensajes-biblicos", status_code=301)
+
+
+@app.get("/mensajes-biblicos")
+def mensajes_biblicos(request: Request):
     return templates.TemplateResponse(
         request,
         "mensajes.html",
         base_context(
             request,
-            title=f"Mensajes y Prédicas — {SITE_NAME}",
-            description=(
-                "Escucha y comparte los mensajes bíblicos y prédicas del "
-                "pastor de Faro de Luz Radio."
-            ),
-            canonical=f"{SITE_URL}/mensajes",
+            title=f"Mensajes Bíblicos — {SITE_NAME}",
+            description="Reflexiones y enseñanzas bíblicas de Faro de Luz.",
+            canonical=f"{SITE_URL}/mensajes-biblicos",
+            eyebrow="Mensajes Bíblicos",
+            heading_html='Mensajes <span style="color:var(--gold)">Bíblicos</span>',
+            intro="Reflexiones y enseñanzas basadas en la Palabra de Dios.",
+            empty_title="Nuestros mensajes bíblicos, aquí pronto",
+            empty_text="Estamos preparando esta sección con reflexiones y enseñanzas bíblicas. Mientras tanto, visita La Biblia para el versículo del día.",
+            messages=store.get_section("messages") or [],
+        ),
+    )
+
+
+@app.get("/mensajes-del-pastor")
+def mensajes_del_pastor(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "mensajes.html",
+        base_context(
+            request,
+            title=f"Mensajes del Pastor — {SITE_NAME}",
+            description="Prédicas y enseñanzas de nuestro pastor.",
+            canonical=f"{SITE_URL}/mensajes-del-pastor",
+            eyebrow="Mensajes del Pastor",
+            heading_html='Mensajes del <span style="color:var(--gold)">Pastor</span>',
+            intro="Prédicas y enseñanzas de nuestro pastor para fortalecer tu fe.",
+            empty_title="Este será el espacio para los mensajes de nuestro pastor",
+            empty_text="Aquí publicaremos las prédicas y enseñanzas de nuestro pastor en cuanto estén disponibles.",
             messages=store.get_section("messages") or [],
         ),
     )
@@ -327,8 +355,9 @@ def robots_txt():
 @app.get("/sitemap.xml")
 def sitemap_xml():
     pages = [
-        "", "radio", "en-vivo", "programacion", "mensajes", "la-biblia",
-        "noticias", "actividades", "iglesia", "contacto",
+        "", "radio", "en-vivo", "programacion", "mensajes-biblicos",
+        "mensajes-del-pastor", "la-biblia", "noticias", "actividades",
+        "iglesia", "contacto",
     ]
     urls = "".join(
         f"<url><loc>{SITE_URL}/{p}</loc><changefreq>weekly</changefreq></url>"
@@ -344,4 +373,4 @@ def sitemap_xml():
 
 @app.get("/favicon.ico")
 def favicon():
-    return FileResponse(BASE_DIR / "static" / "img" / "favicon.svg", media_type="image/svg+xml")
+    return FileResponse(BASE_DIR / "static" / "img" / "favicon-32.png", media_type="image/png")

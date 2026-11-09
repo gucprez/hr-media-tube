@@ -3,9 +3,9 @@
 
 <section class="sec-dark section-tight">
   <div class="container reveal is-in">
-    <span class="eyebrow">Contacto</span>
+    <span class="eyebrow">Contacto y peticiones de oración</span>
     <h1 style="font-size:clamp(2.4rem,6vw,3.6rem);color:#fff;margin-top:16px">Hablemos</h1>
-    <p style="color:var(--fg-dim)">Estamos para servirte.</p>
+    <p style="color:var(--fg-dim)">Estamos para servirte. Escríbenos o comparte tu petición de oración.</p>
   </div>
 </section>
 
@@ -19,12 +19,45 @@
     <div class="info-card">
       <div class="info-card__icon">{{ icons.mail|safe }}</div>
       <h3>Correo</h3>
-      <p>{{ contact.email or "Próximamente" }}</p>
+      {% if contact.email %}
+      <p><a href="mailto:{{ contact.email }}">{{ contact.email }}</a></p>
+      {% else %}
+      <p>Próximamente</p>
+      {% endif %}
     </div>
     <div class="info-card">
       <div class="info-card__icon">{{ icons.whatsapp|safe }}</div>
       <h3>WhatsApp</h3>
       <p>{{ contact.whatsapp or "Próximamente" }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec-mid" id="oracion">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:28px">
+      <span class="eyebrow">Estamos para ti</span>
+      <h2 style="color:#fff">¿Necesitas oración?</h2>
+      <p>Queremos escucharte. Cuéntanos tu petición y oraremos por ti.</p>
+    </div>
+    <div class="panel form-card reveal" style="max-width:560px">
+      <form data-prayer-form>
+        <div class="form-field">
+          <label for="c-nombre">Tu nombre</label>
+          <input type="text" id="c-nombre" name="nombre" required maxlength="80">
+        </div>
+        <div class="form-field">
+          <label for="c-correo">Tu correo (opcional)</label>
+          <input type="email" id="c-correo" name="correo" maxlength="120">
+        </div>
+        <div class="form-field">
+          <label for="c-mensaje">Tu petición de oración o mensaje</label>
+          <textarea id="c-mensaje" name="mensaje" required maxlength="1000"></textarea>
+        </div>
+        <input type="text" name="sitio_web" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="btn btn--gold btn--wide" type="submit">Enviar</button>
+        <p class="form-feedback" data-prayer-feedback role="status"></p>
+      </form>
     </div>
   </div>
 </section>
