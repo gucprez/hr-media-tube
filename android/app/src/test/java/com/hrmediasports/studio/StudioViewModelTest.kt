@@ -11,6 +11,7 @@ import com.hrmediasports.studio.ui.StreamingState
 import com.hrmediasports.studio.ui.StudioViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -28,7 +29,7 @@ class StudioViewModelTest {
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
     @After fun tearDown() = Dispatchers.resetMain()
 
-    private fun vm() = StudioViewModel(DemoMediaEngine, DemoScoreboardSource) { 0L }
+    private fun vm() = StudioViewModel(DemoMediaEngine, DemoScoreboardSource, { 0L }, emptyFlow())
 
     @Test fun selectingSourceOnlyPreparesPreview() {
         val vm = vm()

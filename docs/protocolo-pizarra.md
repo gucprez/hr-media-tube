@@ -1,6 +1,6 @@
 # Protocolo de pizarra v1 (borrador)
 
-Estado: **especificación propuesta, sin implementar ni probar**. El modelo en memoria vive en `android/.../protocol/ScoreboardProtocol.kt`; no existe aún serialización ni transporte.
+Estado: **especificación propuesta, sin implementar ni probar**. En `android/.../protocol/ScoreboardProtocol.kt` solo existen el estado de enlace, el umbral de antigüedad y su formato; no existe aún serialización ni transporte.
 
 ## Transporte (a validar en prueba T3)
 Mensajes JSON UTF‑8, uno por mensaje, sobre cualquiera de:

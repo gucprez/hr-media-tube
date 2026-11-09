@@ -51,6 +51,11 @@ fun CamerasScreen(state: StudioUiState, modifier: Modifier = Modifier) {
             state.sources.filter { it.kind == SourceKind.Camera }.forEach {
                 Line(it.label, "Sin conectar", HrColors.TextMuted)
             }
+            Line(
+                "Recepción de cámaras remotas",
+                if (state.remoteCamerasAvailable) "Disponible" else "No disponible",
+                if (state.remoteCamerasAvailable) HrColors.Turquoise else HrColors.TextMuted,
+            )
             Note("La recepción de cámaras remotas (por ejemplo, un Android enviando video por WebRTC) aún no existe. Se decide con las pruebas T1 y T2 de docs/MATRIZ-FUNCIONES.md.")
         }
     }

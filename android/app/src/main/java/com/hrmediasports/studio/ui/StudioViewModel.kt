@@ -9,6 +9,10 @@ import com.hrmediasports.studio.engine.MediaEngine
 import com.hrmediasports.studio.engine.ScoreboardSnapshot
 import com.hrmediasports.studio.engine.ScoreboardSource
 import com.hrmediasports.studio.protocol.ReadingOrigin
+import com.hrmediasports.studio.protocol.readingAgeMillis
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,14 +24,26 @@ const val SOURCE_CAMERA_2 = "camera-2"
 const val SOURCE_BREAK = "break"
 const val SOURCE_RESULT = "result"
 
+/** Pulso con el que se refresca la antigüedad de la última lectura. */
+const val AGE_TICK_MILLIS = 250L
+
+fun defaultAgeTicks(): Flow<Unit> = flow {
+    while (true) {
+        delay(AGE_TICK_MILLIS)
+        emit(Unit)
+    }
+}
+
 class StudioViewModel(
     private val engine: MediaEngine = DemoMediaEngine,
     private val scoreboardSource: ScoreboardSource = DemoScoreboardSource,
     private val clock: () -> Long = System::currentTimeMillis,
+    ageTicks: Flow<Unit> = defaultAgeTicks(),
 ) : ViewModel() {
 
     private var latest: ScoreboardSnapshot = scoreboardSource.snapshot.value
     private var manualMatch: MatchState? = null
+    private var manualSinceMillis: Long = 0L
 
     private val _state = MutableStateFlow(initialState())
     val state: StateFlow<StudioUiState> = _state.asStateFlow()
@@ -38,6 +54,10 @@ class StudioViewModel(
                 latest = snap
                 refreshScoreboard()
             }
+        }
+        // La antigüedad avanza aunque no lleguen datos: así "desactualizada" aparece sola.
+        viewModelScope.launch {
+            ageTicks.collect { if (latest.lastReceivedAtMillis != null) refreshScoreboard() }
         }
     }
 
@@ -57,7 +77,9 @@ class StudioViewModel(
             streaming = if (caps.canStream) StreamingState.Offline else StreamingState.Unavailable,
             replays = emptyList(),
             replayBufferAvailable = caps.canBufferReplays,
+            // Sin recepción remota no puede haber cámaras conectadas.
             connectedCameras = 0,
+            remoteCamerasAvailable = caps.canReceiveRemoteCameras,
             isDemo = true,
         )
     }
@@ -68,8 +90,10 @@ class StudioViewModel(
             match = manual ?: latest.match,
             origin = if (manual != null) ReadingOrigin.Manual else latest.origin,
             link = latest.link,
-            ageMillis = latest.lastReceivedAtMillis?.let { (clock() - it).coerceAtLeast(0L) },
+            ageMillis = latest.lastReceivedAtMillis?.let { readingAgeMillis(clock(), it) },
             confidence = if (manual != null) null else latest.confidence,
+            newerReadingAvailable = manual != null &&
+                (latest.lastReceivedAtMillis ?: Long.MIN_VALUE) > manualSinceMillis,
         )
     }
 
@@ -118,6 +142,7 @@ class StudioViewModel(
     fun applyCorrection() {
         val match = _state.value.correctionDraft?.toMatchState() ?: return
         manualMatch = match
+        manualSinceMillis = clock()
         _state.update { it.copy(correctionDraft = null, scoreboard = buildScoreboard()) }
     }
 

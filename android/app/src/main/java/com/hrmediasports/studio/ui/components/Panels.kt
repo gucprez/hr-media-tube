@@ -163,6 +163,13 @@ fun ScoreboardPanel(
                 Text("Corrección manual", color = HrColors.TextPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
             }
             if (state.origin == ReadingOrigin.Manual) {
+                if (state.newerReadingAvailable) {
+                    Text(
+                        "Llegó una lectura nueva del lector. Se mantiene tu corrección hasta que la descartes.",
+                        color = HrColors.Amber,
+                        fontSize = 13.sp,
+                    )
+                }
                 OutlinedButton(
                     onClick = onDiscardCorrection,
                     modifier = Modifier.fillMaxWidth().heightIn(min = HrDimens.MinTouch),
@@ -190,6 +197,8 @@ private fun ScoreboardConnection(state: ScoreboardUiState) {
         state.origin == ReadingOrigin.Demo -> "Datos de ejemplo · sin pizarra conectada" to HrColors.Amber
         state.link == LinkState.Connected && state.ageMillis != null && isStale(state.ageMillis) ->
             "Pizarra conectada · sin datos recientes" to HrColors.Amber
+        state.link == LinkState.Connected && state.ageMillis == null ->
+            "Pizarra conectada · esperando datos" to HrColors.Amber
         state.link == LinkState.Connected -> "Pizarra conectada" to HrColors.Turquoise
         state.link == LinkState.Connecting -> "Conectando con la pizarra…" to HrColors.Amber
         else -> "Pizarra sin conexión" to HrColors.TextMuted

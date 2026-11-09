@@ -37,7 +37,7 @@ La APK de debug está firmada con la clave de depuración y sirve solo para prue
 | Paquete | Capa |
 |---------|------|
 | `domain` | Reglas y estado del partido (Kotlin puro) |
-| `protocol` | Modelo del protocolo de pizarra v1 ([especificación](../docs/protocolo-pizarra.md)) |
+| `protocol` | Estado de enlace y reglas de antigüedad del protocolo de pizarra v1 ([especificación](../docs/protocolo-pizarra.md)) |
 | `engine` | Interfaces `MediaEngine` y `ScoreboardSource` + implementaciones demo |
 | `ui` | Compose: tema, componentes, pantallas y `StudioViewModel` |
 

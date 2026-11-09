@@ -1,14 +1,11 @@
 package com.hrmediasports.studio.protocol
 
-import com.hrmediasports.studio.domain.MatchState
-
 /**
- * Capa 3 (protocolo entre dispositivos): modelo en memoria del mensaje de pizarra v1.
+ * Capa 3 (protocolo entre dispositivos): estado de enlace y reglas de antigüedad del protocolo v1.
  * La especificación del cable (JSON, transporte, versionado) está en docs/protocolo-pizarra.md.
- * En esta entrega NO existe transporte ni serialización: solo el modelo que consume la UI.
+ * En esta entrega NO existe transporte ni serialización: solo los tipos de estado y las reglas de
+ * antigüedad que consume la UI.
  */
-const val SCOREBOARD_PROTOCOL_VERSION = 1
-
 /** Tiempo sin lecturas a partir del cual el dato se considera desactualizado. */
 const val STALE_AFTER_MILLIS = 3_000L
 
@@ -17,20 +14,6 @@ enum class ReadingOrigin { Demo, Remote, Manual }
 
 /** Estado del enlace con el dispositivo lector (otro celular). */
 enum class LinkState { NotConnected, Connecting, Connected }
-
-/** Una lectura de pizarra ya recibida y validada. */
-data class ScoreboardReading(
-    val protocolVersion: Int = SCOREBOARD_PROTOCOL_VERSION,
-    val sequence: Long,
-    /** Instante de captura en el emisor (epoch ms, reloj del emisor). */
-    val capturedAtMillis: Long,
-    /** Instante de recepción en este dispositivo (epoch ms, reloj local). */
-    val receivedAtMillis: Long,
-    val match: MatchState,
-    /** Confianza global 0..1; null si el emisor no la informa. */
-    val confidence: Float?,
-    val origin: ReadingOrigin,
-)
 
 /** Milisegundos transcurridos desde la recepción; nunca negativo. */
 fun readingAgeMillis(nowMillis: Long, receivedAtMillis: Long): Long =

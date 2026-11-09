@@ -31,6 +31,8 @@ data class ScoreboardUiState(
     /** Antigüedad de la última lectura en ms; null si no hay lecturas. */
     val ageMillis: Long?,
     val confidence: Float?,
+    /** Hay una lectura del lector posterior a la corrección manual vigente. */
+    val newerReadingAvailable: Boolean = false,
 )
 
 /** Borrador editable de la corrección manual; se valida al aplicar. */
@@ -79,6 +81,7 @@ data class StudioUiState(
     val replays: List<ReplayClip>,
     val replayBufferAvailable: Boolean,
     val connectedCameras: Int,
+    val remoteCamerasAvailable: Boolean,
     val isDemo: Boolean,
     val correctionDraft: CorrectionDraft? = null,
     val message: String? = null,

@@ -20,7 +20,7 @@ Criterio para decidir tras las pruebas: si WebRTC, captura de cámara y composic
 |---|------|-----------------|----------------|----------------------------|
 | 1 | Interfaz adaptable | Móvil / tablet / escritorio; componentes, navegación | `android/.../ui` (Compose) | No: se rehace por framework de UI |
 | 2 | Reglas y estado del partido | Marcador, reloj, cuarto, posesión, validaciones | `android/.../domain` (Kotlin puro) | Sí en la JVM; reimplementar o compartir (KMP) si se cambia de lenguaje |
-| 3 | Protocolo entre dispositivos | Mensajes de pizarra versionados, estado de enlace | Especificación: `protocolo-pizarra.md`; modelo: `android/.../protocol` | La especificación sí (JSON); el código por plataforma |
+| 3 | Protocolo entre dispositivos | Mensajes de pizarra versionados, estado de enlace | Especificación: `protocolo-pizarra.md`; estado de enlace y antigüedad: `android/.../protocol` | La especificación sí (JSON); el código por plataforma |
 | 4 | Reconocimiento de pizarra | Leer el marcador físico con la cámara | **No implementado.** Interfaz `ScoreboardSource`; solo `DemoScoreboardSource` | Depende del motor de visión elegido (por evaluar) |
 | 5 | Captura, composición, codificación, grabación y transmisión | Cámaras, mezcla, encoder, archivo, salida | **No implementado.** Interfaz `MediaEngine`; solo `DemoMediaEngine` (todas las capacidades en `false`) | Muy dependiente de la plataforma |
 
