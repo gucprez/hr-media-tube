@@ -6,7 +6,7 @@ Objetivo: que **Claude y ChatGPT revisen todo** lo que se hace, encuentren error
 Quien escribe el código **no** lo revisa solo. Si lo escribió Claude, lo revisa ChatGPT (y viceversa). El humano decide el merge.
 
 ## Ciclo
-1. **PR abierto** → CI corre automático (`ruff` + `pytest`). Si falla, el autor lo arregla antes de pedir revisión.
+1. **PR abierto** → CI corre automático: job «Python» (`ruff` + `pytest`) y job «Android» (APK de depuración + pruebas unitarias). Si falla, el autor lo arregla antes de pedir revisión.
 2. **Revisor (la otra IA)** lee el diff completo y busca:
    - Bugs y casos borde (entradas vacías, errores no manejados)
    - Seguridad (inyección, secretos, validación de entradas)

@@ -13,7 +13,8 @@ HR Media Tube: app FastAPI desplegada en Railway.
 ```bash
 pip install -r requirements-dev.txt
 uvicorn main:app --reload      # desarrollo local
-ruff check . && pytest -q      # antes de abrir PR
+ruff check . && pytest -q      # antes de abrir PR (Python)
+(cd android && ./gradlew assembleDebug testDebugUnitTest)   # antes de abrir PR (Android)
 ```
 
 ## Flujo de trabajo (obligatorio)
@@ -23,7 +24,7 @@ ruff check . && pytest -q      # antes de abrir PR
 4. Un PR = un cambio pequeño y enfocado. Describe qué cambió y cómo probarlo.
 5. **La otra IA revisa el PR** antes de mergear, siguiendo `docs/REVISION.md`. Quien escribió el código no lo revisa ni lo mergea solo.
    Los hallazgos se comentan como `[severidad] problema → solución` y los errores fuera del PR se abren como issue (plantilla "Error").
-   CI (`ruff` + `pytest`) debe estar en verde.
+   CI debe estar en verde: job **Python** (`ruff` + `pytest`) y, si el cambio toca `android/`, job **Android** (APK de depuración + pruebas unitarias).
    Para cambios grandes, el humano puede correr `/revisar` (plugin `jarvis-consenso`) para una revisión conjunta Claude + Codex.
 6. Antes de empezar: `git pull origin main` para no trabajar sobre código viejo.
 7. No toques archivos que otro PR abierto esté modificando; revisa los PRs abiertos primero.

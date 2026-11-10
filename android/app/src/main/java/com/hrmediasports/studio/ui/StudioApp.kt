@@ -99,16 +99,19 @@ fun StudioAppContent(
         modifier = Modifier.fillMaxSize().background(HrColors.Background).windowInsetsPadding(WindowInsets.safeDrawing),
     ) { padding ->
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
-            val expanded = maxWidth >= HrDimens.ExpandedBreakpoint
+            val expanded = maxWidth >= HrDimens.ExpandedBreakpoint * LocalDensity.current.fontScale.coerceAtLeast(1f)
             // En ventanas bajas se quita la barra de estado inferior para dejar alto a los monitores;
             // el estado de la pizarra sigue visible en su panel.
             val shortWindow = maxHeight < 400.dp
-            val iconOnlyOutputs = !expanded && LocalDensity.current.fontScale > 1.15f
+            val fontScale = LocalDensity.current.fontScale
+            val iconOnlyOutputs = !expanded && fontScale > 1.15f
+            // Letra muy grande en ventana pequeña: riel solo con iconos y banner reducido al rótulo.
+            val bigText = fontScale > 1.3f && (!expanded || shortWindow)
             Column(Modifier.fillMaxSize()) {
                 HrTopBar(state, expanded, iconOnlyOutputs, onRecord, onStream)
-                if (state.isDemo) DemoBanner()
+                if (state.isDemo) DemoBanner(labelOnly = bigText)
                 Row(Modifier.weight(1f)) {
-                    NavRail(state.destination, onNavigate, compact = !expanded || shortWindow)
+                    NavRail(state.destination, onNavigate, compact = !expanded || shortWindow, iconsOnly = bigText)
                     when (state.destination) {
                         Destination.Studio -> StudioScreen(state, actions, Modifier.weight(1f))
                         Destination.Cameras -> CamerasScreen(state, Modifier.weight(1f))

@@ -4,6 +4,7 @@ Leyenda:
 - ✅ **Verificado** con evidencia (prueba ejecutada en dispositivo real, registrada abajo).
 - 🔧 **Compila**: el código compila y pasa pruebas unitarias, pero no se ha probado en un dispositivo.
 - ⬜ **No verificado**: no existe implementación ni prueba.
+- 🧪 **Probado solo en el entorno de desarrollo** (Linux, Robolectric/Chromium, sin dispositivos). Es revisión visual o prueba automática; **no** verifica la plataforma.
 - ❌ **Impedimento confirmado**: probado y no viable (con motivo).
 
 **Hoy no hay ninguna función ✅ ni ❌.** Esta entrega no incluyó pruebas en dispositivos: el entorno de desarrollo no tiene teléfonos, tabletas, Windows, macOS ni Chromebook.
@@ -11,6 +12,8 @@ Leyenda:
 | Función | Android móvil | Android tablet | Windows | macOS | Chrome / PWA | Chromebook |
 |---------|---------------|----------------|---------|-------|--------------|------------|
 | Interfaz Estudio (demo, datos de ejemplo) | 🔧 | 🔧 | ⬜ | ⬜ | ⬜ | ⬜ |
+| Layout adaptable del Estudio (tamaños, escalas de texto, paneles) | 🧪 (capturas simuladas; ver `capturas/README.md`) | 🧪 | — | — | — | — |
+| Arrastre táctil de zonas (Lector de pizarra) | ⬜ | ⬜ | — | — | — | — |
 | Reglas y estado del partido (`MatchState`) | 🔧 | 🔧 | ⬜ | ⬜ | ⬜ | ⬜ |
 | Plantilla de zonas del lector (ajustar y guardar localmente) | 🔧 | 🔧 | ⬜ | ⬜ | ⬜ | ⬜ |
 | Recepción de datos de pizarra (protocolo v1) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -25,7 +28,7 @@ Leyenda:
 | Búfer de repeticiones (últimos 20 s) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Pruebas técnicas requeridas (todas pendientes)
-Procedimiento detallado: [`PRUEBAS-TECNICAS.md`](PRUEBAS-TECNICAS.md).
+Pasos y resultados esperados de cada una: [`PRUEBAS-TECNICAS.md`](PRUEBAS-TECNICAS.md). Robolectric y LDPlayer **no** sustituyen la validación de cámara, temperatura, red ni arrastre táctil en Android real.
 
 Deben ejecutarse **antes** de construir las funciones completas. Cada una produce un registro con dispositivo, versión de SO, medición y veredicto, que actualiza la matriz.
 

@@ -49,15 +49,17 @@ La APK de debug está firmada con la clave de depuración y sirve solo para prue
 
 El logotipo está definido una sola vez (`HrLogo`) y se muestra solo desde la barra de marca común (`HrBrandBar`), por lo que es idéntico en todas las pantallas. Los controles táctiles miden al menos 48 dp (`HrDimens.MinTouch`).
 
-## Adaptación a distintos tamaños (Estudio)
-El layout se decide con el espacio real del área de contenido (sin barras del sistema ni navegación) y con la escala de texto, no con dimensiones fijas:
+## Adaptación a distintos tamaños y escalas de texto (Estudio)
+El layout se decide con el espacio real del área de contenido (sin barras del sistema ni navegación) y con la **escala de texto del sistema, que se respeta sin límite**: cuando la letra es grande, cambia la distribución en lugar de recortar la letra.
 - **Ancho**: monitores Vista previa y Al aire siempre arriba; fuentes compactas debajo; bandeja de repeticiones desplegable (abierta, su lista reemplaza la fila de fuentes y los monitores no se achican); marcador compacto a la derecha.
-- **Bajo** (p. ej. celular horizontal): prioriza Al aire; si no caben ambos monitores, pestañas PREVIA / AL AIRE; repeticiones y marcador completo se abren en paneles aparte (con corrección manual).
+- **Bajo** (p. ej. celular horizontal): prioriza Al aire; si no caben ambos monitores, pestañas PREVIA / AL AIRE; si caben y sobra alto (p. ej. 853×480 dp), fuentes bajo los monitores y marcador completo a la derecha; repeticiones y marcador completo se abren en paneles aparte.
+- **Letra grande (> 130 %)**: umbrales de layout proporcionales a la escala; fuentes en una columna; riel lateral solo con iconos (nombre para accesibilidad); banner reducido al rótulo «MODO DEMOSTRACIÓN»; botones de grabar/transmitir solo con icono; «Poner al aire» sin el nombre de la fuente. Lo secundario se desplaza y, si hay más contenido, el borde inferior se atenúa.
 - Controles táctiles ≥ 48 dp en todos los casos; el logotipo y los gráficos de los monitores no escalan con la fuente.
 - Etiquetas: **PREVIA** (naranja) = fuente preparada; **AL AIRE** (rojo) = fuente en la salida.
 - Marcador: «DATOS DEMO» en modo demostración, «—» si nunca se recibieron datos, y si se pierde una conexión se conservan los últimos datos con «DESACTUALIZADO».
+- El diálogo de corrección manual tiene el campo de tiempo en la primera fila y botones siempre visibles.
 
-Capturas verificadas (generadas con Robolectric, no con un dispositivo): [`../docs/capturas/`](../docs/capturas). Para regenerarlas:
+Capturas y su revisión visual: [`../docs/capturas/`](../docs/capturas) (ver su `README.md`). **Son simulaciones con Robolectric, no un dispositivo real.** Para regenerarlas:
 ```bash
 ./gradlew testDebugUnitTest -Pscreenshots --rerun --tests '*ScreenshotTest*'   # salida en app/build/screenshots
 ```
@@ -66,8 +68,6 @@ Capturas verificadas (generadas con Robolectric, no con un dispositivo): [`../do
 ## Limitaciones conocidas
 - La orientación depende del modo: horizontal en Estudio, vertical en Lector.
 - El arrastre de zonas no se ha probado en un dispositivo táctil.
-- La escala de texto del sistema se limita al 130 % en esta interfaz: por encima, en ventanas pequeñas ya no caben texto y monitores a la vez. En 640×360 dp con 130 % la columna derecha necesita desplazarse.
-- Los paneles específicos (repeticiones y marcador en ventana baja) y los diálogos no están incluidos en las capturas; no se revisaron visualmente.
-- Con ventanas intermedias (p. ej. 853×480 dp) los monitores quedan centrados con espacio libre arriba y abajo.
+- Con letra muy grande en ventanas pequeñas (p. ej. 640×360 dp al 200 %) los monitores son pequeños y los controles secundarios se desplazan; es una decisión de diseño, no un defecto oculto.
 - Textos en español dentro del código (sin `strings.xml` traducible todavía).
-- El diseño no se ha comprobado visualmente en un dispositivo ni emulador (ver nota de entrega).
+- El diseño se revisó en capturas simuladas con Robolectric (y por el usuario en LDPlayer); **no** se ha probado en un dispositivo real (ver `docs/PRUEBAS-TECNICAS.md`, UI-1 a UI-5).

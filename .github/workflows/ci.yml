@@ -3,8 +3,14 @@ on:
   pull_request:
   push:
     branches: [main]
+
+permissions:
+  contents: read
+
 jobs:
-  checks:
+  # Backend Python (FastAPI).
+  python:
+    name: "Python (ruff + pytest)"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,3 +20,42 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
       - run: pytest -q
+
+  # App Android (carpeta android/): APK de depuración + pruebas unitarias.
+  # No ejecuta las capturas de pantalla (Robolectric, opcionales) ni pruebas en dispositivo.
+  android:
+    name: "Android (APK debug + pruebas unitarias)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Plataforma y herramientas de Android
+        working-directory: .
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compilar APK de depuración y correr pruebas unitarias
+        run: ./gradlew --no-daemon assembleDebug testDebugUnitTest
+      - name: Subir APK de depuración
+        uses: actions/upload-artifact@v4
+        with:
+          name: hr-media-sports-apk-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+          if-no-files-found: error
+      - name: Subir resultados de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-resultados-pruebas
+          path: android/app/build/reports/tests/testDebugUnitTest
+          retention-days: 14
+          if-no-files-found: ignore
