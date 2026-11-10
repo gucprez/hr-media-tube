@@ -6,7 +6,7 @@
 - **Qué se mide:** estabilidad, latencia y consumo (y temperatura, porque condiciona las otras tres).
 - **Qué NO vale como prueba:** LDPlayer u otro emulador, Robolectric, la cámara simulada de `studio-server/e2e`. Sirven para desarrollar; no miden un teléfono.
 - **Fuera de alcance:** segunda cámara, OCR/pizarra, grabación, transmisión, repeticiones, internet.
-- **Rama:** `claude/camara-remota-prueba-tecnica` (independiente del PR de la interfaz demo).
+- **Rama:** `claude/camara-remota-720p` (independiente del PR de la interfaz demo).
 
 ## Qué existe para la prueba
 | Pieza | Dónde | Verificado sin dispositivos | Sin verificar |

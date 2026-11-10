@@ -97,4 +97,4 @@ Las capturas simuladas no las cubren:
 Plan detallado de T1 con una cámara a 720p/30 (estabilidad, latencia y consumo): [`prueba-tecnica-camara-remota.md`](prueba-tecnica-camara-remota.md). Arquitectura para Windows, macOS y Chrome: [`ARQUITECTURA-ESCRITORIO-WEB.md`](ARQUITECTURA-ESCRITORIO-WEB.md).
 
 ## Siguiente etapa (independiente de esta entrega)
-La cámara remota y el estudio de laptop están en la rama `claude/camara-remota-prueba-tecnica` como **prueba técnica independiente**: un celular Android real en modo Cámara remota enviando video a una aplicación Estudio en una laptop real, sin LDPlayer. No forman parte del PR de la interfaz.
+La cámara remota y el estudio de laptop están en la rama `claude/camara-remota-720p` como **prueba técnica independiente**: un celular Android real en modo Cámara remota enviando video a una aplicación Estudio en una laptop real, sin LDPlayer. No forman parte del PR de la interfaz.
