@@ -7,7 +7,41 @@ const state = { devices: [], pairing: null };
 const peers = new Map();            // deviceId -> { pc, stream, pendingIce: [], prev: {bytes, ts} }
 let previewId = null, programId = null;
 let ws = null;
-const csvRows = [['hora_iso','dispositivo','nombre','rx_ancho','rx_alto','rx_fps','rx_kbps','rx_jitterbuffer_ms','rx_congelamientos','rx_perdidos','rx_codec','rtt_ms','tx_fps','tx_kbps','tx_encoder','tx_hw','tx_limitacion','bateria_pct','bateria_c','termico','carga_uAh','corriente_uA','lente','zoom','audio']];
+const csvRows = [['hora_iso','dispositivo','nombre','rx_ancho','rx_alto','rx_fps','rx_kbps','rx_jitterbuffer_ms','rx_congelamientos','rx_perdidos','rx_codec','rtt_ms','tx_fps','tx_kbps','tx_encoder','tx_hw','tx_limitacion','bateria_pct','bateria_c','termico','carga_uAh','corriente_uA','lente','zoom','audio',
+  'rx_congelado_total_s','med_congelamientos','med_congelamiento_max_ms','med_congelado_total_ms','pestana_visible','reconexion_s']];
+
+// ---------- Medición de congelamientos y reconexiones ----------
+// DEFINICIÓN (provisional): hay un CONGELAMIENTO cuando pasan más de FREEZE_MS sin que se presente un cuadro nuevo
+// (200 ms ≈ 6 cuadros a 30 fps). Se mide con requestVideoFrameCallback sobre un <video> propio por cámara.
+// Solo cuenta con la pestaña visible: en segundo plano el navegador deja de presentar cuadros y sería un falso congelamiento.
+const FREEZE_MS = 200;
+const meters = new Map();     // deviceId -> { count, maxMs, totalMs, last, reconnecting } (acumulado aunque la cámara se reconecte)
+const liveState = new Map();  // deviceId -> { pending: [s], all: [s] }  tiempos de reconexión
+function meterFor(id) { if (!meters.has(id)) meters.set(id, { count: 0, maxMs: 0, totalMs: 0, last: null, reconnecting: false }); return meters.get(id); }
+function reconFor(id) { if (!liveState.has(id)) liveState.set(id, { pending: [], all: [] }); return liveState.get(id); }
+// RECONEXIÓN (definición): tiempo entre el último cuadro presentado antes de que la conexión de la cámara se
+// reemplace y el primer cuadro presentado después. Es lo que el operador ve sin imagen nueva.
+function startMeter(id, peer) {
+  if (peer.meterVideo) return;
+  const v = document.createElement('video'); v.muted = true; v.autoplay = true; v.playsInline = true; v.srcObject = peer.stream;
+  document.getElementById('meters').appendChild(v); peer.meterVideo = v;
+  const m = meterFor(id);
+  if (!v.requestVideoFrameCallback) return;                 // navegador sin soporte: quedará "sin dato"
+  const cb = (now) => {
+    if (peers.get(id) !== peer) return;                     // conexión reemplazada: este medidor termina
+    if (document.hidden) { m.last = null; m.reconnecting = false; }
+    else {
+      if (m.last != null) {
+        const gap = now - m.last;
+        if (m.reconnecting) { const r = reconFor(id); r.pending.push(gap / 1000); r.all.push(gap / 1000); }
+        else if (gap > FREEZE_MS) { m.count++; m.totalMs += gap; m.maxMs = Math.max(m.maxMs, gap); }
+      }
+      m.reconnecting = false; m.last = now;
+    }
+    v.requestVideoFrameCallback(cb);
+  };
+  v.requestVideoFrameCallback(cb);
+}
 
 // ---------- WebSocket con la propia laptop ----------
 function connectUi() {
@@ -27,7 +61,7 @@ async function onServer(m) {
 // ---------- WebRTC (lado estudio: recibe) ----------
 function closePeer(id) {
   const p = peers.get(id);
-  if (p) { try { p.pc.close(); } catch (e) {} peers.delete(id); }
+  if (p) { try { p.pc.close(); } catch (e) {} if (p.meterVideo) p.meterVideo.remove(); peers.delete(id); const m = meters.get(id); if (m && m.last != null) m.reconnecting = true; }
   attachVideos();
 }
 
@@ -37,7 +71,7 @@ async function onSignal(id, msg) {
     const pc = new RTCPeerConnection({ iceServers: [] });          // red local: no hace falta STUN
     const peer = { pc, stream: new MediaStream(), pendingIce: [], prev: null };
     peers.set(id, peer);
-    pc.ontrack = (e) => { peer.stream = e.streams[0] || peer.stream; if (!e.streams[0]) peer.stream.addTrack(e.track); attachVideos(); render(); };
+    pc.ontrack = (e) => { peer.stream = e.streams[0] || peer.stream; if (!e.streams[0]) peer.stream.addTrack(e.track); if (e.track.kind === 'video') startMeter(id, peer); attachVideos(); render(); };
     pc.onicecandidate = (e) => { if (e.candidate) sendUi({ type: 'ice', deviceId: id, candidate: e.candidate.candidate, sdpMid: e.candidate.sdpMid, sdpMLineIndex: e.candidate.sdpMLineIndex }); };
     pc.onconnectionstatechange = () => { render(); attachVideos(); };
     await pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
@@ -179,19 +213,25 @@ async function sample() {
         p.prev = { bytes: inb.bytesReceived, ts: now };
         rx = { w: inb.frameWidth, h: inb.frameHeight, fps: inb.framesPerSecond, kbps,
           jb: inb.jitterBufferEmittedCount ? Math.round((inb.jitterBufferDelay / inb.jitterBufferEmittedCount) * 1000) : null,
-          freeze: inb.freezeCount, lost: inb.packetsLost, codec: codec ? codec.mimeType : '', rtt: pair && pair.currentRoundTripTime != null ? Math.round(pair.currentRoundTripTime * 1000) : null };
+          freeze: inb.freezeCount, freezeTotal: inb.totalFreezesDuration, lost: inb.packetsLost, codec: codec ? codec.mimeType : '', rtt: pair && pair.currentRoundTripTime != null ? Math.round(pair.currentRoundTripTime * 1000) : null };
       }
     }
-    lines.push({ d, rx, t });
-    if (rx.w || t) csvRows.push([new Date().toISOString(), d.id, d.name, rx.w ?? '', rx.h ?? '', rx.fps ?? '', rx.kbps ?? '', rx.jb ?? '', rx.freeze ?? '', rx.lost ?? '', rx.codec ?? '', rx.rtt ?? '',
-      t?.fps ?? '', t?.bitrateKbps ?? '', t?.encoder ?? '', t?.hardwareEncoder ?? '', t?.limitation ?? '', t?.batteryPct ?? '', t?.batteryTempC ?? '', t?.thermalStatus ?? '', t?.chargeCounterUah ?? '', t?.currentNowUa ?? '', t?.lens ?? '', t?.zoom ?? '', t?.audioOn ?? '']);
+    const m = meters.get(d.id); const ls = liveState.get(d.id);
+    const hasMeter = !!(p && p.meterVideo && p.meterVideo.requestVideoFrameCallback);
+    const rec = ls && ls.pending.length ? ls.pending.splice(0).map((x) => x.toFixed(1)).join('|') : '';
+    lines.push({ d, rx, t, m: hasMeter ? m : null, ls });
+    if (rx.w || t || rec) csvRows.push([new Date().toISOString(), d.id, d.name, rx.w ?? '', rx.h ?? '', rx.fps ?? '', rx.kbps ?? '', rx.jb ?? '', rx.freeze ?? '', rx.lost ?? '', rx.codec ?? '', rx.rtt ?? '',
+      t?.fps ?? '', t?.bitrateKbps ?? '', t?.encoder ?? '', t?.hardwareEncoder ?? '', t?.limitation ?? '', t?.batteryPct ?? '', t?.batteryTempC ?? '', t?.thermalStatus ?? '', t?.chargeCounterUah ?? '', t?.currentNowUa ?? '', t?.lens ?? '', t?.zoom ?? '', t?.audioOn ?? '',
+      rx.freezeTotal ?? '', hasMeter ? m.count : '', hasMeter ? Math.round(m.maxMs) : '', hasMeter ? Math.round(m.totalMs) : '', !document.hidden, rec]);
   }
-  $('stats').innerHTML = lines.length ? lines.map(({ d, rx, t }) => `<div class="kv"><span>Cámara</span><span>${esc(d.name)}</span>
+  $('stats').innerHTML = lines.length ? lines.map(({ d, rx, t, m, ls }) => `<div class="kv"><span>Cámara</span><span>${esc(d.name)}</span>
     <span>Recibido</span><span>${rx.w ? `${rx.w}×${rx.h} · ${rx.fps ?? '–'} fps · ${rx.kbps ?? 0} kbps` : '–'}</span>
     <span>Códec</span><span>${esc(rx.codec || '–')}</span>
     <span>Retardo búfer</span><span>${rx.jb != null ? rx.jb + ' ms' : '–'}</span>
     <span>RTT</span><span>${rx.rtt != null ? rx.rtt + ' ms' : '–'}</span>
-    <span>Congelam. / perdidos</span><span>${rx.freeze ?? '–'} / ${rx.lost ?? '–'}</span>
+    <span>Congelamientos (&gt; ${FREEZE_MS} ms)</span><span>${m ? `${m.count} · más largo ${Math.round(m.maxMs)} ms · total ${(m.totalMs / 1000).toFixed(1)} s` : 'sin dato'}</span>
+    <span>Reconexiones</span><span>${ls && ls.all.length ? `${ls.all.length} · más larga ${Math.max(...ls.all).toFixed(1)} s` : '0'}</span>
+    <span>Paquetes perdidos</span><span>${rx.lost ?? '–'}</span>
     <span>Codificador</span><span>${t ? esc(t.encoder || '–') + (t.hardwareEncoder == null ? '' : t.hardwareEncoder ? ' (hardware)' : ' (software)') : '–'}</span>
     <span>Batería / temp.</span><span>${t && t.batteryPct != null ? t.batteryPct + ' % · ' + (t.batteryTempC ?? '–') + ' °C' : '–'}</span>
     <span>Limitación</span><span>${t ? esc(t.limitation || 'ninguna') : '–'}</span></div>`).join('<hr>') : 'Sin cámara conectada.';
@@ -207,4 +247,4 @@ $('btn-take').onclick = takeToAir;
 $('btn-csv').onclick = downloadCsv;
 loadHosts(); connectUi(); render();
 setInterval(() => sample().catch(() => {}), 2000);
-window.__studio = { state, peers, get previewId() { return previewId; }, get programId() { return programId; }, csvRows };  // para pruebas automáticas
+window.__studio = { state, peers, meters, liveState, FREEZE_MS, get previewId() { return previewId; }, get programId() { return programId; }, csvRows };  // para pruebas automáticas

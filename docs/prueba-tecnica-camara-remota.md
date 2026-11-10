@@ -1,6 +1,6 @@
 # Prueba técnica independiente: Android Cámara remota → Laptop Estudio
 
-**Estado: PREPARADA, NO EJECUTADA.** Nadie ha corrido esta prueba con un teléfono y una laptop reales. Este documento es el plan; los resultados irán en `docs/resultados/`.
+**Estado: PREPARADA, NO EJECUTADA.** Nadie ha corrido esta prueba con un teléfono y una laptop reales. Este documento es el plan técnico; la guía sencilla para ejecutarla es [`GUIA-PRUEBA-CAMARA.md`](GUIA-PRUEBA-CAMARA.md) y los resultados van en `docs/resultados/reales/`.
 
 - **Alcance:** **una** cámara, **1280×720 a 30 fps**, misma red local, sin cuentas ni nube.
 - **Qué se mide:** estabilidad, latencia y consumo (y temperatura, porque condiciona las otras tres).
@@ -35,7 +35,7 @@ En el entorno de desarrollo la cámara simulada llegó a 720p a ~20 fps con cód
 2. Teléfono: **Cámara remota → Escanear QR** (anotar si pide el permiso de cámara en ese momento). Laptop: **Aceptar**.
 3. Teléfono: **Iniciar envío** (anotar si pide el micrófono). Anotar el codificador que muestra «Calidad» y si figura como hardware o software.
 4. Laptop: seleccionar la cámara → **Poner al aire**. Confirmar el aviso **AL AIRE** en el teléfono.
-5. **Corrida de 30 min** sin tocar nada. Al terminar: **Registro CSV** → `docs/resultados/T1-<fecha>-<modelo>-A.csv`.
+5. **Corrida de 30 min** sin tocar nada. Al terminar: **Registro CSV** → `docs/resultados/reales/T1-<fecha>-<modelo>-A.csv`.
 6. **Latencia vidrio a vidrio**, 10 fotos: cronómetro frente a la cámara; una segunda cámara fotografía a la vez el cronómetro real y el monitor del estudio. Anotar ambos tiempos en `lecturas.csv` (`real,monitor`) y correr `python -m tools.prueba_camara.latencia lecturas.csv`.
 7. **Estabilidad** (cada caso 3 veces; anotar si vuelve sola, en cuántos segundos y cuántas fuentes quedan en el estudio; debe ser **una**):
    | Caso | Esperado |
@@ -53,26 +53,31 @@ En el entorno de desarrollo la cámara simulada llegó a 720p a ~20 fps con cód
 
 ## Análisis
 ```bash
-python -m tools.prueba_camara.analisis docs/resultados/T1-<fecha>-<modelo>-A.csv
+python -m tools.prueba_camara.analisis docs/resultados/reales/T1-<fecha>-<modelo>-A.csv --origen real
+python -m tools.prueba_camara.latencia docs/resultados/reales/lecturas-latencia.csv
 ```
-Entrega fps (mediana y percentil 5), % de muestras a 1280×720, congelamientos, cortes del registro, RTT, búfer de jitter, codificador, batería en %/h, temperaturas y estado térmico, con un veredicto por criterio. **«Sin dato» nunca cuenta como cumplido.**
+El origen es obligatorio y encabeza el informe. Los resultados reales y los sintéticos se guardan en carpetas distintas (`docs/resultados/`). **«Sin dato» nunca cuenta como cumplido.**
 
-## Criterios de aceptación propuestos (deben confirmarse)
-| Métrica | Criterio | Fuente |
-|---------|----------|--------|
-| Duración | ≥ 30 min continuos | CSV |
-| FPS recibidos | mediana ≥ 27 | CSV `rx_fps` |
-| Resolución | 1280×720 en ≥ 95 % de las muestras | CSV |
-| Congelamientos | ≤ 3 | CSV `rx_congelamientos` |
-| Cortes | 0 huecos > 6 s durante la corrida sin tocar | CSV |
-| Latencia vidrio a vidrio | mediana ≤ 300 ms, p95 ≤ 500 ms | fotos |
-| Temperatura | estado térmico ≤ 2 (sin «severo») | CSV / ADB |
-| Consumo | **sin umbral aún**: registrar %/h y mAh | CSV / `batterystats` |
-| Reconexión tras Wi-Fi apagado | sola ≤ 15 s, una sola fuente | manual |
+## Definiciones
+- **Congelamiento:** más de **200 ms** sin que se presente un cuadro nuevo (≈ 6 cuadros a 30 fps). Lo mide el estudio con `requestVideoFrameCallback` en un video propio por cámara, solo con la pestaña visible. Se registran la cantidad, **el más largo** y **el tiempo total congelado**. Aparte se guarda lo que informa WebRTC con su propia definición (`freezeCount`, `totalFreezesDuration`).
+- **Reconexión:** tiempo entre el último cuadro presentado antes de que se reemplace la conexión de la cámara y el primero presentado después.
+- **Corte del registro:** hueco mayor de 6 s entre filas del CSV (el estudio escribe cada ~2 s).
+- **Latencia:** vidrio a vidrio, con fotos; se reportan mediana y **p95**.
 
-Solo si se cumplen se sube `--max-cameras` y se prueba una segunda cámara repitiendo todo.
+## Objetivos provisionales de la prueba
+Son objetivos para leer esta prueba de **una** cámara; **no son la aprobación definitiva del producto** y la prueba no espera más aprobaciones para ejecutarse.
+| Métrica | Objetivo provisional | Medición |
+|---------|----------------------|----------|
+| Corrida | 30 minutos | Automática (CSV) |
+| FPS recibidos | Mediana ≥ 27 | Automática |
+| Latencia vidrio a vidrio | Mediana ≤ 300 ms | Manual (fotos) |
+| Reconexión | ≤ 15 s | Automática + observación |
 
-## Resultados (plantilla: `docs/resultados/T1-<fecha>-<modelo>.md`)
+Se **registran sin umbral** (una mediana puede ocultar interrupciones): FPS percentil 5 y mínimo, congelamiento más largo, tiempo total congelado, número de congelamientos, cortes del registro, latencia p95, % de muestras a 1280×720, codificador (hardware/software), batería en %/h, temperatura y estado térmico.
+
+La **segunda cámara** queda pendiente de evaluar estos resultados (`--max-cameras` sigue en 1).
+
+## Resultados (plantilla: `docs/resultados/reales/T1-<fecha>-<modelo>.md`)
 ```
 Teléfono: marca / modelo / SoC / Android       Laptop: modelo / SO / navegador / Java
 Red: router / banda                            Sala: °C

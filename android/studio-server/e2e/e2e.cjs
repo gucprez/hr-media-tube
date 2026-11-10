@@ -62,6 +62,7 @@ window.startDevice = async (uri, deviceId, auth, name) => {
     stream.getVideoTracks()[0].contentHint = 'motion';
     const prm = vs.getParameters(); prm.encodings = [{ maxBitrate: 2500000, maxFramerate: 30 }]; prm.degradationPreference = 'maintain-resolution';
     await vs.setParameters(prm).catch((e) => console.log('setParameters', e.message));
+    window.dev.vs = vs; window.dev.vtrack = stream.getVideoTracks()[0];
     pc.onicecandidate = (e) => { if (e.candidate) sealed({ type: 'ice', candidate: e.candidate.candidate, sdpMid: e.candidate.sdpMid, sdpMLineIndex: e.candidate.sdpMLineIndex }); };
     await pc.setLocalDescription(await pc.createOffer());
     await sealed({ type: 'offer', sdp: pc.localDescription.sdp });
@@ -132,6 +133,16 @@ window.startDevice = async (uri, deviceId, auth, name) => {
     check('El tile muestra PREVIA y AL AIRE', (await studio.textContent('.tile')).includes('AL AIRE'));
     await studio.screenshot({ path: `${OUT}/estudio-laptop.png` });
 
+    // Congelamiento provocado: la cámara deja de enviar cuadros 1,5 s. El estudio debe medirlo (definición: > 200 ms sin cuadro nuevo).
+    const antes = await studio.evaluate(() => { const m = window.__studio.meters.get('cam-e2e-1'); return m ? { c: m.count, max: m.maxMs, tot: m.totalMs } : null; });
+    check('El estudio tiene medidor de congelamientos para la cámara', antes !== null, JSON.stringify(antes));
+    await cam.evaluate(async () => { await window.dev.vs.replaceTrack(null); await new Promise((r) => setTimeout(r, 1500)); await window.dev.vs.replaceTrack(window.dev.vtrack); });
+    await sleep(1500);
+    const despues = await studio.evaluate(() => { const m = window.__studio.meters.get('cam-e2e-1'); return { c: m.count, max: m.maxMs, tot: m.totalMs }; });
+    check('Un corte de 1,5 s se registra como congelamiento', despues.c > antes.c, JSON.stringify(despues));
+    check('Se registra el congelamiento más largo (>= 1 s)', despues.max >= 1000, `(${Math.round(despues.max)} ms)`);
+    check('Se acumula el tiempo total congelado', despues.tot - antes.tot >= 1000, `(${Math.round(despues.tot - antes.tot)} ms)`);
+
     // Telemetría firmada llega a la interfaz
     await sleep(2500);
     check('La telemetría de la cámara llega al panel de calidad', (await studio.textContent('#stats')).includes('simulado-chromium'));
@@ -144,6 +155,9 @@ window.startDevice = async (uri, deviceId, auth, name) => {
     await cam.evaluate(([u]) => startDevice(u, 'cam-e2e-1', 'token', 'Celular de prueba'), [uri]);
     await studio.waitForSelector('.tile:not(.off):has-text("EN LÍNEA")', { timeout: 20000 });
     check('Reconexión con token: sigue habiendo UNA sola fuente', (await studio.$$('.tile')).length === 1);
+    let rec = [];
+    for (let i = 0; i < 50 && rec.length === 0; i++) { rec = await studio.evaluate(() => (window.__studio.liveState.get('cam-e2e-1') || { all: [] }).all); if (!rec.length) await sleep(200); }
+    check('Se mide el tiempo de reconexión (último cuadro antes → primer cuadro después)', rec.length === 1 && rec[0] > 1 && rec[0] < 60, `(${rec.map((x) => x.toFixed(1))} s)`);
     check('Reconexión: el estudio vuelve a avisar AL AIRE', await (async () => { for (let i = 0; i < 30; i++) { if (await cam.evaluate(() => window.dev.onair === true)) return true; await sleep(200); } return false; })());
     check('Reconexión: la fuente conserva su rol AL AIRE', (await studio.textContent('.tile')).includes('AL AIRE'));
 
@@ -163,6 +177,14 @@ window.startDevice = async (uri, deviceId, auth, name) => {
     check('Desconectar elimina la fuente', (await studio.$$('.tile')).length === 0);
     check('El dispositivo desconectado recibe el cierre', await (async () => { for (let i = 0; i < 20; i++) { if (await cam.evaluate(() => window.dev.closed === true || window.dev.state === 'rejected')) return true; await sleep(200); } return false; })());
 
+    const cab = await studio.evaluate(() => window.__studio.csvRows[0]);
+    check('El CSV incluye congelamiento más largo, total congelado y reconexión', ['med_congelamiento_max_ms', 'med_congelado_total_ms', 'reconexion_s', 'pestana_visible'].every((k) => cab.includes(k)));
+    const conRec = await studio.evaluate(() => { const i = window.__studio.csvRows[0].indexOf('reconexion_s'); return window.__studio.csvRows.slice(1).some((r) => r[i] !== ''); });
+    check('La reconexión queda escrita en una fila del CSV', conRec);
+    if (process.env.E2E_CSV) {
+      const texto = await studio.evaluate(() => window.__studio.csvRows.map((r) => r.map((c) => JSON.stringify(String(c))).join(',')).join(String.fromCharCode(10)));
+      fs.writeFileSync(process.env.E2E_CSV, texto);
+    }
     const csv = await studio.evaluate(() => window.__studio.csvRows.length);
     check('Se generó registro de validación (CSV)', csv > 3, `(${csv} filas)`);
   } catch (e) {

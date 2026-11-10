@@ -1,0 +1,29 @@
+OK   Crear estudio muestra QR y enlace de vinculación
+OK   El dispositivo aparece como solicitud pendiente 
+OK   Una cámara pendiente NO es fuente todavía 
+OK   Al aceptar, la cámara aparece como fuente 
+OK   Video WebRTC conectado (tile EN LÍNEA) 
+OK   Se recibe 1280×720 {"w":1280,"h":720,"fps":20,"dec":239}
+INFO fps recibidos en este entorno: 20 (no es una medición de un Android real)
+OK   Seleccionar prepara en Vista previa 
+OK   Aún nada al aire 
+OK   Poner al aire envía AL AIRE a la cámara 
+OK   El tile muestra PREVIA y AL AIRE 
+OK   El estudio tiene medidor de congelamientos para la cámara {"c":0,"max":0,"tot":0}
+OK   Un corte de 1,5 s se registra como congelamiento {"c":1,"max":1533.2999999999993,"tot":1533.2999999999993}
+OK   Se registra el congelamiento más largo (>= 1 s) (1533 ms)
+OK   Se acumula el tiempo total congelado (1533 ms)
+OK   La telemetría de la cámara llega al panel de calidad 
+OK   Al cortarse, la fuente pasa a "sin conexión" (no desaparece) 
+OK   Reconexión con token: sigue habiendo UNA sola fuente 
+OK   Se mide el tiempo de reconexión (último cuadro antes → primer cuadro después) (8.1 s)
+OK   Reconexión: el estudio vuelve a avisar AL AIRE 
+OK   Reconexión: la fuente conserva su rol AL AIRE 
+OK   Un dispositivo con secreto falso es rechazado 
+OK   El intruso no aparece en la lista 
+OK   Desconectar elimina la fuente 
+OK   El dispositivo desconectado recibe el cierre 
+OK   El CSV incluye congelamiento más largo, total congelado y reconexión 
+OK   La reconexión queda escrita en una fila del CSV 
+OK   Se generó registro de validación (CSV) (16 filas)
+TODO OK

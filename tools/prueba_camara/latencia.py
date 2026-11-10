@@ -13,6 +13,8 @@ import sys
 
 from .analisis import _pct
 
+OBJETIVO_MEDIANA_MS = 300   # objetivo provisional; la p95 se registra sin umbral
+
 
 def latencias_ms(pares: list[tuple[float, float]]) -> list[float]:
     """Latencia = lectura real − lectura en el monitor. Las negativas son errores de lectura: se rechazan."""
@@ -39,9 +41,12 @@ def main(argv: list[str] | None = None) -> int:
     r = resumen(pares)
     print(f"Muestras: {r['muestras']} · Mediana: {r['mediana_ms']:.0f} ms · p95: {r['p95_ms']:.0f} ms · "
           f"mín {r['min_ms']:.0f} ms · máx {r['max_ms']:.0f} ms")
+    ok = r["mediana_ms"] <= OBJETIVO_MEDIANA_MS
+    print(f"Objetivo provisional (mediana ≤ {OBJETIVO_MEDIANA_MS} ms): {'cumple' if ok else 'no cumple'} · "
+          f"p95 registrada: {r['p95_ms']:.0f} ms (sin objetivo)")
     if r["muestras"] < 10:
-        print("Aviso: se piden al menos 10 lecturas.")
-    return 0
+        print("Aviso: se piden al menos 10 lecturas; con menos, el p95 no es fiable.")
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

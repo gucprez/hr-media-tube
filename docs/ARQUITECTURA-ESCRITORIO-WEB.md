@@ -1,6 +1,6 @@
 # Arquitectura para Windows, macOS y Chrome
 
-**Estado: propuesta sin validar.** Ninguna opción de este documento se ha ejecutado en Windows, macOS ni Chrome de escritorio. Debe leerse antes de ampliar la prueba técnica de cámara remota.
+**Estado: propuesta sin validar.** El servidor local con navegador es una solución **para la prueba**; todavía **no fija la arquitectura final**. La compatibilidad con Windows, macOS y Chromebook sigue **sin comprobar**. Ninguna opción de este documento se ha ejecutado en Windows, macOS ni Chrome de escritorio. Debe leerse antes de ampliar la prueba técnica de cámara remota.
 
 ## Punto de partida (lo que hay y lo que no demuestra)
 - La interfaz de demostración está escrita en **Kotlin + Jetpack Compose para Android**. **No corre en Windows, macOS ni Chrome y no demuestra compatibilidad con ellos.** Jetpack Compose de Android usa APIs de Android (Activity, recursos, vistas); portarla exige otra tecnología o una migración.

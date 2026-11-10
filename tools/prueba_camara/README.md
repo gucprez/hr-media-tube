@@ -7,8 +7,8 @@
 | `adb_medir.sh` | Muestrea batería/temperatura por ADB inalámbrico y guarda `batterystats` | Solo revisión de sintaxis; **no ejecutado contra un teléfono** |
 
 ```bash
-python -m tools.prueba_camara.analisis docs/resultados/T1-2026-11-12-pixel7.csv
+python -m tools.prueba_camara.analisis docs/resultados/reales/T1-2026-11-12-pixel7.csv --origen real
 python -m tools.prueba_camara.latencia lecturas.csv        # columnas: real,monitor (segundos)
 tools/prueba_camara/adb_medir.sh 10 medicion-adb.csv
 ```
-Procedimiento completo: `docs/prueba-tecnica-camara-remota.md`.
+Guía para ejecutar: `docs/GUIA-PRUEBA-CAMARA.md`. Plan técnico: `docs/prueba-tecnica-camara-remota.md`.
