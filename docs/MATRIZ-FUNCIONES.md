@@ -7,6 +7,8 @@ Leyenda:
 - 🧪 **Probado solo en el entorno de desarrollo** (Linux, Robolectric/Chromium, sin dispositivos). Es revisión visual o prueba automática; **no** verifica la plataforma.
 - ❌ **Impedimento confirmado**: probado y no viable (con motivo).
 
+**Importante:** la interfaz actual es Kotlin/Compose y es solo Android; las columnas Windows, macOS, Chrome/PWA y Chromebook están en ⬜ porque **nada de ella se ha ejecutado ahí** (no hay compatibilidad demostrada).
+
 **Hoy no hay ninguna función ✅ ni ❌.** Esta entrega no incluyó pruebas en dispositivos: el entorno de desarrollo no tiene teléfonos, tabletas, Windows, macOS ni Chromebook.
 
 | Función | Android móvil | Android tablet | Windows | macOS | Chrome / PWA | Chromebook |

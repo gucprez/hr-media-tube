@@ -12,7 +12,7 @@ Este repo está pensado para que **Claude** y **ChatGPT** trabajen juntos.
 Lee [`AGENTS.md`](AGENTS.md) (reglas) y [`docs/COLABORACION.md`](docs/COLABORACION.md) (flujo).
 
 ## HR Media Sports (multiplataforma)
-App de producción de básquetbol en desarrollo, de código abierto.
+App de producción de básquetbol en desarrollo, de código abierto. **Hoy solo existe una interfaz de demostración para Android** (Kotlin + Compose); no hay todavía compatibilidad demostrada con Windows, macOS ni Chrome, ni cámaras, OCR, transmisión, grabación o repeticiones.
 - Alcance, capas y servicios puente: [`docs/PLATAFORMAS.md`](docs/PLATAFORMAS.md)
 - Funciones verificadas por plataforma (hoy: ninguna en dispositivo): [`docs/MATRIZ-FUNCIONES.md`](docs/MATRIZ-FUNCIONES.md)
 - Protocolo de pizarra v1: [`docs/protocolo-pizarra.md`](docs/protocolo-pizarra.md)

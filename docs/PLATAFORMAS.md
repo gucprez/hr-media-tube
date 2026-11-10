@@ -2,6 +2,12 @@
 
 **Estado:** propuesta + primera entrega Android (demo de interfaz). Nada de lo descrito como "propuesto" está validado todavía.
 
+## Qué demuestra y qué NO demuestra esta entrega
+- **Demuestra:** una interfaz de demostración **solo Android** (Kotlin + Jetpack Compose): su distribución, su adaptación a tamaños y escalas de texto, y las reglas del marcador, con pruebas unitarias y capturas simuladas.
+- **NO demuestra compatibilidad con Windows, macOS ni Chrome/PWA.** Jetpack Compose para Android no corre en esas plataformas tal cual: la interfaz de escritorio y web hay que construirla con otra tecnología (o portarla) y validarla. Nada de esa interfaz se ha ejecutado ni probado fuera de Android.
+- **NO incluye** cámaras, OCR/reconocimiento de pizarra, transmisión, grabación ni repeticiones: están marcadas como no disponibles en la propia interfaz.
+- La integración de esas funciones con los motores audiovisuales de cada plataforma se decide con las pruebas T1–T8 (`PRUEBAS-TECNICAS.md`, todas pendientes) y se trabaja en una entrega independiente (rama `claude/camara-remota-prueba-tecnica`, prueba técnica Android Cámara remota → Laptop Estudio).
+
 ## Plataformas objetivo
 Android (celular y tablet) · Windows · macOS · Web (Chrome y PWA, incluida evaluación en Chromebook).
 
