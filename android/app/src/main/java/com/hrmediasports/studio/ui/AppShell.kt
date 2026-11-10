@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hrmediasports.studio.camera.RemoteCameraApp
 import com.hrmediasports.studio.ui.components.DemoBanner
 import com.hrmediasports.studio.ui.components.HrBrandBar
 import com.hrmediasports.studio.ui.reader.ReaderApp
@@ -42,7 +43,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /** Qué hace este dispositivo: estudio (horizontal) o lector de pizarra (celular vertical). */
-enum class AppRole { Studio, Reader }
+enum class AppRole { Studio, Reader, RemoteCamera }
 
 class AppViewModel : ViewModel() {
     private val _role = MutableStateFlow<AppRole?>(null)
@@ -60,6 +61,7 @@ fun HrApp(appViewModel: AppViewModel = viewModel()) {
     DisposableEffect(role) {
         activity?.requestedOrientation = when (role) {
             AppRole.Studio -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            AppRole.RemoteCamera -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             AppRole.Reader -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
             null -> ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
         }
@@ -71,6 +73,7 @@ fun HrApp(appViewModel: AppViewModel = viewModel()) {
         null -> RoleScreen(onSelect = appViewModel::select)
         AppRole.Studio -> StudioApp()
         AppRole.Reader -> ReaderApp()
+        AppRole.RemoteCamera -> RemoteCameraApp()
     }
 }
 
@@ -80,7 +83,7 @@ fun RoleScreen(onSelect: (AppRole) -> Unit) {
         Modifier.fillMaxSize().background(HrColors.Background).windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
         HrBrandBar(title = null, compact = true)
-        DemoBanner(text = "Versión de demostración de la interfaz.")
+        DemoBanner(text = "Estudio y Lector son demostraciones de interfaz. Cámara remota es real pero aún en validación.")
         Column(
             Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -88,6 +91,7 @@ fun RoleScreen(onSelect: (AppRole) -> Unit) {
         ) {
             Text("¿Qué hará este dispositivo?", color = HrColors.TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
             RoleButton("ESTUDIO", "Pantalla horizontal · tablet o celular", { onSelect(AppRole.Studio) })
+            RoleButton("CÁMARA REMOTA", "Pantalla horizontal · envía video a un estudio en la red local", { onSelect(AppRole.RemoteCamera) })
             RoleButton("LECTOR DE PIZARRA", "Pantalla vertical · celular frente al marcador", { onSelect(AppRole.Reader) })
             Text(
                 "Con el botón Atrás de Android vuelves a esta pantalla.",

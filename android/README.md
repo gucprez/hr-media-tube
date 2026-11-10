@@ -4,6 +4,7 @@ Pantalla **Estudio** en Kotlin + Jetpack Compose. **Es un modo demostración**: 
 
 ## Modos
 Al abrir la app eliges el rol del dispositivo (el botón Atrás vuelve a esta pantalla):
+- **Cámara remota** (horizontal): **funcional, en validación** (no probada en un teléfono real). Escanea el QR del estudio de la laptop (`studio-server/README.md`), espera la aceptación y envía video por WebRTC a 720p/30 con codificación por hardware si el chip la ofrece. Pide permisos de cámara y micrófono **solo al usarlos**. Controles: lente (trasera/frontal), zoom, enfoque (tocar la vista previa), exposición y micrófono. Muestra conexión, calidad (según fps, pérdida, RTT y limitación del codificador) y un aviso **AL AIRE** cuando el estudio la usa en la salida. Si se corta la conexión, reintenta sola con su token y el estudio no duplica la fuente. También permite pegar el enlace de vinculación (útil en emuladores). La pantalla se mantiene encendida y la app debe quedar en primer plano. «Lente» significa trasera/frontal: no se seleccionan lentes físicas (gran angular, tele) de un mismo lado.
 - **Estudio** (horizontal): ver abajo.
 - **Lector de pizarra** (celular vertical): marco de cámara con las cinco zonas (Local, Tiempo, Visita, Cuarto, Posesión). **Ajustar zonas** permite mover (arrastrando) y redimensionar (− / +) la zona seleccionada, y **Guardar plantilla** la guarda en el dispositivo y se recupera al reabrir. Lo demás es demo: no hay cámara, reconocimiento ni conexión con el estudio. Los «datos detectados» son valores de ejemplo rotulados y **Iniciar envío** aparece como no disponible.
 
@@ -35,7 +36,8 @@ La APK de debug está firmada con la clave de depuración y sirve solo para prue
 
 ## Pruebas
 ```bash
-./gradlew testDebugUnitTest
+./gradlew testDebugUnitTest      # app (incluye el cliente de enlace contra el servidor real en la JVM)
+./gradlew :core-link:test :studio-server:test
 ```
 
 ## Estructura
@@ -45,6 +47,7 @@ La APK de debug está firmada con la clave de depuración y sirve solo para prue
 | `protocol` | Estado de enlace y reglas de antigüedad del protocolo de pizarra v1 ([especificación](../docs/protocolo-pizarra.md)) |
 | `engine` | Interfaces `MediaEngine` y `ScoreboardSource` + implementaciones demo |
 | `data` | Persistencia local (plantilla de zonas en SharedPreferences) |
+| `camera` | Rol Cámara remota: cliente del enlace, captura CameraX→WebRTC, escáner de QR, telemetría |
 | `ui` | Compose: tema, componentes, pantallas (`StudioViewModel`, `ReaderViewModel`, `AppViewModel`) |
 
 El logotipo está definido una sola vez (`HrLogo`) y se muestra solo desde la barra de marca común (`HrBrandBar`), por lo que es idéntico en todas las pantallas. Los controles táctiles miden al menos 48 dp (`HrDimens.MinTouch`).

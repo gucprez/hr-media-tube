@@ -93,5 +93,8 @@ Las capturas simuladas no las cubren:
 | UI-4 | Giro de 180° en horizontal y vertical (Lector) | El diseño se reacomoda sin perder el estado |
 | UI-5 | Teclado en pantalla en el diálogo de corrección | El campo «Tiempo» y los botones quedan accesibles |
 
+## Prueba técnica de esta rama
+Plan detallado de T1 con una cámara a 720p/30 (estabilidad, latencia y consumo): [`prueba-tecnica-camara-remota.md`](prueba-tecnica-camara-remota.md). Arquitectura para Windows, macOS y Chrome: [`ARQUITECTURA-ESCRITORIO-WEB.md`](ARQUITECTURA-ESCRITORIO-WEB.md).
+
 ## Siguiente etapa (independiente de esta entrega)
 La cámara remota y el estudio de laptop están en la rama `claude/camara-remota-prueba-tecnica` como **prueba técnica independiente**: un celular Android real en modo Cámara remota enviando video a una aplicación Estudio en una laptop real, sin LDPlayer. No forman parte del PR de la interfaz.
