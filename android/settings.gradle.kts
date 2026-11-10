@@ -15,3 +15,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "HRMediaSports"
 include(":app")
+include(":core-link")
+include(":studio-server")
