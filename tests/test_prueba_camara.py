@@ -1,6 +1,6 @@
 """Pruebas de las herramientas de análisis de la prueba Cámara remota → Laptop (con datos sintéticos)."""
 import csv
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -15,7 +15,7 @@ CAMPOS = ["hora_iso", "dispositivo", "nombre", "rx_ancho", "rx_alto", "rx_fps", 
 
 def filas(minutos=30, fps=30, ancho=1280, alto=720, hueco_en=None, congel_final=0, bat=(90, 80), temp=(30.0, 38.0),
           termico=0, hw="true", limitacion="none", max_ms=0, total_ms=0, visible="true", reconexion=None):
-    t0 = datetime(2026, 11, 10, 15, 0, 0, tzinfo=timezone.utc)
+    t0 = datetime(2026, 11, 10, 15, 0, 0, tzinfo=UTC)
     n = int(minutos * 60 / 2) + 1
     out, t = [], t0
     for i in range(n):

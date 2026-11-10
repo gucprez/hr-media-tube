@@ -132,7 +132,7 @@ def resumir(filas: list[dict], origen: str = "sin indicar") -> Resumen:
     tiempos = []
     for f in filas:
         try:
-            tiempos.append(datetime.fromisoformat(f["hora_iso"].replace("Z", "+00:00")))
+            tiempos.append(datetime.fromisoformat(f["hora_iso"]))
         except (KeyError, ValueError):
             continue
     if len(tiempos) >= 2:
