@@ -18,6 +18,9 @@ Leyenda:
 | Arrastre táctil de zonas (Lector de pizarra) | ⬜ | ⬜ | — | — | — | — |
 | Reglas y estado del partido (`MatchState`) | 🔧 | 🔧 | ⬜ | ⬜ | ⬜ | ⬜ |
 | Plantilla de zonas del lector (ajustar y guardar localmente) | 🔧 | 🔧 | ⬜ | ⬜ | ⬜ | ⬜ |
+| Contenido para descansos: biblioteca, listas, plantillas, secuencia y reglas de audio (lógica) | 🔧 | 🔧 | ⬜ | ⬜ | ⬜ | ⬜ |
+| Contenido para descansos: importar archivos, validar decodificadores, miniaturas, guardado | ⬜ (compila; sin ejecutar en dispositivo) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| Contenido para descansos: reproducción real de video y audio en la salida | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | Recepción de datos de pizarra (protocolo v1) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | Envío de datos de pizarra | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | Reconocimiento de pizarra (cámara) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |

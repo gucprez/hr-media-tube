@@ -9,13 +9,19 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.core.app.ActivityScenario
+import com.hrmediasports.studio.content.Compat
+import com.hrmediasports.studio.content.MediaItem
+import com.hrmediasports.studio.content.MediaType
+import com.hrmediasports.studio.content.OverlayKind
+import com.hrmediasports.studio.content.Template
 import com.hrmediasports.studio.domain.MatchState
+import com.hrmediasports.studio.ui.ContentTab
 import com.hrmediasports.studio.engine.DemoMediaEngine
 import com.hrmediasports.studio.engine.ScoreboardSnapshot
 import com.hrmediasports.studio.engine.ScoreboardSource
 import com.hrmediasports.studio.protocol.LinkState
 import com.hrmediasports.studio.protocol.ReadingOrigin
-import com.hrmediasports.studio.ui.SOURCE_BREAK
+import com.hrmediasports.studio.ui.SOURCE_RESULT
 import com.hrmediasports.studio.ui.SOURCE_CAMERA_2
 import com.hrmediasports.studio.ui.StudioPanel
 import com.hrmediasports.studio.ui.StudioApp
@@ -122,7 +128,7 @@ class ScreenshotTest {
     }
 
     private fun onAirScenario(): StudioViewModel.() -> Unit = {
-        selectSource(SOURCE_BREAK); takeToAir(); selectSource(SOURCE_CAMERA_2)
+        selectSource(SOURCE_RESULT); takeToAir(); selectSource(SOURCE_CAMERA_2)
     }
 
     // --- Tamaños pedidos, en dp (1 dp = 1 px a 160 dpi) ---
@@ -178,4 +184,40 @@ class ScreenshotTest {
     @Test fun small640Big15() = shot("30-640x360dp-texto-1.5", 640, 360, 240, 1.5f, vm(setup = onAirScenario()))
     @Test fun wide1280Big20() = shot("31-1280x720dp-texto-2.0", 1280, 720, 160, 2.0f, vm(setup = onAirScenario()))
     @Test fun small640BigNoOnAir() = shot("32-640x360dp-texto-2.0-sin-salida", 640, 360, 240, 2.0f)
+
+    // --- Módulo de contenidos para descansos ---
+    private fun img(id: String, compat: Compat = Compat.Ok) = MediaItem(id, "content://demo/$id", "$id.png", MediaType.Image, width = 1920, height = 1080, compat = compat)
+    private fun vid(id: String, compat: Compat = Compat.Ok, note: String? = null) =
+        MediaItem(id, "content://demo/$id", "$id.mp4", MediaType.Video, durationMs = 15_000, width = 1920, height = 1080, compat = compat, compatNote = note, hardwareDecoder = if (compat == Compat.Ok) true else null)
+
+    /** Biblioteca y dos listas de ejemplo. Devuelve el id de «Tiempo muerto». */
+    private fun StudioViewModel.seed(): String {
+        importMedia(listOf(img("patrocinador-1"), vid("anuncio-tienda"), img("patrocinador-2"), vid("formato-raro", Compat.Unsupported, "sin decodificador para video/x-desconocido")))
+        consumeMessage()
+        createPlaylist(Template.HalfTime)
+        val half = state.value.editingPlaylistId!!
+        addEntry(half, "patrocinador-1"); addEntry(half, "anuncio-tienda"); addEntry(half, "formato-raro")
+        createPlaylist(Template.Timeout)
+        val timeout = state.value.editingPlaylistId!!
+        addEntry(timeout, "patrocinador-1"); addEntry(timeout, "anuncio-tienda"); addEntry(timeout, "patrocinador-2")
+        toggleEntryScoreboard(timeout, state.value.content.playlist(timeout)!!.entries[0].entryId)
+        editPlaylist(null)
+        selectSource(SOURCE_CAMERA_2); takeToAir()
+        return timeout
+    }
+
+    @Test fun contentLists() = shot("40-960x540dp-descansos-listas", 960, 540, viewModel = vm(setup = { seed(); openContentPanel() }))
+    @Test fun contentListsLow() = shot("41-640x360dp-descansos-listas", 640, 360, 240, viewModel = vm(setup = { seed(); openContentPanel() }))
+    @Test fun contentEditor() = shot("42-960x540dp-descansos-editor", 960, 540, manualClock = true, viewModel = vm(setup = { val id = seed(); openContentPanel(); editPlaylist(id) }))
+    @Test fun contentLibrary() = shot("43-960x540dp-descansos-biblioteca", 960, 540, viewModel = vm(setup = { seed(); openContentPanel(); setContentTab(ContentTab.Library) }))
+    @Test fun contentAudio() = shot("44-960x540dp-descansos-audio", 960, 540, viewModel = vm(setup = { seed(); openContentPanel(); setContentTab(ContentTab.Audio) }))
+    @Test fun contentSponsors() = shot("45-960x540dp-descansos-patrocinadores", 960, 540, viewModel = vm(setup = { seed(); addOverlay("patrocinador-1", OverlayKind.Logo); openContentPanel(); setContentTab(ContentTab.Sponsors) }))
+    @Test fun breakPrepared() = shot("46-960x540dp-descanso-preparado", 960, 540, viewModel = vm(setup = { preparePlaylist(seed()); consumeMessage() }))
+    @Test fun breakOnAirWide() = shot("47-960x540dp-descanso-al-aire", 960, 540, viewModel = vm(setup = { preparePlaylist(seed()); consumeMessage(); takeToAir() }))
+    @Test fun breakOnAirLow() = shot("48-640x360dp-descanso-al-aire", 640, 360, 240, viewModel = vm(setup = { preparePlaylist(seed()); consumeMessage(); takeToAir() }))
+    @Test fun breakOnAirMid() = shot("49-853x480dp-descanso-al-aire", 853, 480, 240, viewModel = vm(setup = { preparePlaylist(seed()); consumeMessage(); takeToAir() }))
+    @Test fun breakOnAirBig() = shot("50-640x360dp-descanso-al-aire-texto-2.0", 640, 360, 240, 2.0f, vm(setup = { preparePlaylist(seed()); consumeMessage(); takeToAir() }))
+    @Test fun breakFallback() = shot("51-960x540dp-descanso-placa-respaldo", 960, 540, viewModel = vm(setup = { preparePlaylist(seed()); consumeMessage(); takeToAir(); breakItemFailed("error de lectura"); consumeMessage() }))
+    @Test fun breakHold() = shot("52-960x540dp-descanso-placa-espera", 960, 540, viewModel = vm(setup = { preparePlaylist(seed()); consumeMessage(); takeToAir(); breakStop() }))
+    @Test fun breakOnAir1280() = shot("53-1280x720dp-descanso-al-aire", 1280, 720, viewModel = vm(setup = { preparePlaylist(seed()); consumeMessage(); takeToAir() }))
 }

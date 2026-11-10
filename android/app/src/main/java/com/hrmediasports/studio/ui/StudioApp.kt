@@ -21,7 +21,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.hrmediasports.studio.content.FileContentStore
+import com.hrmediasports.studio.content.MediaInspector
+import com.hrmediasports.studio.ui.content.ContentActions
+import com.hrmediasports.studio.ui.content.ContentPanel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,9 +59,61 @@ import com.hrmediasports.studio.ui.theme.HrColors
 import com.hrmediasports.studio.ui.theme.HrDimens
 
 @Composable
-fun StudioApp(viewModel: StudioViewModel = viewModel()) {
+fun StudioApp(viewModel: StudioViewModel? = null) {
+    val context = LocalContext.current.applicationContext
+    // En la app real la biblioteca y las listas se guardan en disco; en pruebas se inyecta otro ViewModel.
+    val vm: StudioViewModel = viewModel ?: viewModel(
+        factory = viewModelFactory { initializer { StudioViewModel(contentStore = FileContentStore(context)) } },
+    )
+    StudioApp(vm, context)
+}
+
+@Composable
+private fun StudioApp(viewModel: StudioViewModel, context: android.content.Context) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    // Selector del sistema: solo archivos locales elegidos por el operador (imágenes y videos).
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) {
+            scope.launch {
+                val items = withContext(Dispatchers.IO) {
+                    val inspector = MediaInspector(context)
+                    uris.map { uri -> inspector.keepPermission(uri); inspector.inspect(uri) }   // valida ANTES de usarlos
+                }
+                viewModel.importMedia(items)
+            }
+        }
+    }
+    val content = ContentActions(
+        onClose = viewModel::closeContentPanel,
+        onTab = viewModel::setContentTab,
+        onImport = { picker.launch(arrayOf("image/*", "video/*")) },
+        onRemoveMedia = viewModel::removeMedia,
+        onCreate = viewModel::createPlaylist,
+        onEdit = viewModel::editPlaylist,
+        onRemovePlaylist = viewModel::removePlaylist,
+        onRename = viewModel::renamePlaylist,
+        onAddEntry = viewModel::addEntry,
+        onRemoveEntry = viewModel::removeEntry,
+        onMoveEntry = viewModel::moveEntry,
+        onToggleScoreboard = viewModel::toggleEntryScoreboard,
+        onImageSeconds = viewModel::setImageSeconds,
+        onLoop = viewModel::setLoop,
+        onAutoReturn = viewModel::setAutoReturn,
+        onSlateText = viewModel::setSlateText,
+        onPrepare = viewModel::preparePlaylist,
+        onAddOverlay = viewModel::addOverlay,
+        onToggleOverlay = viewModel::toggleOverlay,
+        onRemoveOverlay = viewModel::removeOverlay,
+        onAudioPolicy = viewModel::setAudioPolicy,
+        onReturnSource = viewModel::setReturnSource,
+        onBackToMatch = viewModel::backToMatch,
+        onPause = viewModel::breakTogglePause,
+        onNext = viewModel::breakNext,
+        onStop = viewModel::breakStop,
+    )
     StudioAppContent(
+        content = content,
         state = state,
         actions = StudioActions(
             onSelectSource = viewModel::selectSource,
@@ -83,6 +148,7 @@ fun StudioAppContent(
     onApplyCorrection: () -> Unit,
     onDismissCorrection: () -> Unit,
     onMessageShown: () -> Unit,
+    content: ContentActions = ContentActions(),
 ) {
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(state.message) {
@@ -113,7 +179,7 @@ fun StudioAppContent(
                 Row(Modifier.weight(1f)) {
                     NavRail(state.destination, onNavigate, compact = !expanded || shortWindow, iconsOnly = bigText)
                     when (state.destination) {
-                        Destination.Studio -> StudioScreen(state, actions, Modifier.weight(1f))
+                        Destination.Studio -> StudioScreen(state, actions, Modifier.weight(1f), content)
                         Destination.Cameras -> CamerasScreen(state, Modifier.weight(1f))
                         Destination.Graphics -> GraphicsScreen(
                             state,
@@ -137,6 +203,8 @@ fun StudioAppContent(
             }
         }
     }
+
+    if (state.contentPanelOpen) ContentPanel(state, content)
 
     state.correctionDraft?.let { draft ->
         ManualCorrectionDialog(draft, onDraftChange, onApplyCorrection, onDismissCorrection)

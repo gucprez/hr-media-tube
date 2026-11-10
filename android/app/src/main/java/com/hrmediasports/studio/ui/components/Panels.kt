@@ -55,6 +55,7 @@ import com.hrmediasports.studio.protocol.LinkState
 import com.hrmediasports.studio.protocol.ReadingOrigin
 import com.hrmediasports.studio.protocol.formatAge
 import com.hrmediasports.studio.protocol.isStale
+import com.hrmediasports.studio.ui.BreakView
 import com.hrmediasports.studio.ui.ReplayClip
 import com.hrmediasports.studio.ui.ScoreboardUiState
 import com.hrmediasports.studio.ui.VideoSource
@@ -107,6 +108,7 @@ fun PreviewPanel(
     alreadyOnAir: Boolean,
     onTakeToAir: () -> Unit,
     modifier: Modifier = Modifier,
+    breakView: BreakView? = null,
 ) {
     PanelFrame(
         title = "VISTA PREVIA",
@@ -116,7 +118,7 @@ fun PreviewPanel(
         badge = { if (source != null) StatusChip(source.label.uppercase(), HrColors.Orange) },
     ) {
         FitVideo(Modifier.weight(1f).fillMaxWidth()) {
-            if (source != null) SourceView(source, match, Modifier.fillMaxSize(), dataNote)
+            if (source != null) SourceView(source, match, Modifier.fillMaxSize(), dataNote, breakView)
             else EmptyVideo("Elige una fuente para prepararla")
         }
         TakeToAirButton(canTakeToAir, alreadyOnAir, source?.label, onTakeToAir)
@@ -125,7 +127,7 @@ fun PreviewPanel(
 
 /** Salida (pantallas anchas): fuente al aire, borde rojo. */
 @Composable
-fun ProgramPanel(source: VideoSource?, match: MatchState?, dataNote: String?, modifier: Modifier = Modifier) {
+fun ProgramPanel(source: VideoSource?, match: MatchState?, dataNote: String?, modifier: Modifier = Modifier, breakView: BreakView? = null) {
     PanelFrame(
         title = "AL AIRE",
         modifier = modifier,
@@ -137,7 +139,7 @@ fun ProgramPanel(source: VideoSource?, match: MatchState?, dataNote: String?, mo
         },
     ) {
         FitVideo(Modifier.weight(1f).fillMaxWidth()) {
-            if (source != null) SourceView(source, match, Modifier.fillMaxSize(), dataNote)
+            if (source != null) SourceView(source, match, Modifier.fillMaxSize(), dataNote, breakView)
             else EmptyVideo("Nada al aire. Prepara una fuente y pulsa «Poner al aire».")
         }
         Box(Modifier.fillMaxWidth().heightIn(min = 24.dp), contentAlignment = Alignment.CenterStart) {

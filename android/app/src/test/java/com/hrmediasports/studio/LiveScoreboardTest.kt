@@ -8,7 +8,7 @@ import com.hrmediasports.studio.protocol.LinkState
 import com.hrmediasports.studio.protocol.ReadingOrigin
 import com.hrmediasports.studio.protocol.isStale
 import com.hrmediasports.studio.ui.MonitorView
-import com.hrmediasports.studio.ui.SOURCE_BREAK
+import com.hrmediasports.studio.ui.SOURCE_RESULT
 import com.hrmediasports.studio.ui.StudioPanel
 import com.hrmediasports.studio.ui.StudioViewModel
 import com.hrmediasports.studio.ui.dataLabel
@@ -142,7 +142,7 @@ class LiveScoreboardTest {
         assertEquals(MonitorView.Program, vm.state.value.monitorView)
         vm.setMonitorView(MonitorView.Preview)
         assertEquals(MonitorView.Preview, vm.state.value.monitorView)
-        vm.selectSource(SOURCE_BREAK)
+        vm.selectSource(SOURCE_RESULT)
         vm.takeToAir()                                      // al poner al aire se vuelve a ver la salida
         assertEquals(MonitorView.Program, vm.state.value.monitorView)
 

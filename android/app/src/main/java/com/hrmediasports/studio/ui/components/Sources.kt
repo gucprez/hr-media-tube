@@ -46,7 +46,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hrmediasports.studio.domain.MatchState
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import com.hrmediasports.studio.ui.BreakView
 import com.hrmediasports.studio.ui.SourceKind
+import com.hrmediasports.studio.ui.content.rememberThumbnail
 import com.hrmediasports.studio.ui.VideoSource
 import com.hrmediasports.studio.ui.theme.HrColors
 import com.hrmediasports.studio.ui.theme.HrDimens
@@ -84,6 +88,7 @@ fun SourceView(
     match: MatchState?,
     modifier: Modifier = Modifier,
     dataNote: String? = null,
+    breakView: BreakView? = null,
 ) {
     val d = LocalDensity.current
     CompositionLocalProvider(LocalDensity provides Density(d.density, fontScale = 1f)) {
@@ -108,23 +113,48 @@ fun SourceView(
                 }
 
                 SourceKind.Break -> {
-                    Canvas(Modifier.fillMaxSize()) {
-                        val stripe = size.width * 0.12f
-                        for (i in 0..5) {
-                            val x = size.width * (0.45f + i * 0.14f)
-                            val path = Path().apply {
-                                moveTo(x, 0f)
-                                lineTo(x + stripe, 0f)
-                                lineTo(x + stripe - size.height * 0.5f, size.height)
-                                lineTo(x - size.height * 0.5f, size.height)
-                                close()
+                    val thumb = breakView?.uri?.let { rememberThumbnail(it, breakView.isVideo) }
+                    if (thumb != null) {
+                        // Miniatura del archivo (imagen, o primer cuadro del video). No es reproducción.
+                        Image(thumb, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+                    } else {
+                        Canvas(Modifier.fillMaxSize()) {
+                            val stripe = size.width * 0.12f
+                            for (i in 0..5) {
+                                val x = size.width * (0.45f + i * 0.14f)
+                                val path = Path().apply {
+                                    moveTo(x, 0f)
+                                    lineTo(x + stripe, 0f)
+                                    lineTo(x + stripe - size.height * 0.5f, size.height)
+                                    lineTo(x - size.height * 0.5f, size.height)
+                                    close()
+                                }
+                                drawPath(path, HrColors.Orange.copy(alpha = if (i % 2 == 0) 0.85f else 0.35f), style = Fill)
                             }
-                            drawPath(path, HrColors.Orange.copy(alpha = if (i % 2 == 0) 0.85f else 0.35f), style = Fill)
                         }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Filled.SportsBasketball, null, tint = HrColors.Orange, modifier = Modifier.size(icon * 1.1f))
-                        Text("DESCANSO", color = Color.White, fontSize = title, fontWeight = FontWeight.Black)
+                    if (breakView == null) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Filled.SportsBasketball, null, tint = HrColors.Orange, modifier = Modifier.size(icon * 1.1f))
+                            Text("DESCANSO", color = Color.White, fontSize = title, fontWeight = FontWeight.Black)
+                        }
+                    } else {
+                        Column(
+                            Modifier.fillMaxSize().background(Color.Black.copy(alpha = if (thumb != null) 0.35f else 0f)).padding((6f * k).dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            // Textos cortos y de una línea: caben incluso en el monitor más pequeño.
+                            Text(
+                                if (breakView.scoreboard) "MARCADOR ${match?.let { "${it.homePoints}–${it.awayPoints}" } ?: "—"}" else " ",
+                                color = HrColors.Amber, fontSize = body, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
+                            )
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(breakView.headline, color = Color.White, fontSize = title, fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
+                                if (k >= 0.7f) Text(breakView.detail, color = Color.White, fontSize = body, textAlign = TextAlign.Center)
+                            }
+                            Text("DEMO · NO SE EMITE", color = HrColors.Amber, fontSize = body, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                        }
                     }
                 }
 
@@ -164,10 +194,11 @@ fun MonitorBox(
     borderColor: Color,
     emptyText: String,
     modifier: Modifier = Modifier,
+    breakView: BreakView? = null,
 ) {
     FitVideo(modifier, border = BorderStroke(if (source != null) 3.dp else 1.dp, if (source != null) borderColor else HrColors.Outline)) {
         if (source != null) {
-            SourceView(source, match, Modifier.fillMaxSize(), dataNote)
+            SourceView(source, match, Modifier.fillMaxSize(), dataNote, breakView)
         } else {
             EmptyVideo(emptyText)
         }

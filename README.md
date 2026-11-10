@@ -20,3 +20,4 @@ App de producción de básquetbol en desarrollo, de código abierto. **Hoy solo 
 - Procedimiento de pruebas técnicas: [`docs/PRUEBAS-TECNICAS.md`](docs/PRUEBAS-TECNICAS.md)
 - Licencia: Apache-2.0 ([`LICENSE`](LICENSE))
 - App Android (demo de interfaz) e instrucciones de APK: [`android/README.md`](android/README.md)
+- Contenido para descansos (entrega 1: interfaz, biblioteca y listas; sin reproducción real): [`docs/CONTENIDO-DESCANSOS.md`](docs/CONTENIDO-DESCANSOS.md)

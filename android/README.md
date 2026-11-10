@@ -15,6 +15,9 @@ Al abrir la app eliges el rol del dispositivo (el botón Atrás vuelve a esta pa
 - Grabar, Transmitir y «Guardar últimos 20 s» aparecen como **no disponibles** y explican por qué al pulsarlos.
 - Cámaras: placeholders rotulados «Sin video». «Descanso» y «Resultado» son gráficos dibujados por la app.
 
+## Contenido para descansos (entrega 1)
+El botón **DESCANSO** abre un panel con biblioteca de imágenes y videos locales, listas (plantillas Medio tiempo, Tiempo muerto, Volvemos en breve), patrocinadores y audio. Preparar una lista la pone en Vista previa; **Poner al aire** la inicia desde el comienzo; **Volver al partido** regresa a la cámara y restaura el audio. **No hay reproducción real todavía**: la secuencia es una demostración y nada sale en la emisión. Detalle: [`../docs/CONTENIDO-DESCANSOS.md`](../docs/CONTENIDO-DESCANSOS.md).
+
 ## Requisitos
 - JDK 17 o superior (probado con 21)
 - Android SDK con `platforms;android-35` y `build-tools` (o Android Studio Ladybug o más reciente)
@@ -45,6 +48,7 @@ La APK de debug está firmada con la clave de depuración y sirve solo para prue
 | `protocol` | Estado de enlace y reglas de antigüedad del protocolo de pizarra v1 ([especificación](../docs/protocolo-pizarra.md)) |
 | `engine` | Interfaces `MediaEngine` y `ScoreboardSource` + implementaciones demo |
 | `data` | Persistencia local (plantilla de zonas en SharedPreferences) |
+| `content` | Contenido para descansos: biblioteca, listas, secuenciador y reglas de audio (lógica pura) + lectura de archivos Android |
 | `ui` | Compose: tema, componentes, pantallas (`StudioViewModel`, `ReaderViewModel`, `AppViewModel`) |
 
 El logotipo está definido una sola vez (`HrLogo`) y se muestra solo desde la barra de marca común (`HrBrandBar`), por lo que es idéntico en todas las pantallas. Los controles táctiles miden al menos 48 dp (`HrDimens.MinTouch`).

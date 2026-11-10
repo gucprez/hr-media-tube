@@ -16,6 +16,7 @@ Revisión hecha al incorporar cada dependencia. Fuente: metadatos de licencia pu
 | Robolectric (solo pruebas, capturas) | 4.14.1 | MIT |
 | androidx.compose.ui:ui-test-junit4 / ui-test-manifest (solo pruebas) | BOM 2024.12.01 | Apache‑2.0 |
 | Gradle Wrapper | 8.10.2 | Apache‑2.0 |
+| kotlinx-serialization-json (guardado de biblioteca y listas) | 1.7.3 | Apache‑2.0 (según su POM) |
 
 Notas:
 - Los iconos de `material-icons-extended` son de Material Design (Apache‑2.0).

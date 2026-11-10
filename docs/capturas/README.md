@@ -29,6 +29,20 @@ Criterios: Al aire visible · controles ≥ 48 dp · sin textos partidos, cortad
 | `29-853x480dp-texto-2.0`, `30-640x360dp-texto-1.5`, `31-1280x720dp-texto-2.0`, `32-…-sin-salida` | Más combinaciones de tamaño y escala | OK |
 | `17`/`18-lector-360x780dp[-texto-1.3]` | Lector de pizarra vertical | OK |
 
+## Módulo de contenido para descansos (capturas 40–53)
+| Archivo | Qué muestra | Resultado de la revisión |
+|---------|-------------|--------------------------|
+| `40`/`41-…-descansos-listas` | Panel de contenidos, pestaña Listas (ancho y bajo) | OK |
+| `42-…-descansos-editor` | Editor de una lista: reordenar, quitar, marcador por elemento | OK |
+| `43`…`45` | Biblioteca, Audio y Patrocinadores | OK |
+| `46-…-descanso-preparado` | Lista preparada en Vista previa; la cámara sigue al aire | OK |
+| `47`, `49`, `53-…-descanso-al-aire` | Descanso al aire con la barra de control y «Volver al partido» (960×540, 853×480, 1280×720) | OK. *Corregido en esta revisión: la barra aplastaba los monitores* |
+| `48-640x360dp-descanso-al-aire` | Lo mismo en celular horizontal | OK. *Corregido: «Volver al partido» quedaba fuera de pantalla* |
+| `50-…-texto-2.0` | Descanso al aire con texto al 200 % | OK con límites: se muestra solo Al aire (sin pestañas) y la información se reduce a una línea |
+| `51`, `52` | Placa de respaldo (archivo que falla) y placa de espera | OK |
+
+Las miniaturas de esas capturas son marcadores: los archivos de ejemplo no existen. En el teléfono se muestran la imagen o el primer cuadro del video.
+
 ## Limitaciones de esta revisión
 - Robolectric no reproduce multitáctil, barras del sistema, teclado en pantalla ni recorte de pantalla.
 - El **arrastre táctil** de zonas no se ve en una captura estática: pendiente en dispositivo real (UI-1).

@@ -4,7 +4,7 @@ import com.hrmediasports.studio.engine.DemoMediaEngine
 import com.hrmediasports.studio.engine.DemoScoreboardSource
 import com.hrmediasports.studio.protocol.ReadingOrigin
 import com.hrmediasports.studio.ui.RecordingState
-import com.hrmediasports.studio.ui.SOURCE_BREAK
+import com.hrmediasports.studio.ui.SOURCE_RESULT
 import com.hrmediasports.studio.ui.SOURCE_CAMERA_1
 import com.hrmediasports.studio.ui.SOURCE_CAMERA_2
 import com.hrmediasports.studio.ui.StreamingState
@@ -40,14 +40,14 @@ class StudioViewModelTest {
 
     @Test fun takeToAirSendsPreviewToProgram() {
         val vm = vm()
-        vm.selectSource(SOURCE_BREAK)
+        vm.selectSource(SOURCE_RESULT)
         assertTrue(vm.state.value.canTakeToAir)
         vm.takeToAir()
-        assertEquals(SOURCE_BREAK, vm.state.value.programSourceId)
+        assertEquals(SOURCE_RESULT, vm.state.value.programSourceId)
         assertFalse(vm.state.value.canTakeToAir)
         // Seleccionar otra no cambia lo que está al aire.
         vm.selectSource(SOURCE_CAMERA_1)
-        assertEquals(SOURCE_BREAK, vm.state.value.programSourceId)
+        assertEquals(SOURCE_RESULT, vm.state.value.programSourceId)
     }
 
     @Test fun unknownSourceIsIgnored() {

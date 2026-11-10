@@ -46,7 +46,11 @@ import com.hrmediasports.studio.ui.components.ScoreboardSummaryButton
 import com.hrmediasports.studio.ui.components.ScrollFade
 import com.hrmediasports.studio.ui.components.SourceTile
 import com.hrmediasports.studio.ui.components.TakeToAirButton
+import com.hrmediasports.studio.ui.content.BreakBar
+import com.hrmediasports.studio.ui.content.ContentActions
 import com.hrmediasports.studio.ui.dataLabel
+import com.hrmediasports.studio.ui.previewBreakView
+import com.hrmediasports.studio.ui.programBreakView
 import com.hrmediasports.studio.ui.theme.HrColors
 import com.hrmediasports.studio.ui.theme.HrDimens
 
@@ -75,12 +79,12 @@ private val BOTH_MONITORS_MIN_WIDTH = 440.dp
  * Los monitores nunca están dentro de un contenedor con desplazamiento.
  */
 @Composable
-fun StudioScreen(state: StudioUiState, actions: StudioActions, modifier: Modifier = Modifier) {
+fun StudioScreen(state: StudioUiState, actions: StudioActions, modifier: Modifier = Modifier, content: ContentActions = ContentActions()) {
     BoxWithConstraints(modifier.fillMaxSize()) {
         // Los umbrales crecen con la escala de texto: con letra grande hace falta más espacio real.
         val fs = LocalDensity.current.fontScale
         val wide = maxWidth >= 720.dp * fs && maxHeight >= 380.dp * fs
-        if (wide) WideLayout(state, actions, maxWidth) else LowLayout(state, actions, maxWidth, maxHeight, fs)
+        if (wide) WideLayout(state, actions, content, maxWidth, maxHeight) else LowLayout(state, actions, content, maxWidth, maxHeight, fs)
     }
 
     when (state.openPanel) {
@@ -95,7 +99,7 @@ fun StudioScreen(state: StudioUiState, actions: StudioActions, modifier: Modifie
 }
 
 @Composable
-private fun WideLayout(state: StudioUiState, actions: StudioActions, width: Dp) {
+private fun WideLayout(state: StudioUiState, actions: StudioActions, content: ContentActions, width: Dp, height: Dp) {
     val match = state.scoreboard.match
     val note = state.scoreboard.dataLabel()
     val scoreboardWidth = (width * 0.28f).coerceIn(236.dp, 320.dp)
@@ -110,18 +114,24 @@ private fun WideLayout(state: StudioUiState, actions: StudioActions, width: Dp) 
                     alreadyOnAir = state.previewSourceId != null && state.previewSourceId == state.programSourceId,
                     onTakeToAir = actions.onTakeToAir,
                     modifier = Modifier.weight(1f).fillMaxHeight(),
+                    breakView = state.previewBreakView(),
                 )
-                ProgramPanel(state.programSource, match, note, Modifier.weight(1.3f).fillMaxHeight())
+                ProgramPanel(state.programSource, match, note, Modifier.weight(1.3f).fillMaxHeight(), state.programBreakView())
             }
+            if (state.breakOnAir) BreakBar(state, content)
             // Con la bandeja abierta, su lista ocupa el lugar de las fuentes: los monitores no se achican.
-            if (!state.replaysTrayOpen) SourcesRow(state, actions, dense = false)
-            ReplaysTray(
-                clips = state.replays,
-                bufferAvailable = state.replayBufferAvailable,
-                open = state.replaysTrayOpen,
-                onToggle = actions.onToggleReplaysTray,
-                onSaveLast20 = actions.onSaveReplay,
-            )
+            if (!state.replaysTrayOpen || (state.breakOnAir && height < 560.dp)) SourcesRow(state, actions, dense = false)
+            // En ventanas poco altas, mientras hay un descanso al aire la bandeja de repeticiones cede su lugar
+            // a la barra del descanso: así los monitores (y Al aire) siguen visibles.
+            if (!(state.breakOnAir && height < 560.dp)) {
+                ReplaysTray(
+                    clips = state.replays,
+                    bufferAvailable = state.replayBufferAvailable,
+                    open = state.replaysTrayOpen,
+                    onToggle = actions.onToggleReplaysTray,
+                    onSaveLast20 = actions.onSaveReplay,
+                )
+            }
         }
         ScoreboardPanel(
             state.scoreboard,
@@ -134,7 +144,7 @@ private fun WideLayout(state: StudioUiState, actions: StudioActions, width: Dp) 
 }
 
 @Composable
-private fun LowLayout(state: StudioUiState, actions: StudioActions, width: Dp, height: Dp, fontScale: Float) {
+private fun LowLayout(state: StudioUiState, actions: StudioActions, content: ContentActions, width: Dp, height: Dp, fontScale: Float) {
     val match = state.scoreboard.match
     val note = state.scoreboard.dataLabel()
     // Con letra muy grande las fuentes pasan a una columna: así el lateral no devora el ancho del monitor.
@@ -153,24 +163,30 @@ private fun LowLayout(state: StudioUiState, actions: StudioActions, width: Dp, h
 
     Row(Modifier.fillMaxSize().padding(6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            MonitorHeader(showBoth, state, actions.onSetMonitorView)
+            // Descanso al aire con letra muy grande: se quitan las pestañas y se muestra solo Al aire, que es lo prioritario.
+            val onlyProgram = state.breakOnAir && fontScale > 1.3f && !showBoth
+            if (!onlyProgram) MonitorHeader(showBoth, state, actions.onSetMonitorView)
             if (showBoth) {
                 Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     PreviewMonitor(state, match, note, Modifier.weight(1f).fillMaxHeight())
                     ProgramMonitor(state, match, note, Modifier.weight(1f).fillMaxHeight())
                 }
-            } else if (state.monitorView == MonitorView.Preview) {
+            } else if (state.monitorView == MonitorView.Preview && !onlyProgram) {
                 PreviewMonitor(state, match, note, Modifier.fillMaxWidth().weight(1f))
             } else {
                 ProgramMonitor(state, match, note, Modifier.fillMaxWidth().weight(1f))
             }
             if (roomy) SourcesRow(state, actions, dense = true)
-            TakeToAirButton(
-                canTakeToAir = state.canTakeToAir,
-                alreadyOnAir = state.previewSourceId != null && state.previewSourceId == state.programSourceId,
-                previewLabel = state.previewSource?.label,
-                onClick = actions.onTakeToAir,
-            )
+            if (state.breakOnAir) BreakBar(state, content)
+            // Con un descanso al aire y nada nuevo preparado, «Volver al partido» ocupa el lugar de «Poner al aire».
+            if (!state.breakOnAir || state.canTakeToAir) {
+                TakeToAirButton(
+                    canTakeToAir = state.canTakeToAir,
+                    alreadyOnAir = state.previewSourceId != null && state.previewSourceId == state.programSourceId,
+                    previewLabel = state.previewSource?.label,
+                    onClick = actions.onTakeToAir,
+                )
+            }
         }
         val sideScroll = rememberScrollState()
         ScrollFade(sideScroll, HrColors.Background, Modifier.width(sideWidth).fillMaxHeight()) {
@@ -196,12 +212,12 @@ private fun LowLayout(state: StudioUiState, actions: StudioActions, width: Dp, h
 
 @Composable
 private fun PreviewMonitor(state: StudioUiState, match: com.hrmediasports.studio.domain.MatchState?, note: String?, modifier: Modifier) {
-    MonitorBox(state.previewSource, match, note, HrColors.Orange, "Elige una fuente para prepararla", modifier)
+    MonitorBox(state.previewSource, match, note, HrColors.Orange, "Elige una fuente para prepararla", modifier, state.previewBreakView())
 }
 
 @Composable
 private fun ProgramMonitor(state: StudioUiState, match: com.hrmediasports.studio.domain.MatchState?, note: String?, modifier: Modifier) {
-    MonitorBox(state.programSource, match, note, HrColors.OnAirRed, "Nada al aire", modifier)
+    MonitorBox(state.programSource, match, note, HrColors.OnAirRed, "Nada al aire", modifier, state.programBreakView())
 }
 
 /**
