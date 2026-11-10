@@ -43,6 +43,7 @@ import com.hrmediasports.studio.ui.components.ReplaysPanelContent
 import com.hrmediasports.studio.ui.components.ReplaysTray
 import com.hrmediasports.studio.ui.components.ScoreboardPanel
 import com.hrmediasports.studio.ui.components.ScoreboardSummaryButton
+import com.hrmediasports.studio.ui.components.ScrollFade
 import com.hrmediasports.studio.ui.components.SourceTile
 import com.hrmediasports.studio.ui.components.TakeToAirButton
 import com.hrmediasports.studio.ui.dataLabel
@@ -79,15 +80,15 @@ fun StudioScreen(state: StudioUiState, actions: StudioActions, modifier: Modifie
         // Los umbrales crecen con la escala de texto: con letra grande hace falta más espacio real.
         val fs = LocalDensity.current.fontScale
         val wide = maxWidth >= 720.dp * fs && maxHeight >= 380.dp * fs
-        if (wide) WideLayout(state, actions, maxWidth) else LowLayout(state, actions, maxWidth, fs)
+        if (wide) WideLayout(state, actions, maxWidth) else LowLayout(state, actions, maxWidth, maxHeight, fs)
     }
 
     when (state.openPanel) {
         StudioPanel.Replays -> PanelDialog("REPETICIONES", actions.onClosePanel) {
             ReplaysPanelContent(state.replays, state.replayBufferAvailable, actions.onSaveReplay)
         }
-        StudioPanel.Scoreboard -> PanelDialog("MARCADOR", actions.onClosePanel) {
-            ScoreboardPanel(state.scoreboard, actions.onManualCorrection, actions.onDiscardCorrection, Modifier.fillMaxWidth())
+        StudioPanel.Scoreboard -> PanelDialog(null, actions.onClosePanel) {
+            ScoreboardPanel(state.scoreboard, actions.onManualCorrection, actions.onDiscardCorrection, Modifier.fillMaxWidth(), compact = true)
         }
         null -> Unit
     }
@@ -133,44 +134,62 @@ private fun WideLayout(state: StudioUiState, actions: StudioActions, width: Dp) 
 }
 
 @Composable
-private fun LowLayout(state: StudioUiState, actions: StudioActions, width: Dp, fontScale: Float) {
+private fun LowLayout(state: StudioUiState, actions: StudioActions, width: Dp, height: Dp, fontScale: Float) {
     val match = state.scoreboard.match
     val note = state.scoreboard.dataLabel()
-    val sideWidth = (width * 0.38f).coerceIn(200.dp * fontScale, 340.dp * fontScale)
+    // Con letra muy grande las fuentes pasan a una columna: así el lateral no devora el ancho del monitor.
+    val columns = if (fontScale > 1.3f) 1 else 2
+    val sideMin = if (columns == 1) 100.dp * fontScale else 200.dp * fontScale
+    val sideWidth = (width * 0.38f).coerceIn(sideMin, maxOf(sideMin, 340.dp))
+
+    // Espacio real del lado izquierdo (descontando márgenes de 6 dp y la separación).
+    val leftWidth = width - sideWidth - 18.dp
+    val leftHeight = height - 12.dp
+    val showBoth = leftWidth >= BOTH_MONITORS_MIN_WIDTH && leftHeight >= 200.dp
+    // Si ambos monitores caben y sobra alto, se aprovecha: fuentes bajo los monitores y marcador completo a la derecha.
+    val videoIfBoth = (leftWidth - 6.dp) / 2 * (9f / 16f)
+    val spare = leftHeight - 100.dp * fontScale - videoIfBoth
+    val roomy = showBoth && spare >= 70.dp * fontScale
+
     Row(Modifier.fillMaxSize().padding(6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        BoxWithConstraints(Modifier.weight(1f).fillMaxHeight()) {
-            val showBoth = maxWidth >= BOTH_MONITORS_MIN_WIDTH && maxHeight >= 200.dp
-            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                MonitorHeader(showBoth, state, actions.onSetMonitorView)
-                if (showBoth) {
-                    Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PreviewMonitor(state, match, note, Modifier.weight(1f).fillMaxHeight())
-                        ProgramMonitor(state, match, note, Modifier.weight(1f).fillMaxHeight())
-                    }
-                } else if (state.monitorView == MonitorView.Preview) {
-                    PreviewMonitor(state, match, note, Modifier.fillMaxWidth().weight(1f))
-                } else {
-                    ProgramMonitor(state, match, note, Modifier.fillMaxWidth().weight(1f))
+        Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            MonitorHeader(showBoth, state, actions.onSetMonitorView)
+            if (showBoth) {
+                Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    PreviewMonitor(state, match, note, Modifier.weight(1f).fillMaxHeight())
+                    ProgramMonitor(state, match, note, Modifier.weight(1f).fillMaxHeight())
                 }
-                TakeToAirButton(
-                    canTakeToAir = state.canTakeToAir,
-                    alreadyOnAir = state.previewSourceId != null && state.previewSourceId == state.programSourceId,
-                    previewLabel = state.previewSource?.label,
-                    onClick = actions.onTakeToAir,
-                )
+            } else if (state.monitorView == MonitorView.Preview) {
+                PreviewMonitor(state, match, note, Modifier.fillMaxWidth().weight(1f))
+            } else {
+                ProgramMonitor(state, match, note, Modifier.fillMaxWidth().weight(1f))
             }
+            if (roomy) SourcesRow(state, actions, dense = true)
+            TakeToAirButton(
+                canTakeToAir = state.canTakeToAir,
+                alreadyOnAir = state.previewSourceId != null && state.previewSourceId == state.programSourceId,
+                previewLabel = state.previewSource?.label,
+                onClick = actions.onTakeToAir,
+            )
         }
+        val sideScroll = rememberScrollState()
+        ScrollFade(sideScroll, HrColors.Background, Modifier.width(sideWidth).fillMaxHeight()) {
         Column(
-            Modifier.width(sideWidth).fillMaxHeight().verticalScroll(rememberScrollState()),
+            Modifier.fillMaxSize().verticalScroll(sideScroll),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SourcesGrid(state, actions)
-            ScoreboardSummaryButton(state.scoreboard, { actions.onOpenPanel(StudioPanel.Scoreboard) })
+            if (roomy) {
+                ScoreboardPanel(state.scoreboard, actions.onManualCorrection, actions.onDiscardCorrection, Modifier.fillMaxWidth(), compact = true)
+            } else {
+                SourcesGrid(state, actions, columns)
+                ScoreboardSummaryButton(state.scoreboard, { actions.onOpenPanel(StudioPanel.Scoreboard) })
+            }
             OutlinedButton(
                 onClick = { actions.onOpenPanel(StudioPanel.Replays) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = HrDimens.MinTouch),
                 border = BorderStroke(1.dp, HrColors.Outline),
             ) { Text("REPETICIONES (${state.replays.size})", color = HrColors.TextPrimary, fontWeight = FontWeight.Bold) }
+        }
         }
     }
 }
@@ -242,9 +261,9 @@ private fun SourcesRow(state: StudioUiState, actions: StudioActions, dense: Bool
 
 /** Fuentes en cuadrícula 2×2 (modo bajo). */
 @Composable
-private fun SourcesGrid(state: StudioUiState, actions: StudioActions) {
+private fun SourcesGrid(state: StudioUiState, actions: StudioActions, columns: Int) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        state.sources.chunked(2).forEach { pair ->
+        state.sources.chunked(columns).forEach { pair ->
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 pair.forEach { source -> tile(source, state, actions, true, Modifier.weight(1f).fillMaxHeight()) }
             }

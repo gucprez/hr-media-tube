@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -88,7 +89,8 @@ fun TakeToAirButton(
                 fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center,
             )
-            if (previewLabel != null && !alreadyOnAir) {
+            // Con letra muy grande se omite el nombre de la fuente para no robar alto al monitor.
+            if (previewLabel != null && !alreadyOnAir && LocalDensity.current.fontScale <= 1.3f) {
                 Text(previewLabel, fontSize = 12.sp, textAlign = TextAlign.Center)
             }
         }
@@ -424,7 +426,7 @@ fun ReplaysPanelContent(
 
 /** Panel específico a pantalla casi completa, con cierre explícito de 48 dp. */
 @Composable
-fun PanelDialog(title: String, onClose: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+fun PanelDialog(title: String?, onClose: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(
             Modifier.fillMaxWidth(0.94f).fillMaxHeight(0.94f),
@@ -433,12 +435,15 @@ fun PanelDialog(title: String, onClose: () -> Unit, content: @Composable ColumnS
             border = BorderStroke(1.dp, HrColors.Outline),
         ) {
             Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(title, color = HrColors.TextPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-                Column(
-                    Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    content = content,
-                )
+                if (title != null) Text(title, color = HrColors.TextPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                val scroll = rememberScrollState()
+                ScrollFade(scroll, HrColors.Panel, Modifier.weight(1f).fillMaxWidth()) {
+                    Column(
+                        Modifier.fillMaxSize().verticalScroll(scroll),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        content = content,
+                    )
+                }
                 OutlinedButton(
                     onClick = onClose,
                     modifier = Modifier.fillMaxWidth().heightIn(min = HrDimens.MinTouch),

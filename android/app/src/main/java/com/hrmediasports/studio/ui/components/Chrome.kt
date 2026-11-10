@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,6 +44,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -175,11 +177,13 @@ fun NavRail(
     onSelect: (Destination) -> Unit,
     compact: Boolean,
     modifier: Modifier = Modifier,
+    /** Con letra muy grande el riel muestra solo iconos (nombre por accesibilidad) para no robar ancho al monitor. */
+    iconsOnly: Boolean = false,
 ) {
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .widthIn(min = if (compact) 72.dp else 88.dp)
+            .widthIn(min = if (iconsOnly) 56.dp else if (compact) 72.dp else 88.dp)
             .width(IntrinsicSize.Max)
             .background(HrColors.Panel)
             .verticalScroll(rememberScrollState())
@@ -195,6 +199,7 @@ fun NavRail(
                     .clip(RoundedCornerShape(10.dp))
                     .background(if (isSelected) HrColors.Orange else Color.Transparent)
                     .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(dest) })
+                    .semantics { contentDescription = dest.title }
                     .padding(horizontal = 4.dp, vertical = 2.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
@@ -205,14 +210,16 @@ fun NavRail(
                     tint = if (isSelected) Color.Black else HrColors.TextPrimary,
                     modifier = Modifier.size(if (compact) 22.dp else 26.dp),
                 )
-                Text(
-                    dest.title,
-                    color = if (isSelected) Color.Black else HrColors.TextPrimary,
-                    fontSize = if (compact) 10.sp else 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    softWrap = false,
-                )
+                if (!iconsOnly) {
+                    Text(
+                        dest.title,
+                        color = if (isSelected) Color.Black else HrColors.TextPrimary,
+                        fontSize = if (compact) 10.sp else 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                }
             }
         }
     }
@@ -231,12 +238,14 @@ private fun Destination.icon(): ImageVector = when (this) {
 fun DemoBanner(
     modifier: Modifier = Modifier,
     label: String = "MODO DEMOSTRACIÓN",
+    /** Solo el rótulo (sin la explicación): para ventanas pequeñas con letra grande. */
+    labelOnly: Boolean = false,
     text: String = "Interfaz de muestra: sin cámaras, transmisión, grabación ni repeticiones reales.",
 ) {
     Text(
         text = buildAnnotatedString {
             withStyle(SpanStyle(fontWeight = FontWeight.Black)) { append("$label  ") }
-            append(text)
+            if (!labelOnly) append(text)
         },
         color = Color.Black,
         fontSize = 12.sp,
@@ -318,5 +327,30 @@ fun HrBrandBar(
         }
         Spacer(Modifier.weight(1f))
         trailing()
+    }
+}
+
+/**
+ * Contenedor de una zona con desplazamiento vertical: si queda contenido por ver, se atenúa el borde
+ * inferior para que un elemento cortado se lea como "hay más" y no como un error.
+ */
+@Composable
+fun ScrollFade(
+    state: androidx.compose.foundation.ScrollState,
+    background: Color,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Box(modifier) {
+        content()
+        if (state.canScrollForward) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(28.dp)
+                    .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, background))),
+            )
+        }
     }
 }

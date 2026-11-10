@@ -3,14 +3,12 @@ package com.hrmediasports.studio.shots
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalDensity
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.core.app.ActivityScenario
-import androidx.compose.ui.unit.Density
 import com.hrmediasports.studio.domain.MatchState
 import com.hrmediasports.studio.engine.DemoMediaEngine
 import com.hrmediasports.studio.engine.ScoreboardSnapshot
@@ -19,6 +17,7 @@ import com.hrmediasports.studio.protocol.LinkState
 import com.hrmediasports.studio.protocol.ReadingOrigin
 import com.hrmediasports.studio.ui.SOURCE_BREAK
 import com.hrmediasports.studio.ui.SOURCE_CAMERA_2
+import com.hrmediasports.studio.ui.StudioPanel
 import com.hrmediasports.studio.ui.StudioApp
 import com.hrmediasports.studio.ui.StudioViewModel
 import com.hrmediasports.studio.ui.theme.HrTheme
@@ -64,35 +63,62 @@ class ScreenshotTest {
         fontScale: Float = 1f,
         viewModel: StudioViewModel = vm(),
         portrait: Boolean = false,
+        manualClock: Boolean = false,
         content: (@Composable () -> Unit)? = null,
     ) {
         RuntimeEnvironment.setQualifiers("w${wDp}dp-h${hDp}dp-${if (portrait) "port" else "land"}-${dpi}dpi")
+        // Con un campo de texto enfocado el cursor parpadea sin fin y Compose nunca queda «en reposo»: se avanza el reloj a mano.
+        if (manualClock) rule.mainClock.autoAdvance = false
+        // Escala de texto REAL del sistema (como en Ajustes ▸ Pantalla): también llega a diálogos y ventanas.
+        RuntimeEnvironment.setFontScale(fontScale)
         val scenario = ActivityScenario.launch(ComponentActivity::class.java)
         scenario.onActivity { activity ->
-            activity.setContent {
-                val d = LocalDensity.current
-                CompositionLocalProvider(LocalDensity provides Density(d.density, fontScale)) {
-                    HrTheme { if (content != null) content() else StudioApp(viewModel) }
-                }
-            }
+            activity.setContent { HrTheme { if (content != null) content() else StudioApp(viewModel) } }
         }
-        rule.waitForIdle()
+        if (manualClock) rule.mainClock.advanceTimeBy(600) else rule.waitForIdle()
         scenario.onActivity { activity ->
             val metrics = activity.resources.displayMetrics
             val w = metrics.widthPixels
             val h = metrics.heightPixels
-            val decor = activity.window.decorView
-            decor.measure(
-                View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY),
-            )
-            decor.layout(0, 0, w, h)
             val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-            decor.draw(Canvas(bmp))
+            val canvas = Canvas(bmp)
+            // Se dibujan TODAS las ventanas de la app (actividad + diálogos), de atrás hacia delante.
+            val roots = rootViews()
+            val activityRoot = activity.window.decorView
+            (listOf(activityRoot) + roots.filter { it !== activityRoot }).forEachIndexed { i, root ->
+                val dialog = i > 0
+                val lp = root.layoutParams as? WindowManager.LayoutParams
+                root.measure(
+                    View.MeasureSpec.makeMeasureSpec(w, if (dialog && lp?.width != WindowManager.LayoutParams.MATCH_PARENT) View.MeasureSpec.AT_MOST else View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(h, if (dialog && lp?.height != WindowManager.LayoutParams.MATCH_PARENT) View.MeasureSpec.AT_MOST else View.MeasureSpec.EXACTLY),
+                )
+                val vw = root.measuredWidth
+                val vh = root.measuredHeight
+                val left = if (dialog) (w - vw) / 2 else 0
+                val top = if (dialog) (h - vh) / 2 else 0
+                root.layout(left, top, left + vw, top + vh)
+                if (dialog && lp != null && (lp.flags and WindowManager.LayoutParams.FLAG_DIM_BEHIND) != 0) {
+                    canvas.drawColor(android.graphics.Color.argb((lp.dimAmount * 255).toInt(), 0, 0, 0))
+                }
+                canvas.save()
+                canvas.translate(left.toFloat(), top.toFloat())
+                root.draw(canvas)
+                canvas.restore()
+            }
             val dir = File("build/screenshots").also { it.mkdirs() }
             File(dir, "$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
         scenario.close()
+    }
+
+    /** Vistas raíz de todas las ventanas abiertas (la actividad y los diálogos). */
+    @Suppress("UNCHECKED_CAST")
+    private fun rootViews(): List<View> {
+        val wmg = Class.forName("android.view.WindowManagerGlobal")
+        val inst = wmg.getMethod("getInstance").invoke(null)
+        val names = wmg.getMethod("getViewRootNames").invoke(inst) as Array<String>
+        val get = wmg.getMethod("getRootView", String::class.java)
+        return names.mapNotNull { get.invoke(inst, it) as? View }
     }
 
     private fun onAirScenario(): StudioViewModel.() -> Unit = {
@@ -138,4 +164,18 @@ class ScreenshotTest {
     // --- Lector de pizarra (vertical) ---
     @Test fun reader() = shot("17-lector-360x780dp", 360, 780, 160, portrait = true, content = { com.hrmediasports.studio.ui.reader.ReaderApp() })
     @Test fun reader13() = shot("18-lector-360x780dp-texto-1.3", 360, 780, 160, 1.3f, portrait = true, content = { com.hrmediasports.studio.ui.reader.ReaderApp() })
+
+    // --- Paneles específicos y diálogos (ventana baja y ancha) ---
+    @Test fun repliesPanelLow() = shot("21-640x360dp-panel-repeticiones", 640, 360, 240, viewModel = vm(setup = { onAirScenario()(this); openPanel(StudioPanel.Replays) }))
+    @Test fun scoreboardPanelLow() = shot("22-640x360dp-panel-marcador", 640, 360, 240, viewModel = vm(setup = { onAirScenario()(this); openPanel(StudioPanel.Scoreboard) }))
+    @Test fun correctionDialogWide() = shot("23-960x540dp-dialogo-correccion", 960, 540, manualClock = true, viewModel = vm(setup = { onAirScenario()(this); openCorrection() }))
+    @Test fun correctionDialogLow() = shot("24-640x360dp-dialogo-correccion", 640, 360, 240, manualClock = true, viewModel = vm(setup = { onAirScenario()(this); openCorrection() }))
+    @Test fun correctionDialogLowBig() = shot("25-640x360dp-dialogo-correccion-texto-2.0", 640, 360, 240, 2.0f, manualClock = true, viewModel = vm(setup = { onAirScenario()(this); openCorrection() }))
+    @Test fun repliesPanelBig() = shot("26-640x360dp-panel-repeticiones-texto-2.0", 640, 360, 240, 2.0f, vm(setup = { onAirScenario()(this); openPanel(StudioPanel.Replays) }))
+    @Test fun scoreboardPanelBig() = shot("27-640x360dp-panel-marcador-texto-2.0", 640, 360, 240, 2.0f, vm(setup = { onAirScenario()(this); openPanel(StudioPanel.Scoreboard) }))
+    @Test fun trayOpenWide() = shot("28-1280x720dp-bandeja-abierta", 1280, 720, viewModel = vm(setup = { onAirScenario()(this); toggleReplaysTray() }))
+    @Test fun mid853Big() = shot("29-853x480dp-texto-2.0", 853, 480, 240, 2.0f, vm(setup = onAirScenario()))
+    @Test fun small640Big15() = shot("30-640x360dp-texto-1.5", 640, 360, 240, 1.5f, vm(setup = onAirScenario()))
+    @Test fun wide1280Big20() = shot("31-1280x720dp-texto-2.0", 1280, 720, 160, 2.0f, vm(setup = onAirScenario()))
+    @Test fun small640BigNoOnAir() = shot("32-640x360dp-texto-2.0-sin-salida", 640, 360, 240, 2.0f)
 }
