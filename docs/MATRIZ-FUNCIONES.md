@@ -4,15 +4,26 @@ Leyenda:
 - ✅ **Verificado** con evidencia (prueba ejecutada en dispositivo real, registrada abajo).
 - 🔧 **Compila**: el código compila y pasa pruebas unitarias, pero no se ha probado en un dispositivo.
 - ⬜ **No verificado**: no existe implementación ni prueba.
+- 🧪 **Probado en el entorno de desarrollo** (Linux, Chromium headless, sin dispositivos). Cuenta como prueba automática, **no** como verificación de la plataforma.
 - ❌ **Impedimento confirmado**: probado y no viable (con motivo).
 
-**Hoy no hay ninguna función ✅ ni ❌.** Esta entrega no incluyó pruebas en dispositivos: el entorno de desarrollo no tiene teléfonos, tabletas, Windows, macOS ni Chromebook.
+**Hoy no hay ninguna función ✅ ni ❌.** Ninguna entrega incluyó pruebas en dispositivos: el entorno de desarrollo no tiene teléfonos, tabletas, Windows, macOS ni Chromebook.
 
 | Función | Android móvil | Android tablet | Windows | macOS | Chrome / PWA | Chromebook |
 |---------|---------------|----------------|---------|-------|--------------|------------|
 | Interfaz Estudio (demo, datos de ejemplo) | 🔧 | 🔧 | ⬜ | ⬜ | ⬜ | ⬜ |
 | Reglas y estado del partido (`MatchState`) | 🔧 | 🔧 | ⬜ | ⬜ | ⬜ | ⬜ |
 | Plantilla de zonas del lector (ajustar y guardar localmente) | 🔧 | 🔧 | ⬜ | ⬜ | ⬜ | ⬜ |
+| Estudio laptop: crear estudio, QR de vinculación, aceptar/desconectar dispositivos | — | — | ⬜ | ⬜ | 🧪 | ⬜ |
+| Estudio laptop: cámaras como fuentes, Vista previa separada de Poner al aire, aviso AL AIRE | — | — | ⬜ | ⬜ | 🧪 | ⬜ |
+| Vinculación autenticada y señalización local (protocolo de conexión v1) | 🔧 (cliente probado contra el servidor en JVM) | 🔧 | ⬜ | ⬜ | 🧪 | ⬜ |
+| Reconexión sin duplicar fuentes | 🔧 (cliente probado contra el servidor en JVM) | 🔧 | ⬜ | ⬜ | 🧪 | ⬜ |
+| App: escáner de QR con cámara real | ⬜ (decodificador probado con QR sintéticos) | ⬜ | — | — | — | — |
+| App: permisos de cámara/micrófono en uso | ⬜ | ⬜ | — | — | — | — |
+| App: captura CameraX → WebRTC 720p/30 | ⬜ (compila; sin ejecutar) | ⬜ | — | — | — | — |
+| App: codificación por hardware | ⬜ (se infiere del nombre del codificador; sin medir) | ⬜ | — | — | — | — |
+| App: controles de lente, zoom, enfoque, exposición y audio | ⬜ (compila; sin ejecutar) | ⬜ | — | — | — | — |
+| Recepción de video WebRTC en el estudio (decodificación y reproducción) | — | — | ⬜ | ⬜ | 🧪 (cámara simulada, ~20 fps por software) | ⬜ |
 | Recepción de datos de pizarra (protocolo v1) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | Envío de datos de pizarra | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | Reconocimiento de pizarra (cámara) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -31,7 +42,7 @@ Deben ejecutarse **antes** de construir las funciones completas. Cada una produc
 
 | ID | Prueba | Criterio de aceptación propuesto (a confirmar con el responsable) | Estado |
 |----|--------|-------------------------------------------------------------------|--------|
-| T1 | Cámara Android → Windows y → macOS por WebRTC | 1080p30 durante 30 min sin cortes; latencia vidrio a vidrio medida y registrada en LAN | Pendiente |
+| T1 | Cámara Android → Windows y → macOS por WebRTC (procedimiento detallado: «Validación inicial» en `PRUEBAS-TECNICAS.md`) | 1080p30 durante 30 min sin cortes; latencia vidrio a vidrio medida y registrada en LAN | Pendiente |
 | T2 | Cámara Android → estudio web (Chrome) y → Android | Igual que T1 | Pendiente |
 | T3 | Datos de pizarra entre plataformas (protocolo v1) | Sin pérdida de `seq` en 30 min; antigüedad p95 < 500 ms en LAN; recuperación tras cortar Wi‑Fi | Pendiente |
 | T4 | Video con marcador integrado en la salida | Marcador dibujado en el cuadro codificado, con desfase marcador↔imagen medido | Pendiente |

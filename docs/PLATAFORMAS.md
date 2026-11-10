@@ -14,15 +14,18 @@ El cambio de alcance propone **Flutter** como base compartida; la tarea de esta 
 
 Criterio para decidir tras las pruebas: si WebRTC, captura de cámara y composición no son viables con Flutter en Windows/macOS/Web sin código nativo por plataforma, se evalúa una alternativa (p. ej. Compose Multiplatform para escritorio + cliente web separado). Ese análisis es parte de la validación y no se adelanta aquí.
 
+## Estudio de escritorio (laptop)
+Decisión de esta entrega: el estudio es un **servidor local (JVM) + interfaz web** que se abre en Chrome (`android/studio-server`). Motivos: Chrome ya recibe, decodifica y reproduce WebRTC en Windows y macOS sin librerías nativas por sistema operativo ni licencias adicionales, y se puede probar de forma automática. Costo: no es una ventana nativa. No se evaluó Flutter ni Compose Multiplatform para esto; si el equipo prefiere una ventana nativa, la interfaz puede empaquetarse sin cambiar el protocolo (`protocolo-conexion.md`). Windows y macOS **no** se han probado (solo Linux). Instalación y costos: `android/studio-server/README.md`.
+
 ## Separación en capas
 
 | # | Capa | Responsabilidad | Dónde está hoy | Portable entre plataformas |
 |---|------|-----------------|----------------|----------------------------|
 | 1 | Interfaz adaptable | Móvil / tablet / escritorio; componentes, navegación | `android/.../ui` (Compose) | No: se rehace por framework de UI |
 | 2 | Reglas y estado del partido | Marcador, reloj, cuarto, posesión, validaciones | `android/.../domain` (Kotlin puro) | Sí en la JVM; reimplementar o compartir (KMP) si se cambia de lenguaje |
-| 3 | Protocolo entre dispositivos | Mensajes de pizarra versionados, estado de enlace | Especificación: `protocolo-pizarra.md`; estado de enlace y antigüedad: `android/.../protocol` | La especificación sí (JSON); el código por plataforma |
+| 3 | Protocolo entre dispositivos | Vinculación autenticada y señalización (`protocolo-conexion.md`, **implementado**); mensajes de pizarra versionados (`protocolo-pizarra.md`, solo especificación) | `android/core-link` (compartido), `android/studio-server`, app Android | La especificación sí (JSON + HMAC); implementaciones Kotlin y JavaScript |
 | 4 | Reconocimiento de pizarra | Leer el marcador físico con la cámara | **No implementado.** Interfaz `ScoreboardSource`; solo `DemoScoreboardSource` | Depende del motor de visión elegido (por evaluar) |
-| 5 | Captura, composición, codificación, grabación y transmisión | Cámaras, mezcla, encoder, archivo, salida | **No implementado.** Interfaz `MediaEngine`; solo `DemoMediaEngine` (todas las capacidades en `false`) | Muy dependiente de la plataforma |
+| 5 | Captura, composición, codificación, grabación y transmisión | Cámaras, mezcla, encoder, archivo, salida | **Parcial:** captura y envío de una cámara Android por WebRTC (`android/.../camera`, sin validar en dispositivo) y recepción en el estudio. Composición, grabación, transmisión y repeticiones **no** existen. `MediaEngine` del Estudio Android sigue en demo | Muy dependiente de la plataforma |
 
 Regla: la UI solo habilita una función si `MediaEngine.capabilities` / `ScoreboardSource` la declara. En el modo demostración todo está declarado como no disponible.
 

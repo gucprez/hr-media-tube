@@ -230,11 +230,12 @@ private fun Destination.icon(): ImageVector = when (this) {
 @Composable
 fun DemoBanner(
     modifier: Modifier = Modifier,
+    label: String = "MODO DEMOSTRACIÓN",
     text: String = "Interfaz de muestra: sin cámaras, transmisión, grabación ni repeticiones reales.",
 ) {
     Text(
         text = buildAnnotatedString {
-            withStyle(SpanStyle(fontWeight = FontWeight.Black)) { append("MODO DEMOSTRACIÓN  ") }
+            withStyle(SpanStyle(fontWeight = FontWeight.Black)) { append("$label  ") }
             append(text)
         },
         color = Color.Black,
