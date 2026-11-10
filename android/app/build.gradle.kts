@@ -13,16 +13,14 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.2.0-demo"
-        // WebRTC pesa ~11 MB por ABI: solo 64 bits (teléfonos actuales y emuladores x86_64).
-        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+        versionName = "0.1.0-demo"
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
         }
     }
     compileOptions {
@@ -50,14 +48,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":core-link"))
-    implementation(libs.okhttp)
-    implementation(libs.webrtc.android)
-    implementation(libs.camerax.core)
-    implementation(libs.camerax.camera2)
-    implementation(libs.camerax.lifecycle)
-    implementation(libs.camerax.view)
-    implementation(libs.zxing.core)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.tooling.preview)
@@ -69,11 +59,6 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.junit)
-    // Prueba de integración: el cliente Android real contra el servidor real del estudio, en la JVM.
-    testImplementation(project(":studio-server"))
-    testImplementation(libs.ktor.server.core)
-    testImplementation(libs.ktor.server.netty)
-    testImplementation(libs.ktor.server.websockets)
     testImplementation(libs.robolectric)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
