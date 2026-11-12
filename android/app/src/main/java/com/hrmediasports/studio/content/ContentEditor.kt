@@ -20,9 +20,6 @@ object ContentEditor {
         overlays = state.overlays.filterNot { it.mediaId == mediaId },
     )
 
-    fun updateMedia(state: ContentState, item: MediaItem): ContentState =
-        state.copy(library = state.library.map { if (it.id == item.id) item else it })
-
     /** Lista nueva a partir de una plantilla (vacía de contenido: el operador elige los archivos). */
     fun createFromTemplate(state: ContentState, template: Template, id: String): ContentState {
         val base = when (template) {
@@ -47,8 +44,18 @@ object ContentEditor {
     private fun edit(state: ContentState, playlistId: String, f: (Playlist) -> Playlist): ContentState =
         state.copy(playlists = state.playlists.map { if (it.id == playlistId) f(it) else it })
 
+    /** Se guarda lo que se escribe (permite espacios y borrar todo mientras se edita); [displayName] da el nombre a mostrar. */
     fun rename(state: ContentState, playlistId: String, name: String): ContentState =
-        edit(state, playlistId) { it.copy(name = name.trim().take(40).ifBlank { it.name }) }
+        edit(state, playlistId) { it.copy(name = name.take(40)) }
+
+    /** Nombre para mostrar: sin espacios sobrantes y con un texto de reserva si quedó vacío. */
+    fun displayName(p: Playlist): String = p.name.trim().ifBlank { "Lista sin nombre" }
+
+    /** Reemplaza los datos de archivos ya existentes (por ejemplo tras volver a validarlos). */
+    fun updateMedia(state: ContentState, items: List<MediaItem>): ContentState {
+        val byId = items.associateBy { it.id }
+        return state.copy(library = state.library.map { byId[it.id] ?: it })
+    }
 
     /** Añade un elemento de la biblioteca a la lista (un mismo archivo puede repetirse en la lista). */
     fun addEntry(state: ContentState, playlistId: String, mediaId: String, entryId: String): ContentState {

@@ -259,4 +259,25 @@ class ContentLogicTest {
         // Campos desconocidos de una versión futura no rompen la carga.
         assertEquals(ContentState(), ContentJson.decode("""{"version":1,"campoNuevo":true}"""))
     }
+
+    @Test fun nameKeepsWhatIsTypedAndHasADisplayFallback() {
+        var s = mixed()
+        s = ContentEditor.rename(s, "p", "Medio tiempo ")                    // el espacio final no se pierde al escribir
+        assertEquals("Medio tiempo ", s.playlist("p")!!.name)
+        assertEquals("Medio tiempo", ContentEditor.displayName(s.playlist("p")!!))
+        s = ContentEditor.rename(s, "p", "")                                 // se puede borrar todo para reescribir
+        assertEquals("", s.playlist("p")!!.name)
+        assertEquals("Lista sin nombre", ContentEditor.displayName(s.playlist("p")!!))
+        assertEquals(40, ContentEditor.rename(s, "p", "x".repeat(99)).playlist("p")!!.name.length)
+    }
+
+    @Test fun revalidationUpdatesFilesWithoutBreakingLists() {
+        val s = mixed()
+        val gone = s.media("v")!!.copy(compat = Compat.Missing, compatNote = "se perdió el permiso de lectura")
+        val after = ContentEditor.updateMedia(s, listOf(gone, img("no-esta-en-biblioteca")))
+        assertEquals(Compat.Missing, after.media("v")!!.compat)
+        assertEquals(3, after.library.size)                                  // no añade archivos desconocidos
+        assertEquals(s.playlist("p"), after.playlist("p"))                   // las listas no cambian
+        assertTrue(ContentEditor.issues(after, after.playlist("p")!!).single().contains("no se encuentra"))
+    }
 }

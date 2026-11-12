@@ -33,7 +33,7 @@ El módulo es independiente del reconocimiento de pizarra: vive en `android/.../
 - Al volver al partido se restaura exactamente la mezcla anterior, aunque se haya cambiado de lista en medio.
 
 ## Pruebas (automáticas, sin dispositivo)
-`ContentLogicTest` y `ContentFlowTest` (33 pruebas): interrupción del anuncio a mitad de un video, retorno a la cámara y restauración del audio, archivos incompatibles / no encontrados / quitados / que fallan en reproducción, listas con imágenes y videos, repetición, retorno automático, pausa/siguiente/detener, guardado y recarga, datos dañados. Capturas: `docs/capturas/40…53`.
+`ContentLogicTest` y `ContentFlowTest` (37 pruebas): interrupción del anuncio a mitad de un video, retorno a la cámara y restauración del audio, archivos incompatibles / no encontrados / quitados / que fallan en reproducción, listas con imágenes y videos, repetición, retorno automático, pausa/siguiente/detener, guardado y recarga, datos dañados, edición del nombre, revalidación de archivos al preparar y relanzamiento de una lista editada mientras está al aire. Capturas: `docs/capturas/40…53`.
 
 **Sin probar en un Android real:** el selector de archivos, los permisos persistentes de lectura, la validación de decodificadores, las miniaturas y el guardado en disco.
 

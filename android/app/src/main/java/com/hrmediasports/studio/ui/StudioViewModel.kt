@@ -173,6 +173,9 @@ class StudioViewModel(
 
     fun removeMedia(id: String) = editContent { ContentEditor.removeMedia(it, id) }
 
+    /** Resultado de volver a validar archivos (existencia, lectura, decodificador) justo antes de usarlos. */
+    fun updateMedia(items: List<MediaItem>) { if (items.isNotEmpty()) editContent { ContentEditor.updateMedia(it, items) } }
+
     fun createPlaylist(template: Template) {
         val id = newId()
         editContent { ContentEditor.createFromTemplate(it, template, id) }
@@ -217,8 +220,8 @@ class StudioViewModel(
             it.copy(
                 preparedPlaylistId = id, previewSourceId = SOURCE_BREAK, contentPanelOpen = false, editingPlaylistId = null,
                 monitorView = MonitorView.Preview,
-                message = if (issues.isEmpty()) "«${p.name}» preparada en Vista previa." else
-                    "«${p.name}» preparada con ${issues.size} aviso(s): ${issues.first()}",
+                message = if (issues.isEmpty()) "«${ContentEditor.displayName(p)}» preparada en Vista previa." else
+                    "«${ContentEditor.displayName(p)}» preparada con ${issues.size} aviso(s): ${issues.first()}",
             )
         }
     }

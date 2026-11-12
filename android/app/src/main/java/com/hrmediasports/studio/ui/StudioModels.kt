@@ -142,8 +142,8 @@ data class StudioUiState(
             previewSourceId == null -> false
             previewSourceId != SOURCE_BREAK -> previewSourceId != programSourceId
             preparedPlaylist == null -> false
-            // Un descanso ya al aire solo se "retoma" si se preparó OTRA lista.
-            else -> programSourceId != SOURCE_BREAK || breakState?.playlist?.id != preparedPlaylistId
+            // Un descanso ya al aire solo se "retoma" si se preparó otra lista o si la misma cambió desde que salió.
+            else -> programSourceId != SOURCE_BREAK || breakState?.playlist != preparedPlaylist
         }
 }
 
@@ -167,7 +167,7 @@ fun StudioUiState.previewBreakView(): BreakView? {
     val first = p.entries.firstOrNull()?.let { content.media(it.mediaId) }
     val n = if (p.entries.size == 1) "1 elemento" else "${p.entries.size} elementos"
     return BreakView(
-        headline = p.name.uppercase(),
+        headline = p.name.trim().ifBlank { "Lista sin nombre" }.uppercase(),
         detail = if (first == null) "$n · placa «${p.slateText}»" else "$n · empieza con ${first.name}",
         uri = first?.uri, isVideo = first?.type == MediaType.Video, slate = first == null,
         scoreboard = p.entries.firstOrNull()?.showScoreboard == true,

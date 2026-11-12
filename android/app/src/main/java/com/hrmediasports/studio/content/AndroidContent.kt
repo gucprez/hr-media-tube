@@ -45,6 +45,20 @@ class MediaInspector(context: Context) {
         runCatching { ctx.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
     }
 
+    /** Libera el permiso de lectura de un archivo que ya no se usa (Android limita cuántos se conservan). */
+    fun releasePermission(uriText: String) {
+        runCatching { ctx.contentResolver.releasePersistableUriPermission(Uri.parse(uriText), Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+    }
+
+    /**
+     * Vuelve a validar un archivo ya importado: puede haberse borrado, movido o perdido el permiso.
+     * Conserva su identidad (id y nombre) para no romper las listas que lo usan.
+     */
+    fun recheck(item: MediaItem): MediaItem {
+        val fresh = inspect(Uri.parse(item.uri))
+        return fresh.copy(id = item.id, name = item.name)
+    }
+
     fun inspect(uri: Uri): MediaItem {
         val mime = runCatching { ctx.contentResolver.getType(uri) }.getOrNull()
         val name = displayName(uri) ?: uri.lastPathSegment ?: "archivo"
@@ -69,6 +83,8 @@ class MediaInspector(context: Context) {
         else base.copy(compat = Compat.Unsupported, compatNote = "no se pudo leer la imagen")
     } catch (e: java.io.FileNotFoundException) {
         base.copy(compat = Compat.Missing)
+    } catch (e: SecurityException) {
+        base.copy(compat = Compat.Missing, compatNote = "se perdió el permiso de lectura")
     } catch (e: Exception) {
         base.copy(compat = Compat.Unsupported, compatNote = "no se pudo leer la imagen")
     }
@@ -101,6 +117,8 @@ class MediaInspector(context: Context) {
             }
         } catch (e: java.io.FileNotFoundException) {
             base.copy(compat = Compat.Missing)
+        } catch (e: SecurityException) {
+            base.copy(compat = Compat.Missing, compatNote = "se perdió el permiso de lectura")
         } catch (e: Exception) {
             base.copy(compat = Compat.Unsupported, compatNote = "no se pudo leer el video")
         } finally {

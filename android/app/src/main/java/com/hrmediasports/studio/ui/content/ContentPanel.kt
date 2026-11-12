@@ -213,7 +213,7 @@ private fun PlaylistList(state: StudioUiState, actions: ContentActions) {
         Surface(shape = RoundedCornerShape(10.dp), color = HrColors.PanelRaised, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(p.name, color = HrColors.TextPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                    Text(ContentEditor.displayName(p), color = HrColors.TextPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                     if (onAir) StatusChip("AL AIRE", HrColors.OnAirRed, filled = true, dense = true)
                     if (prepared && !onAir) StatusChip("PREVIA", HrColors.Orange, dense = true)
                     if (issues.isNotEmpty()) StatusChip("${issues.size} AVISO(S)", HrColors.Amber, dense = true)

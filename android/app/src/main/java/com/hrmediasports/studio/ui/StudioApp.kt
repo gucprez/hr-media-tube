@@ -88,7 +88,12 @@ private fun StudioApp(viewModel: StudioViewModel, context: android.content.Conte
         onClose = viewModel::closeContentPanel,
         onTab = viewModel::setContentTab,
         onImport = { picker.launch(arrayOf("image/*", "video/*")) },
-        onRemoveMedia = viewModel::removeMedia,
+        onRemoveMedia = { id ->
+            val uri = viewModel.state.value.content.media(id)?.uri
+            viewModel.removeMedia(id)
+            // Solo se quita la referencia y su permiso de lectura; el archivo original no se toca.
+            if (uri != null && viewModel.state.value.content.library.none { it.uri == uri }) MediaInspector(context).releasePermission(uri)
+        },
         onCreate = viewModel::createPlaylist,
         onEdit = viewModel::editPlaylist,
         onRemovePlaylist = viewModel::removePlaylist,
@@ -101,7 +106,16 @@ private fun StudioApp(viewModel: StudioViewModel, context: android.content.Conte
         onLoop = viewModel::setLoop,
         onAutoReturn = viewModel::setAutoReturn,
         onSlateText = viewModel::setSlateText,
-        onPrepare = viewModel::preparePlaylist,
+        onPrepare = { id ->
+            // Antes de preparar se vuelven a validar los archivos de la lista: pueden haberse borrado o movido.
+            val s = viewModel.state.value
+            val media = s.content.playlist(id)?.entries?.mapNotNull { s.content.media(it.mediaId) }?.distinctBy { it.id }.orEmpty()
+            scope.launch {
+                val checked = withContext(Dispatchers.IO) { MediaInspector(context).let { insp -> media.map(insp::recheck) } }
+                viewModel.updateMedia(checked)
+                viewModel.preparePlaylist(id)
+            }
+        },
         onAddOverlay = viewModel::addOverlay,
         onToggleOverlay = viewModel::toggleOverlay,
         onRemoveOverlay = viewModel::removeOverlay,

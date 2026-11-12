@@ -277,4 +277,28 @@ class ContentFlowTest {
         assertTrue(vm.state.value.message!!.contains("ya estaban"))
         assertEquals(2, vm.state.value.content.library.size)
     }
+
+    @Test fun editingTheListOnAirAllowsTakingItAgainWithTheChanges() {
+        val vm = vm()
+        val id = vm.withMixedList()
+        vm.preparePlaylist(id); vm.takeToAir()
+        assertFalse(vm.state.value.canTakeToAir)                             // misma lista, sin cambios
+        vm.removeEntry(id, vm.state.value.content.playlist(id)!!.entries.first().entryId)
+        assertTrue(vm.state.value.canTakeToAir)                              // cambió: se puede volver a poner al aire
+        assertEquals("a.png", vm.state.value.breakState!!.showing.title)     // lo que está al aire no cambia solo
+        vm.takeToAir()
+        assertEquals("v.mp4", vm.state.value.breakState!!.showing.title)     // empieza de nuevo con la lista editada
+    }
+
+    @Test fun fileThatDisappearedIsCaughtWhenPreparing() {
+        val vm = vm()
+        val id = vm.withMixedList()
+        // La app vuelve a validar antes de preparar y encuentra que el video ya no está.
+        vm.updateMedia(listOf(vm.state.value.content.media("v")!!.copy(compat = Compat.Missing)))
+        vm.preparePlaylist(id)
+        assertTrue(vm.state.value.message!!.contains("1 aviso") && vm.state.value.message!!.contains("no se encuentra"))
+        vm.consumeMessage()
+        vm.takeToAir(); vm.advance(6_000)
+        assertTrue(vm.state.value.breakState!!.showing is Showing.Fallback)  // placa de respaldo, sin bloquear
+    }
 }
