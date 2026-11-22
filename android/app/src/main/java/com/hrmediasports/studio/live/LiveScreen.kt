@@ -128,7 +128,7 @@ fun LiveApp(onExit: () -> Unit) {
 }
 
 @Composable
-private fun KeepScreenOn() {
+fun KeepScreenOn() {
     val activity = LocalContext.current as? ComponentActivity
     DisposableEffect(Unit) {
         activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -230,7 +230,7 @@ fun LiveScreen(vm: LiveViewModel, onExit: () -> Unit) {
 }
 
 @Composable
-private fun CameraPreview() {
+fun CameraPreview() {
     AndroidView(factory = { ctx ->
         SurfaceView(ctx).apply {
             holder.addCallback(object : SurfaceHolder.Callback {

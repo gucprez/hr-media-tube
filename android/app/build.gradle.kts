@@ -12,8 +12,8 @@ android {
         applicationId = "com.hrmediasports.studio"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.3.0-transmision"
+        versionCode = 4
+        versionName = "0.4.0-estudio"
     }
 
     buildTypes {
@@ -57,6 +57,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.rootencoder)
+    implementation(libs.camerax.core)
+    implementation(libs.camerax.camera2)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.camerax.view)
+    implementation(libs.zxing.core)
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.junit)

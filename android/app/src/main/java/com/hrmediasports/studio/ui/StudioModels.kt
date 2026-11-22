@@ -27,6 +27,9 @@ data class ReplayClip(val id: String, val label: String, val durationSeconds: In
 
 enum class MonitorView { Preview, Program }
 
+/** Diálogos del Estudio real. */
+enum class StudioDialog { Pairing, StreamSetup, ConfirmStopStream }
+
 /** Paneles específicos que se abren aparte cuando la ventana es baja. */
 enum class StudioPanel { Replays, Scoreboard }
 
@@ -107,6 +110,13 @@ data class StudioUiState(
     val replaysTrayOpen: Boolean = false,
     val openPanel: StudioPanel? = null,
     val message: String? = null,
+    // ---- Solo en el Estudio real ----
+    val live: Boolean = false,
+    val remoteCameras: List<com.hrmediasports.studio.link.RemoteCamera> = emptyList(),
+    val engine: com.hrmediasports.studio.live.EngineStatus? = null,
+    val overlayVisible: Boolean = true,
+    val dialog: StudioDialog? = null,
+    val liveSettings: com.hrmediasports.studio.live.LiveSettings? = null,
 ) {
     val previewSource: VideoSource? get() = sources.firstOrNull { it.id == previewSourceId }
     val programSource: VideoSource? get() = sources.firstOrNull { it.id == programSourceId }

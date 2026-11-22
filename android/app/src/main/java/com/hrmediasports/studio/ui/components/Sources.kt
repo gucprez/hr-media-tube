@@ -78,13 +78,25 @@ fun FitVideo(
  * marcador rotulado. "Descanso" y "Resultado" son gráficos locales reales (dibujados por la app).
  * El texto de estos gráficos es parte de la imagen: no sigue la escala de fuente del sistema.
  */
+/** Qué papel cumple un monitor: el Estudio real dibuja video de verdad según el papel. */
+enum class MonitorRole { Preview, Program }
+
+/**
+ * Proveedor de video real para los monitores del Estudio. Devuelve true si dibujó la fuente;
+ * false para usar el gráfico de la interfaz. null en la demostración.
+ */
+val LocalLiveMonitors = androidx.compose.runtime.staticCompositionLocalOf<(@Composable (VideoSource, MonitorRole, Modifier) -> Boolean)?> { null }
+
 @Composable
 fun SourceView(
     source: VideoSource,
     match: MatchState?,
     modifier: Modifier = Modifier,
     dataNote: String? = null,
+    role: MonitorRole? = null,
 ) {
+    val liveMonitors = LocalLiveMonitors.current
+    if (liveMonitors != null && role != null && liveMonitors(source, role, modifier)) return
     val d = LocalDensity.current
     CompositionLocalProvider(LocalDensity provides Density(d.density, fontScale = 1f)) {
         BoxWithConstraints(
@@ -164,10 +176,11 @@ fun MonitorBox(
     borderColor: Color,
     emptyText: String,
     modifier: Modifier = Modifier,
+    role: MonitorRole? = null,
 ) {
     FitVideo(modifier, border = BorderStroke(if (source != null) 3.dp else 1.dp, if (source != null) borderColor else HrColors.Outline)) {
         if (source != null) {
-            SourceView(source, match, Modifier.fillMaxSize(), dataNote)
+            SourceView(source, match, Modifier.fillMaxSize(), dataNote, role)
         } else {
             EmptyVideo(emptyText)
         }

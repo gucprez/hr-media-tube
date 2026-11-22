@@ -21,8 +21,10 @@ import java.nio.ByteBuffer
  *
  * El cliente RTMP copia cada cuadro antes de encolarlo, así que compartir el búfer es seguro.
  */
-class MultiRtmpStream(context: Context, checkers: List<ConnectChecker>) :
-    StreamBase(context, Camera2Source(context), MicrophoneSource()) {
+class MultiRtmpStream private constructor(context: Context, checkers: List<ConnectChecker>, val camera: Camera2Source) :
+    StreamBase(context, camera, MicrophoneSource()) {
+
+    constructor(context: Context, checkers: List<ConnectChecker>) : this(context, checkers, Camera2Source(context))
 
     private val keyframeListener = object : StreamClientListener {
         override fun onRequestKeyframe() = requestKeyframe()
@@ -42,7 +44,6 @@ class MultiRtmpStream(context: Context, checkers: List<ConnectChecker>) :
     }
 
     val size: Int get() = clients.size
-    val camera: Camera2Source get() = videoSource as Camera2Source
     val microphone: MicrophoneSource get() = audioSource as MicrophoneSource
 
     fun client(i: Int): StreamBaseClient = streamClients[i]

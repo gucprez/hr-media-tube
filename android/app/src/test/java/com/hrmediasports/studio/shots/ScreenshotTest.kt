@@ -7,6 +7,10 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import com.hrmediasports.studio.ui.LiveTopActions
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.background
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.core.app.ActivityScenario
 import com.hrmediasports.studio.domain.MatchState
@@ -223,4 +227,71 @@ class ScreenshotTest {
         val dir = File("build/screenshots").also { it.mkdirs() }
         File(dir, "67-video-marcador-1280x720.png").outputStream().use { frame.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
+
+    // ---------- Estudio real, Pizarra y QR (motores falsos) ----------
+    private fun realStudio(setup: (com.hrmediasports.studio.FakeStudioLive, com.hrmediasports.studio.FakeBoardSource) -> Unit = { _, _ -> },
+                           ui: StudioViewModel.() -> Unit = {}): StudioViewModel {
+        val settings = com.hrmediasports.studio.live.LiveSettings(homeName = "TIGR", awayName = "LEON")
+            .withDestination(com.hrmediasports.studio.live.LiveDestination(com.hrmediasports.studio.live.Platform.YouTube, enabled = true, key = "yt-1234"))
+            .withDestination(com.hrmediasports.studio.live.LiveDestination(com.hrmediasports.studio.live.Platform.Facebook, enabled = true, key = "fb-5678"))
+        val live = com.hrmediasports.studio.FakeStudioLive(com.hrmediasports.studio.live.InMemoryLiveSettingsStore(settings))
+        val board = com.hrmediasports.studio.FakeBoardSource()
+        setup(live, board)
+        return StudioViewModel(DemoMediaEngine, board, { 100_000L }, emptyFlow(), live).apply(ui)
+    }
+
+    @Composable
+    private fun RealStudioContent(vm: StudioViewModel) {
+        val state by vm.state.collectAsState()
+        val monitors: @Composable (com.hrmediasports.studio.ui.VideoSource, com.hrmediasports.studio.ui.components.MonitorRole, androidx.compose.ui.Modifier) -> Boolean = { src, role, m ->
+            if (role == com.hrmediasports.studio.ui.components.MonitorRole.Program) {
+                androidx.compose.foundation.layout.Box(m.then(androidx.compose.ui.Modifier.background(androidx.compose.ui.graphics.Color(0xFF6B4A2B))), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                    androidx.compose.material3.Text("[video de la cámara: ${src.label}]", color = androidx.compose.ui.graphics.Color.White)
+                }
+                true
+            } else false
+        }
+        androidx.compose.runtime.CompositionLocalProvider(com.hrmediasports.studio.ui.components.LocalLiveMonitors provides monitors) {
+            com.hrmediasports.studio.ui.StudioAppContent(
+                state = state,
+                actions = com.hrmediasports.studio.ui.screens.StudioActions(onSelectSource = vm::selectSource, onTakeToAir = vm::takeToAir),
+                onNavigate = vm::navigate, onRecord = vm::onRecordClick, onStream = vm::onStreamClick,
+                onDraftChange = vm::updateDraft, onApplyCorrection = vm::applyCorrection, onDismissCorrection = vm::dismissCorrection,
+                onMessageShown = vm::consumeMessage,
+                topActions = { compact -> LiveTopActions(state, state.engine ?: com.hrmediasports.studio.live.EngineStatus(), compact, vm) },
+                sectionOverride = { dest, m ->
+                    if (dest == com.hrmediasports.studio.ui.Destination.Cameras) { com.hrmediasports.studio.ui.DevicesScreen(state, state.engine ?: com.hrmediasports.studio.live.EngineStatus(), com.hrmediasports.studio.link.PairingCode.random("192.168.1.20", 47800), vm, m); true } else false
+                },
+            )
+        }
+    }
+
+    private fun studioOnAir(): (com.hrmediasports.studio.FakeStudioLive, com.hrmediasports.studio.FakeBoardSource) -> Unit = { live, board ->
+        board.receive(54, 49, 100_000L)
+        live.cameras.value = listOf(com.hrmediasports.studio.link.RemoteCamera(0, connected = true, name = "S21+", hasVideo = true, fps = 30, battery = 80, thermal = 1),
+            com.hrmediasports.studio.link.RemoteCamera(1))
+        live.remoteAge = 100
+    }
+
+    @Test fun realStudioS22() = shot("70-estudio-real-s22", 915, 412, 420, content = {
+        RealStudioContent(realStudio(studioOnAir(), ui = { onStreamClick(); selectSource(com.hrmediasports.studio.ui.SOURCE_CAMERA_2) }))
+    })
+    @Test fun realStudioTablet() = shot("71-estudio-real-1280x800", 1280, 800, 240, content = {
+        RealStudioContent(realStudio(studioOnAir(), ui = { onStreamClick(); onRecordClick(); selectSource(com.hrmediasports.studio.ui.SOURCE_BREAK) }))
+    })
+    @Test fun realStudioDevices() = shot("72-estudio-dispositivos", 915, 412, 420, content = {
+        RealStudioContent(realStudio(studioOnAir(), ui = { navigate(com.hrmediasports.studio.ui.Destination.Cameras) }))
+    })
+    @Test fun pairingQr() = shot("73-estudio-qr-conectar", 915, 412, 420, content = {
+        com.hrmediasports.studio.ui.PairingDialog(com.hrmediasports.studio.link.PairingCode.random("192.168.1.20", 47800), {}, {})
+    })
+    @Test fun boardManual() = shot("74-pizarra-a-mano", 915, 412, 420, content = {
+        val sink = object : com.hrmediasports.studio.board.ScoreSink {
+            override val status = MutableStateFlow<com.hrmediasports.studio.link.ClientStatus>(com.hrmediasports.studio.link.ClientStatus.Connected("Pizarra"))
+            override fun send(msg: com.hrmediasports.studio.link.ScoreMessage) {}
+        }
+        val vm = com.hrmediasports.studio.board.BoardViewModel(sink, com.hrmediasports.studio.domain.InMemoryZoneTemplateStore(), { 100_000L }, tickMillis = 0)
+        vm.points(true, 3); vm.points(false, 2)
+        com.hrmediasports.studio.board.BoardScreen(vm, {}, {})
+    })
 }

@@ -11,6 +11,7 @@ import android.os.SystemClock
 import android.provider.MediaStore
 import android.util.Log
 import android.view.SurfaceView
+import com.hrmediasports.studio.link.RemoteVideoSource
 import com.pedro.common.ConnectChecker
 import com.pedro.encoder.input.gl.render.filters.`object`.ImageObjectFilterRender
 import com.pedro.encoder.utils.CodecUtil
@@ -48,6 +49,9 @@ data class EngineStatus(
     val hardwareEncoder: Boolean = true,
     /** Cambia cada vez que se prepara la cámara: la vista previa se vuelve a crear. */
     val generation: Int = 0,
+    /** 0 = cámara de este teléfono; 1.. = cámara remota (lugar + 1). */
+    val videoSource: Int = 0,
+    val slate: Slate = Slate.None,
 ) {
     val anyOn: Boolean get() = links.values.any { it != LinkStatus.Off && it !is LinkStatus.Failed }
     val anyLive: Boolean get() = links.values.any { it == LinkStatus.Live }
@@ -74,6 +78,11 @@ object LiveEngine {
     private var thermal = Thermal.Unknown
     private val renderer by lazy { ScoreboardRenderer() }
     private var scoreFilter: ImageObjectFilterRender? = null
+    private var slateFilter: ImageObjectFilterRender? = null
+    @Volatile private var slate: Slate = Slate.None
+    @Volatile private var slateTitle: String? = null
+    /** Cámaras remotas por lugar (Cámara 2 = lugar 0). */
+    val remotes: List<RemoteVideoSource> = List(2) { RemoteVideoSource() }
     private var logoFilter: ImageObjectFilterRender? = null
     @Volatile private var score: LiveScore = LiveScore()
     @Volatile private var logo: Bitmap? = null
@@ -146,6 +155,7 @@ object LiveEngine {
     fun prepare(q: Quality): Boolean {
         val s = ensureStream()
         if (s.isStreaming || s.isRecording || s.isOnPreview) return _status.value.prepared
+        if (_status.value.videoSource != 0) { runCatching { s.changeVideoSource(s.camera) }; _status.update { it.copy(videoSource = 0) } }
         quality = q
         val cap = bitrateCap(q, thermal)
         // Codificador por hardware: el de software calienta mucho más el teléfono.
@@ -192,15 +202,18 @@ object LiveEngine {
     private fun installOverlays(s: MultiRtmpStream) {
         val gl = s.getGlInterface()
         gl.clearFilters()
+        val pf = ImageObjectFilterRender()
         val sf = ImageObjectFilterRender()
         val lf = ImageObjectFilterRender()
-        gl.addFilter(sf); gl.addFilter(lf)
-        scoreFilter = sf; logoFilter = lf
+        gl.addFilter(pf); gl.addFilter(sf); gl.addFilter(lf)
+        slateFilter = pf; scoreFilter = sf; logoFilter = lf
+        pf.setScale(100f, 100f); pf.setPosition(0f, 0f)
+        applySlate()
         renderer.invalidate()
         renderer.render(score, SystemClock.elapsedRealtime())?.let { sf.setImage(it) }
         sf.setScale(ScoreboardRenderer.WIDTH / ScoreboardRenderer.REFERENCE_WIDTH * 100f, ScoreboardRenderer.HEIGHT / ScoreboardRenderer.REFERENCE_HEIGHT * 100f)
         sf.setPosition(1.8f, 3f)
-        sf.setAlpha(if (score.visible) 1f else 0f)
+        sf.setAlpha(if (score.visible && slate == Slate.None) 1f else 0f)
         applyLogo()
     }
 
@@ -213,19 +226,50 @@ object LiveEngine {
         val sy = b.height / ScoreboardRenderer.REFERENCE_HEIGHT * 100f
         lf.setScale(sx, sy)
         lf.setPosition(100f - sx - 1.8f, 3f)
-        lf.setAlpha(1f)
+        lf.setAlpha(if (slate == Slate.None) 1f else 0f)
     }
 
-    fun setLogo(bitmap: Bitmap?) { logo = bitmap?.let { scaleLogo(it) }; applyLogo() }
+    fun setLogo(bitmap: Bitmap?) { logo = bitmap?.let { scaleLogo(it) }; applyLogo(); if (slate != Slate.None) applySlate() }
 
     @Volatile private var scoreSet = false
     fun currentScore(): LiveScore? = if (scoreSet) score else null
 
     fun setScore(s: LiveScore) {
         scoreSet = true
+        val changed = s.home != score.home || s.away != score.away || s.period != score.period
         score = s
-        scoreFilter?.setAlpha(if (s.visible) 1f else 0f)
+        scoreFilter?.setAlpha(if (s.visible && slate == Slate.None) 1f else 0f)
+        if (changed && slate != Slate.None) applySlate() // el gráfico de descanso/resultado muestra el marcador actual
     }
+
+    /** Pone (o quita) un gráfico de pantalla completa encima de la cámara. */
+    fun setSlate(kind: Slate, title: String? = null) {
+        slate = kind; slateTitle = title
+        applySlate()
+        scoreFilter?.setAlpha(if (score.visible && kind == Slate.None) 1f else 0f)
+        logoFilter?.setAlpha(if (logo != null && kind == Slate.None) 1f else 0f)
+        _status.update { it.copy(slate = kind) }
+    }
+
+    private fun applySlate() {
+        val pf = slateFilter ?: return
+        val bmp = SlateRenderer.render(slate, score, logo, slateTitle)
+        if (bmp == null) { pf.setAlpha(0f); return }
+        pf.setImage(bmp); pf.setScale(100f, 100f); pf.setPosition(0f, 0f); pf.setAlpha(1f)
+    }
+
+    /** Cambia la cámara que sale al aire: 0 = este teléfono, 1.. = cámara remota. */
+    fun selectVideo(index: Int): Boolean {
+        val s = stream ?: return false
+        if (index == _status.value.videoSource) return true
+        val src = if (index == 0) s.camera else remotes.getOrNull(index - 1) ?: return false
+        return runCatching { s.changeVideoSource(src) }
+            .onSuccess { _status.update { it.copy(videoSource = index) } }
+            .onFailure { Log.w(TAG, "cambio de cámara", it) }.isSuccess
+    }
+
+    /** Milisegundos desde el último cuadro de la cámara remota (null si nunca llegó). */
+    fun remoteAgeMs(slot: Int): Long? = remotes.getOrNull(slot)?.lastFrameAt?.takeIf { it > 0 }?.let { SystemClock.elapsedRealtime() - it }
 
     private fun startOverlayLoop() = scope.launch {
         while (isActive) {
@@ -242,6 +286,7 @@ object LiveEngine {
         val ready = destinations.filter { it.ready }
         if (ready.isEmpty()) return "Activa al menos un destino con su clave."
         LiveService.start(app)
+        autoRecord = record
         if (record && !s.isRecording) startRecording(s)
         for (d in ready) {
             val endpoint = d.endpoint() ?: continue
@@ -282,14 +327,35 @@ object LiveEngine {
     }
 
     private fun finishSession(s: MultiRtmpStream) {
-        if (s.isRecording) stopRecording(s)
+        if (s.isRecording && !manualRecording) stopRecording(s)
+        autoRecord = false
         _status.update { it.copy(streamingSince = null) }
-        LiveService.stop(app)
+        if (!s.isRecording) LiveService.stop(app)
         // Los codificadores quedan listos de nuevo para otra transmisión.
         if (!s.isStreaming && !s.isRecording) _status.update { it.copy(prepared = true) }
     }
 
     // ---------- Grabación de respaldo ----------
+
+    @Volatile private var manualRecording = false
+
+    /** GRABAR del Estudio: graba aunque no se transmita; sigue grabando aunque termine la transmisión. */
+    fun startManualRecording(): String? {
+        val s = stream ?: return "La cámara no está lista."
+        if (!_status.value.prepared) return "La cámara no está lista."
+        manualRecording = true
+        if (!s.isRecording) { LiveService.start(app); startRecording(s) }
+        return null
+    }
+
+    fun stopManualRecording() {
+        val s = stream ?: return
+        manualRecording = false
+        if (s.isRecording && !s.anyActive()) { stopRecording(s); LiveService.stop(app) }
+        else if (s.isRecording && !autoRecord) stopRecording(s)
+    }
+
+    @Volatile private var autoRecord = false
 
     private fun startRecording(s: MultiRtmpStream) {
         val dir = app.getExternalFilesDir(Environment.DIRECTORY_MOVIES) ?: app.filesDir
@@ -379,5 +445,6 @@ object LiveEngine {
         runCatching { s.release() }
         stream = null
         _status.update { EngineStatus(thermal = it.thermal, lastRecording = it.lastRecording) }
+        slate = Slate.None
     }
 }

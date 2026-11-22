@@ -44,11 +44,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /** Qué hace este dispositivo: estudio (horizontal) o lector de pizarra (celular vertical). */
-enum class AppRole { Live, Studio, Reader }
+enum class AppRole { Studio, Board, Camera, Live, DemoStudio, Reader }
 
 class AppViewModel : ViewModel() {
     // Si hay una transmisión en curso (p. ej. se volvió desde la notificación), se entra directo a ella.
-    private val _role = MutableStateFlow<AppRole?>(if (LiveEngine.status.value.anyOn) AppRole.Live else null)
+    private val _role = MutableStateFlow<AppRole?>(if (LiveEngine.status.value.anyOn) AppRole.Studio else null)
     val role: StateFlow<AppRole?> = _role.asStateFlow()
 
     fun select(role: AppRole) { _role.value = role }
@@ -63,20 +63,24 @@ fun HrApp(appViewModel: AppViewModel = viewModel()) {
     DisposableEffect(role) {
         activity?.requestedOrientation = when (role) {
             // Horizontal fija: la orientación del video no debe cambiar a mitad de la transmisión.
-            AppRole.Live -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-            AppRole.Studio -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            AppRole.Studio, AppRole.Live, AppRole.Camera, AppRole.Board -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            AppRole.DemoStudio -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             AppRole.Reader -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
             null -> ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
         }
         onDispose {}
     }
     // El modo Transmitir maneja Atrás por su cuenta (no se sale si está al aire).
-    BackHandler(enabled = role != null && role != AppRole.Live) { appViewModel.backToSelector() }
+    // Estudio, Transmitir y Cámara manejan Atrás por su cuenta (no se sale estando al aire).
+    BackHandler(enabled = role == AppRole.DemoStudio || role == AppRole.Reader || role == AppRole.Board) { appViewModel.backToSelector() }
 
     when (role) {
         null -> RoleScreen(onSelect = appViewModel::select)
+        AppRole.Studio -> com.hrmediasports.studio.ui.RealStudioApp(onExit = appViewModel::backToSelector)
+        AppRole.Board -> com.hrmediasports.studio.board.BoardApp(onExit = appViewModel::backToSelector)
+        AppRole.Camera -> com.hrmediasports.studio.link.CameraRoleApp(onExit = appViewModel::backToSelector)
         AppRole.Live -> LiveApp(onExit = appViewModel::backToSelector)
-        AppRole.Studio -> StudioApp()
+        AppRole.DemoStudio -> StudioApp()
         AppRole.Reader -> ReaderApp()
     }
 }
@@ -87,16 +91,17 @@ fun RoleScreen(onSelect: (AppRole) -> Unit) {
         Modifier.fillMaxSize().background(HrColors.Background).windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
         HrBrandBar(title = null, compact = true)
-        DemoBanner(text = "Transmitir funciona de verdad (en prueba). Estudio y Lector siguen siendo demostración.")
+        DemoBanner(text = "Versión en prueba: valídala con la guía antes de usarla en un partido.")
         Column(
             Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         ) {
             Text("¿Qué hará este dispositivo?", color = HrColors.TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-            RoleButton("TRANSMITIR EN VIVO", "Cámara del teléfono a YouTube y Facebook con marcador", { onSelect(AppRole.Live) }, live = true)
-            RoleButton("ESTUDIO (DEMO)", "Pantalla horizontal · tablet o celular", { onSelect(AppRole.Studio) })
-            RoleButton("LECTOR DE PIZARRA (DEMO)", "Pantalla vertical · celular frente al marcador", { onSelect(AppRole.Reader) })
+            RoleButton("ESTUDIO", "Teléfono principal: cámara, marcador, Vista previa / Al aire y transmisión a YouTube y Facebook", { onSelect(AppRole.Studio) }, live = true)
+            RoleButton("PIZARRA", "Teléfono que mira el marcador del gimnasio (o se marca a mano) y lo manda al Estudio", { onSelect(AppRole.Board) })
+            RoleButton("CÁMARA", "Teléfono extra que solo filma y manda la imagen al Estudio (Cámara 2)", { onSelect(AppRole.Camera) })
+            RoleButton("TRANSMISIÓN RÁPIDA", "Un solo teléfono, sin Estudio: cámara + marcador a mano", { onSelect(AppRole.Live) })
             Text(
                 "Con el botón Atrás de Android vuelves a esta pantalla.",
                 color = HrColors.TextMuted,

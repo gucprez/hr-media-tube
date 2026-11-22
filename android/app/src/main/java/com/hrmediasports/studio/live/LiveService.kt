@@ -28,9 +28,12 @@ class LiveService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = notification()
+        // Cámara remota y pizarra no usan micrófono: declararlo sin permiso haría fallar el servicio.
+        val cameraOnly = intent?.getBooleanExtra(EXTRA_CAMERA_ONLY, false) ?: false
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            startForeground(ID, notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+            val type = if (cameraOnly) ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+                else ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            startForeground(ID, notification, type)
         } else startForeground(ID, notification)
         acquireLocks()
         return START_NOT_STICKY
@@ -64,7 +67,7 @@ class LiveService : Service() {
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE)
         val b = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(this, CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(this)
-        return b.setContentTitle("HR Media Sports · transmitiendo")
+        return b.setContentTitle("HR Media Sports · en uso")
             .setContentText("Toca para volver al control de la transmisión")
             .setSmallIcon(R.drawable.ic_stat_live)
             .setOngoing(true)
@@ -76,8 +79,10 @@ class LiveService : Service() {
         private const val ID = 7
         private const val CHANNEL = "transmision"
 
-        fun start(context: Context) {
-            val i = Intent(context, LiveService::class.java)
+        private const val EXTRA_CAMERA_ONLY = "cameraOnly"
+
+        fun start(context: Context, cameraOnly: Boolean = false) {
+            val i = Intent(context, LiveService::class.java).putExtra(EXTRA_CAMERA_ONLY, cameraOnly)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(i) else context.startService(i)
         }
 

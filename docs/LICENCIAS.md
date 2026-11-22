@@ -43,3 +43,5 @@ Apache-2.0 (archivo `LICENSE` en la raíz). Compatible con todas las dependencia
 | Dependencia | Licencia | Uso |
 |---|---|---|
 | RootEncoder 2.6.1 (pedroSG94, vía JitPack) | Apache-2.0 | Cámara, codificación por hardware, RTMP/RTMPS, grabación |
+| AndroidX CameraX 1.3.4 | Apache-2.0 | Cámara de la Pizarra (lectura automática) y lector de QR |
+| ZXing core 3.5.3 | Apache-2.0 | Generar y leer el QR de emparejamiento |
