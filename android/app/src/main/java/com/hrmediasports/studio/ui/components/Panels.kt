@@ -116,7 +116,7 @@ fun PreviewPanel(
         badge = { if (source != null) StatusChip(source.label.uppercase(), HrColors.Orange) },
     ) {
         FitVideo(Modifier.weight(1f).fillMaxWidth()) {
-            if (source != null) SourceView(source, match, Modifier.fillMaxSize(), dataNote)
+            if (source != null) SourceView(source, match, Modifier.fillMaxSize(), dataNote, MonitorRole.Preview)
             else EmptyVideo("Elige una fuente para prepararla")
         }
         TakeToAirButton(canTakeToAir, alreadyOnAir, source?.label, onTakeToAir)
@@ -137,12 +137,12 @@ fun ProgramPanel(source: VideoSource?, match: MatchState?, dataNote: String?, mo
         },
     ) {
         FitVideo(Modifier.weight(1f).fillMaxWidth()) {
-            if (source != null) SourceView(source, match, Modifier.fillMaxSize(), dataNote)
+            if (source != null) SourceView(source, match, Modifier.fillMaxSize(), dataNote, MonitorRole.Program)
             else EmptyVideo("Nada al aire. Prepara una fuente y pulsa «Poner al aire».")
         }
         Box(Modifier.fillMaxWidth().heightIn(min = 24.dp), contentAlignment = Alignment.CenterStart) {
             Text(
-                "Salida de demostración: no se emite ni se graba.",
+                if (LocalLiveMonitors.current != null) "Esto es exactamente lo que sale en la transmisión." else "Salida de demostración: no se emite ni se graba.",
                 color = HrColors.TextMuted,
                 fontSize = 12.sp,
             )

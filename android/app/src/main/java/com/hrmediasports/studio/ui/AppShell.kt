@@ -37,15 +37,18 @@ import com.hrmediasports.studio.ui.components.DemoBanner
 import com.hrmediasports.studio.ui.components.HrBrandBar
 import com.hrmediasports.studio.ui.reader.ReaderApp
 import com.hrmediasports.studio.ui.theme.HrColors
+import com.hrmediasports.studio.live.LiveApp
+import com.hrmediasports.studio.live.LiveEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /** Qué hace este dispositivo: estudio (horizontal) o lector de pizarra (celular vertical). */
-enum class AppRole { Studio, Reader }
+enum class AppRole { Studio, Board, Camera, Live, DemoStudio, Reader }
 
 class AppViewModel : ViewModel() {
-    private val _role = MutableStateFlow<AppRole?>(null)
+    // Si hay una transmisión en curso (p. ej. se volvió desde la notificación), se entra directo a ella.
+    private val _role = MutableStateFlow<AppRole?>(if (LiveEngine.status.value.anyOn) AppRole.Studio else null)
     val role: StateFlow<AppRole?> = _role.asStateFlow()
 
     fun select(role: AppRole) { _role.value = role }
@@ -59,17 +62,25 @@ fun HrApp(appViewModel: AppViewModel = viewModel()) {
     val activity = LocalContext.current as? Activity
     DisposableEffect(role) {
         activity?.requestedOrientation = when (role) {
-            AppRole.Studio -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            // Horizontal fija: la orientación del video no debe cambiar a mitad de la transmisión.
+            AppRole.Studio, AppRole.Live, AppRole.Camera, AppRole.Board -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            AppRole.DemoStudio -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             AppRole.Reader -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
             null -> ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
         }
         onDispose {}
     }
-    BackHandler(enabled = role != null) { appViewModel.backToSelector() }
+    // El modo Transmitir maneja Atrás por su cuenta (no se sale si está al aire).
+    // Estudio, Transmitir y Cámara manejan Atrás por su cuenta (no se sale estando al aire).
+    BackHandler(enabled = role == AppRole.DemoStudio || role == AppRole.Reader || role == AppRole.Board) { appViewModel.backToSelector() }
 
     when (role) {
         null -> RoleScreen(onSelect = appViewModel::select)
-        AppRole.Studio -> StudioApp()
+        AppRole.Studio -> com.hrmediasports.studio.ui.RealStudioApp(onExit = appViewModel::backToSelector)
+        AppRole.Board -> com.hrmediasports.studio.board.BoardApp(onExit = appViewModel::backToSelector)
+        AppRole.Camera -> com.hrmediasports.studio.link.CameraRoleApp(onExit = appViewModel::backToSelector)
+        AppRole.Live -> LiveApp(onExit = appViewModel::backToSelector)
+        AppRole.DemoStudio -> StudioApp()
         AppRole.Reader -> ReaderApp()
     }
 }
@@ -80,15 +91,17 @@ fun RoleScreen(onSelect: (AppRole) -> Unit) {
         Modifier.fillMaxSize().background(HrColors.Background).windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
         HrBrandBar(title = null, compact = true)
-        DemoBanner(text = "Versión de demostración de la interfaz.")
+        DemoBanner(text = "Versión en prueba: valídala con la guía antes de usarla en un partido.")
         Column(
             Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         ) {
             Text("¿Qué hará este dispositivo?", color = HrColors.TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-            RoleButton("ESTUDIO", "Pantalla horizontal · tablet o celular", { onSelect(AppRole.Studio) })
-            RoleButton("LECTOR DE PIZARRA", "Pantalla vertical · celular frente al marcador", { onSelect(AppRole.Reader) })
+            RoleButton("ESTUDIO", "Teléfono principal: cámara, marcador, Vista previa / Al aire y transmisión a YouTube y Facebook", { onSelect(AppRole.Studio) }, live = true)
+            RoleButton("PIZARRA", "Teléfono que mira el marcador del gimnasio (o se marca a mano) y lo manda al Estudio", { onSelect(AppRole.Board) })
+            RoleButton("CÁMARA", "Teléfono extra que solo filma y manda la imagen al Estudio (Cámara 2)", { onSelect(AppRole.Camera) })
+            RoleButton("TRANSMISIÓN RÁPIDA", "Un solo teléfono, sin Estudio: cámara + marcador a mano", { onSelect(AppRole.Live) })
             Text(
                 "Con el botón Atrás de Android vuelves a esta pantalla.",
                 color = HrColors.TextMuted,
@@ -100,11 +113,12 @@ fun RoleScreen(onSelect: (AppRole) -> Unit) {
 }
 
 @Composable
-private fun RoleButton(title: String, subtitle: String, onClick: () -> Unit) {
+private fun RoleButton(title: String, subtitle: String, onClick: () -> Unit, live: Boolean = false) {
     Button(
         onClick = onClick,
         modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth().heightIn(min = 72.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = HrColors.Orange, contentColor = Color.Black),
+        colors = if (live) ButtonDefaults.buttonColors(containerColor = HrColors.OnAirRed, contentColor = Color.White)
+            else ButtonDefaults.buttonColors(containerColor = HrColors.Orange, contentColor = Color.Black),
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(title, fontSize = 20.sp, fontWeight = FontWeight.Black)

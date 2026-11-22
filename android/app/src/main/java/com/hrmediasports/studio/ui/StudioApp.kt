@@ -16,6 +16,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -83,6 +84,10 @@ fun StudioAppContent(
     onApplyCorrection: () -> Unit,
     onDismissCorrection: () -> Unit,
     onMessageShown: () -> Unit,
+    /** Estudio real: botones extra de la barra superior. */
+    topActions: @Composable RowScope.(iconOnly: Boolean) -> Unit = {},
+    /** Estudio real: reemplaza el contenido de una sección (devuelve true si la dibujó). */
+    sectionOverride: (@Composable (Destination, Modifier) -> Boolean)? = null,
 ) {
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(state.message) {
@@ -108,11 +113,12 @@ fun StudioAppContent(
             // Letra muy grande en ventana pequeña: riel solo con iconos y banner reducido al rótulo.
             val bigText = fontScale > 1.3f && (!expanded || shortWindow)
             Column(Modifier.fillMaxSize()) {
-                HrTopBar(state, expanded, iconOnlyOutputs, onRecord, onStream)
+                HrTopBar(state, expanded, iconOnlyOutputs, onRecord, onStream, topActions)
                 if (state.isDemo) DemoBanner(labelOnly = bigText)
                 Row(Modifier.weight(1f)) {
                     NavRail(state.destination, onNavigate, compact = !expanded || shortWindow, iconsOnly = bigText)
-                    when (state.destination) {
+                    val overridden = state.destination != Destination.Studio && sectionOverride?.invoke(state.destination, Modifier.weight(1f)) == true
+                    if (!overridden) when (state.destination) {
                         Destination.Studio -> StudioScreen(state, actions, Modifier.weight(1f))
                         Destination.Cameras -> CamerasScreen(state, Modifier.weight(1f))
                         Destination.Graphics -> GraphicsScreen(
@@ -131,7 +137,7 @@ fun StudioAppContent(
                     ConnectionStatusBar(
                         connectedCameras = state.connectedCameras,
                         scoreboardConnected = state.scoreboard.link == LinkState.Connected,
-                        versionLabel = "v0.1.0-demo",
+                        versionLabel = if (state.live) "v0.4.0" else "v0.1.0-demo",
                     )
                 }
             }
@@ -145,9 +151,11 @@ fun StudioAppContent(
 
 /** Barra superior del Estudio: marca común + estado demo + controles de salida. */
 @Composable
-private fun HrTopBar(state: StudioUiState, expanded: Boolean, iconOnly: Boolean, onRecord: () -> Unit, onStream: () -> Unit) {
+private fun HrTopBar(state: StudioUiState, expanded: Boolean, iconOnly: Boolean, onRecord: () -> Unit, onStream: () -> Unit,
+                     topActions: @Composable RowScope.(Boolean) -> Unit) {
     HrBrandBar(title = if (expanded) state.destination.title else null, compact = !expanded) {
         if (state.isDemo) StatusChip("DEMO", HrColors.Amber, filled = false)
+        topActions(!expanded)
         OutputControls(state.recording, state.streaming, onRecord, onStream, iconOnly)
     }
 }

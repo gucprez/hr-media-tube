@@ -7,6 +7,10 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import com.hrmediasports.studio.ui.LiveTopActions
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.background
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.core.app.ActivityScenario
 import com.hrmediasports.studio.domain.MatchState
@@ -178,4 +182,116 @@ class ScreenshotTest {
     @Test fun small640Big15() = shot("30-640x360dp-texto-1.5", 640, 360, 240, 1.5f, vm(setup = onAirScenario()))
     @Test fun wide1280Big20() = shot("31-1280x720dp-texto-2.0", 1280, 720, 160, 2.0f, vm(setup = onAirScenario()))
     @Test fun small640BigNoOnAir() = shot("32-640x360dp-texto-2.0-sin-salida", 640, 360, 240, 2.0f)
+
+    // ---------- Modo Transmitir (motor falso: sin cámara ni red) ----------
+    private fun liveVm(setup: com.hrmediasports.studio.FakeControl.() -> Unit = {}, settings: com.hrmediasports.studio.live.LiveSettings? = null,
+                       ui: com.hrmediasports.studio.live.LiveViewModel.() -> Unit = {}): com.hrmediasports.studio.live.LiveViewModel {
+        val c = com.hrmediasports.studio.FakeControl().apply(setup)
+        val st = settings ?: com.hrmediasports.studio.live.LiveSettings(homeName = "TIGR", awayName = "LEON")
+            .withDestination(com.hrmediasports.studio.live.LiveDestination(com.hrmediasports.studio.live.Platform.YouTube, enabled = true, key = "abcd-efgh-1234"))
+            .withDestination(com.hrmediasports.studio.live.LiveDestination(com.hrmediasports.studio.live.Platform.Facebook, enabled = true, key = "FB-5678"))
+        return com.hrmediasports.studio.live.LiveViewModel(c, com.hrmediasports.studio.live.InMemoryLiveSettingsStore(st), { 100_000L }, tickMillis = 0).apply(ui)
+    }
+
+    private fun onAirLive(): com.hrmediasports.studio.live.LiveViewModel.() -> Unit = {
+        goLive(); points(true, 3); points(true, 2); points(false, 2); foul(false, 1); foul(false, 1); toggleClock()
+    }
+
+    @Test fun liveS21Idle() = shot("60-transmitir-s21-listo", 915, 412, 420, content = { com.hrmediasports.studio.live.LiveScreen(liveVm(), {}) })
+    @Test fun liveS21OnAir() = shot("61-transmitir-s21-al-aire", 915, 412, 420, content = { com.hrmediasports.studio.live.LiveScreen(liveVm(ui = onAirLive()), {}) })
+    @Test fun liveS21OneDown() = shot("62-transmitir-s21-facebook-reconectando", 915, 412, 420, content = {
+        val vm = liveVm(ui = onAirLive())
+        com.hrmediasports.studio.live.LiveScreen(vm, {})
+    })
+    @Test fun liveSetup() = shot("63-transmitir-s21-configurar", 915, 412, 420, manualClock = true, content = {
+        com.hrmediasports.studio.live.LiveScreen(liveVm(ui = { openPanel(com.hrmediasports.studio.live.LivePanel.Setup) }), {})
+    })
+    @Test fun liveSmallBigText() = shot("64-transmitir-731x411-texto-1.3", 731, 411, 420, 1.3f, content = { com.hrmediasports.studio.live.LiveScreen(liveVm(ui = onAirLive()), {}) })
+    @Test fun liveSaver() = shot("65-transmitir-ahorro", 915, 412, 420, content = { com.hrmediasports.studio.live.LiveScreen(liveVm(ui = { onAirLive()(this); toggleSaver() }), {}) })
+    @Test fun liveRoles() = shot("66-seleccion-de-modo", 915, 412, 420, content = { com.hrmediasports.studio.ui.RoleScreen(onSelect = {}) })
+
+    /** Lo que sale en el VIDEO: marcador incrustado sobre un cuadro de 1280×720. */
+    @Test fun liveOverlayInVideo() {
+        val frame = Bitmap.createBitmap(1280, 720, Bitmap.Config.ARGB_8888)
+        val c = Canvas(frame)
+        c.drawColor(android.graphics.Color.rgb(150, 110, 70))   // piso de duela
+        val r = com.hrmediasports.studio.live.ScoreboardRenderer()
+        var s = com.hrmediasports.studio.live.ScoreEditor.setTeams(com.hrmediasports.studio.live.LiveScore(), "TIGR", 0xFFFB8C00, "LEON", 0xFF1E88E5, 10)
+        s = com.hrmediasports.studio.live.ScoreEditor.addPoints(s, true, 54)
+        s = com.hrmediasports.studio.live.ScoreEditor.addPoints(s, false, 49)
+        s = com.hrmediasports.studio.live.ScoreEditor.addFoul(s, false, 4)
+        s = com.hrmediasports.studio.live.ScoreEditor.nextPeriod(com.hrmediasports.studio.live.ScoreEditor.nextPeriod(s)).copy(clockBaseSeconds = 7 * 60 + 32)
+        s = com.hrmediasports.studio.live.ScoreEditor.addFoul(s, true, 2)
+        val bmp = r.render(s, 0L)!!
+        c.drawBitmap(bmp, 1280 * 0.018f, 720 * 0.03f, null)
+        val dir = File("build/screenshots").also { it.mkdirs() }
+        File(dir, "67-video-marcador-1280x720.png").outputStream().use { frame.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    // ---------- Estudio real, Pizarra y QR (motores falsos) ----------
+    private fun realStudio(setup: (com.hrmediasports.studio.FakeStudioLive, com.hrmediasports.studio.FakeBoardSource) -> Unit = { _, _ -> },
+                           ui: StudioViewModel.() -> Unit = {}): StudioViewModel {
+        val settings = com.hrmediasports.studio.live.LiveSettings(homeName = "TIGR", awayName = "LEON")
+            .withDestination(com.hrmediasports.studio.live.LiveDestination(com.hrmediasports.studio.live.Platform.YouTube, enabled = true, key = "yt-1234"))
+            .withDestination(com.hrmediasports.studio.live.LiveDestination(com.hrmediasports.studio.live.Platform.Facebook, enabled = true, key = "fb-5678"))
+        val live = com.hrmediasports.studio.FakeStudioLive(com.hrmediasports.studio.live.InMemoryLiveSettingsStore(settings))
+        val board = com.hrmediasports.studio.FakeBoardSource()
+        setup(live, board)
+        return StudioViewModel(DemoMediaEngine, board, { 100_000L }, emptyFlow(), live).apply(ui)
+    }
+
+    @Composable
+    private fun RealStudioContent(vm: StudioViewModel) {
+        val state by vm.state.collectAsState()
+        val monitors: @Composable (com.hrmediasports.studio.ui.VideoSource, com.hrmediasports.studio.ui.components.MonitorRole, androidx.compose.ui.Modifier) -> Boolean = { src, role, m ->
+            if (role == com.hrmediasports.studio.ui.components.MonitorRole.Program) {
+                androidx.compose.foundation.layout.Box(m.then(androidx.compose.ui.Modifier.background(androidx.compose.ui.graphics.Color(0xFF6B4A2B))), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                    androidx.compose.material3.Text("[video de la cámara: ${src.label}]", color = androidx.compose.ui.graphics.Color.White)
+                }
+                true
+            } else false
+        }
+        androidx.compose.runtime.CompositionLocalProvider(com.hrmediasports.studio.ui.components.LocalLiveMonitors provides monitors) {
+            com.hrmediasports.studio.ui.StudioAppContent(
+                state = state,
+                actions = com.hrmediasports.studio.ui.screens.StudioActions(onSelectSource = vm::selectSource, onTakeToAir = vm::takeToAir),
+                onNavigate = vm::navigate, onRecord = vm::onRecordClick, onStream = vm::onStreamClick,
+                onDraftChange = vm::updateDraft, onApplyCorrection = vm::applyCorrection, onDismissCorrection = vm::dismissCorrection,
+                onMessageShown = vm::consumeMessage,
+                topActions = { compact -> LiveTopActions(state, state.engine ?: com.hrmediasports.studio.live.EngineStatus(), compact, vm) },
+                sectionOverride = { dest, m ->
+                    if (dest == com.hrmediasports.studio.ui.Destination.Cameras) { com.hrmediasports.studio.ui.DevicesScreen(state, state.engine ?: com.hrmediasports.studio.live.EngineStatus(), com.hrmediasports.studio.link.PairingCode.random("192.168.1.20", 47800), vm, m); true } else false
+                },
+            )
+        }
+    }
+
+    private fun studioOnAir(): (com.hrmediasports.studio.FakeStudioLive, com.hrmediasports.studio.FakeBoardSource) -> Unit = { live, board ->
+        board.receive(54, 49, 100_000L)
+        live.cameras.value = listOf(com.hrmediasports.studio.link.RemoteCamera(0, connected = true, name = "S21+", hasVideo = true, fps = 30, battery = 80, thermal = 1),
+            com.hrmediasports.studio.link.RemoteCamera(1))
+        live.remoteAge = 100
+    }
+
+    @Test fun realStudioS22() = shot("70-estudio-real-s22", 915, 412, 420, content = {
+        RealStudioContent(realStudio(studioOnAir(), ui = { onStreamClick(); selectSource(com.hrmediasports.studio.ui.SOURCE_CAMERA_2) }))
+    })
+    @Test fun realStudioTablet() = shot("71-estudio-real-1280x800", 1280, 800, 240, content = {
+        RealStudioContent(realStudio(studioOnAir(), ui = { onStreamClick(); onRecordClick(); selectSource(com.hrmediasports.studio.ui.SOURCE_BREAK) }))
+    })
+    @Test fun realStudioDevices() = shot("72-estudio-dispositivos", 915, 412, 420, content = {
+        RealStudioContent(realStudio(studioOnAir(), ui = { navigate(com.hrmediasports.studio.ui.Destination.Cameras) }))
+    })
+    @Test fun pairingQr() = shot("73-estudio-qr-conectar", 915, 412, 420, content = {
+        com.hrmediasports.studio.ui.PairingDialog(com.hrmediasports.studio.link.PairingCode.random("192.168.1.20", 47800), {}, {})
+    })
+    @Test fun boardManual() = shot("74-pizarra-a-mano", 915, 412, 420, content = {
+        val sink = object : com.hrmediasports.studio.board.ScoreSink {
+            override val status = MutableStateFlow<com.hrmediasports.studio.link.ClientStatus>(com.hrmediasports.studio.link.ClientStatus.Connected("Pizarra"))
+            override fun send(msg: com.hrmediasports.studio.link.ScoreMessage) {}
+        }
+        val vm = com.hrmediasports.studio.board.BoardViewModel(sink, com.hrmediasports.studio.domain.InMemoryZoneTemplateStore(), { 100_000L }, tickMillis = 0)
+        vm.points(true, 3); vm.points(false, 2)
+        com.hrmediasports.studio.board.BoardScreen(vm, {}, {})
+    })
 }

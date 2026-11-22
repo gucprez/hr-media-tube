@@ -196,12 +196,12 @@ private fun LowLayout(state: StudioUiState, actions: StudioActions, width: Dp, h
 
 @Composable
 private fun PreviewMonitor(state: StudioUiState, match: com.hrmediasports.studio.domain.MatchState?, note: String?, modifier: Modifier) {
-    MonitorBox(state.previewSource, match, note, HrColors.Orange, "Elige una fuente para prepararla", modifier)
+    MonitorBox(state.previewSource, match, note, HrColors.Orange, "Elige una fuente para prepararla", modifier, com.hrmediasports.studio.ui.components.MonitorRole.Preview)
 }
 
 @Composable
 private fun ProgramMonitor(state: StudioUiState, match: com.hrmediasports.studio.domain.MatchState?, note: String?, modifier: Modifier) {
-    MonitorBox(state.programSource, match, note, HrColors.OnAirRed, "Nada al aire", modifier)
+    MonitorBox(state.programSource, match, note, HrColors.OnAirRed, "Nada al aire", modifier, com.hrmediasports.studio.ui.components.MonitorRole.Program)
 }
 
 /**
