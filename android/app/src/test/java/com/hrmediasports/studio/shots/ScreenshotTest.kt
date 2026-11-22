@@ -178,4 +178,49 @@ class ScreenshotTest {
     @Test fun small640Big15() = shot("30-640x360dp-texto-1.5", 640, 360, 240, 1.5f, vm(setup = onAirScenario()))
     @Test fun wide1280Big20() = shot("31-1280x720dp-texto-2.0", 1280, 720, 160, 2.0f, vm(setup = onAirScenario()))
     @Test fun small640BigNoOnAir() = shot("32-640x360dp-texto-2.0-sin-salida", 640, 360, 240, 2.0f)
+
+    // ---------- Modo Transmitir (motor falso: sin cámara ni red) ----------
+    private fun liveVm(setup: com.hrmediasports.studio.FakeControl.() -> Unit = {}, settings: com.hrmediasports.studio.live.LiveSettings? = null,
+                       ui: com.hrmediasports.studio.live.LiveViewModel.() -> Unit = {}): com.hrmediasports.studio.live.LiveViewModel {
+        val c = com.hrmediasports.studio.FakeControl().apply(setup)
+        val st = settings ?: com.hrmediasports.studio.live.LiveSettings(homeName = "TIGR", awayName = "LEON")
+            .withDestination(com.hrmediasports.studio.live.LiveDestination(com.hrmediasports.studio.live.Platform.YouTube, enabled = true, key = "abcd-efgh-1234"))
+            .withDestination(com.hrmediasports.studio.live.LiveDestination(com.hrmediasports.studio.live.Platform.Facebook, enabled = true, key = "FB-5678"))
+        return com.hrmediasports.studio.live.LiveViewModel(c, com.hrmediasports.studio.live.InMemoryLiveSettingsStore(st), { 100_000L }, tickMillis = 0).apply(ui)
+    }
+
+    private fun onAirLive(): com.hrmediasports.studio.live.LiveViewModel.() -> Unit = {
+        goLive(); points(true, 3); points(true, 2); points(false, 2); foul(false, 1); foul(false, 1); toggleClock()
+    }
+
+    @Test fun liveS21Idle() = shot("60-transmitir-s21-listo", 915, 412, 420, content = { com.hrmediasports.studio.live.LiveScreen(liveVm(), {}) })
+    @Test fun liveS21OnAir() = shot("61-transmitir-s21-al-aire", 915, 412, 420, content = { com.hrmediasports.studio.live.LiveScreen(liveVm(ui = onAirLive()), {}) })
+    @Test fun liveS21OneDown() = shot("62-transmitir-s21-facebook-reconectando", 915, 412, 420, content = {
+        val vm = liveVm(ui = onAirLive())
+        com.hrmediasports.studio.live.LiveScreen(vm, {})
+    })
+    @Test fun liveSetup() = shot("63-transmitir-s21-configurar", 915, 412, 420, manualClock = true, content = {
+        com.hrmediasports.studio.live.LiveScreen(liveVm(ui = { openPanel(com.hrmediasports.studio.live.LivePanel.Setup) }), {})
+    })
+    @Test fun liveSmallBigText() = shot("64-transmitir-731x411-texto-1.3", 731, 411, 420, 1.3f, content = { com.hrmediasports.studio.live.LiveScreen(liveVm(ui = onAirLive()), {}) })
+    @Test fun liveSaver() = shot("65-transmitir-ahorro", 915, 412, 420, content = { com.hrmediasports.studio.live.LiveScreen(liveVm(ui = { onAirLive()(this); toggleSaver() }), {}) })
+    @Test fun liveRoles() = shot("66-seleccion-de-modo", 915, 412, 420, content = { com.hrmediasports.studio.ui.RoleScreen(onSelect = {}) })
+
+    /** Lo que sale en el VIDEO: marcador incrustado sobre un cuadro de 1280×720. */
+    @Test fun liveOverlayInVideo() {
+        val frame = Bitmap.createBitmap(1280, 720, Bitmap.Config.ARGB_8888)
+        val c = Canvas(frame)
+        c.drawColor(android.graphics.Color.rgb(150, 110, 70))   // piso de duela
+        val r = com.hrmediasports.studio.live.ScoreboardRenderer()
+        var s = com.hrmediasports.studio.live.ScoreEditor.setTeams(com.hrmediasports.studio.live.LiveScore(), "TIGR", 0xFFFB8C00, "LEON", 0xFF1E88E5, 10)
+        s = com.hrmediasports.studio.live.ScoreEditor.addPoints(s, true, 54)
+        s = com.hrmediasports.studio.live.ScoreEditor.addPoints(s, false, 49)
+        s = com.hrmediasports.studio.live.ScoreEditor.addFoul(s, false, 4)
+        s = com.hrmediasports.studio.live.ScoreEditor.nextPeriod(com.hrmediasports.studio.live.ScoreEditor.nextPeriod(s)).copy(clockBaseSeconds = 7 * 60 + 32)
+        s = com.hrmediasports.studio.live.ScoreEditor.addFoul(s, true, 2)
+        val bmp = r.render(s, 0L)!!
+        c.drawBitmap(bmp, 1280 * 0.018f, 720 * 0.03f, null)
+        val dir = File("build/screenshots").also { it.mkdirs() }
+        File(dir, "67-video-marcador-1280x720.png").outputStream().use { frame.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
 }

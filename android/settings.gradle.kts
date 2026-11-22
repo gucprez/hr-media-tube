@@ -10,6 +10,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Solo para RootEncoder (Apache-2.0), que se publica en JitPack.
+        maven("https://jitpack.io") { content { includeGroupByRegex("com\\.github\\.pedroSG94.*") } }
     }
 }
 

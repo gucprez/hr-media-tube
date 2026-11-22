@@ -37,15 +37,18 @@ import com.hrmediasports.studio.ui.components.DemoBanner
 import com.hrmediasports.studio.ui.components.HrBrandBar
 import com.hrmediasports.studio.ui.reader.ReaderApp
 import com.hrmediasports.studio.ui.theme.HrColors
+import com.hrmediasports.studio.live.LiveApp
+import com.hrmediasports.studio.live.LiveEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /** Qué hace este dispositivo: estudio (horizontal) o lector de pizarra (celular vertical). */
-enum class AppRole { Studio, Reader }
+enum class AppRole { Live, Studio, Reader }
 
 class AppViewModel : ViewModel() {
-    private val _role = MutableStateFlow<AppRole?>(null)
+    // Si hay una transmisión en curso (p. ej. se volvió desde la notificación), se entra directo a ella.
+    private val _role = MutableStateFlow<AppRole?>(if (LiveEngine.status.value.anyOn) AppRole.Live else null)
     val role: StateFlow<AppRole?> = _role.asStateFlow()
 
     fun select(role: AppRole) { _role.value = role }
@@ -59,16 +62,20 @@ fun HrApp(appViewModel: AppViewModel = viewModel()) {
     val activity = LocalContext.current as? Activity
     DisposableEffect(role) {
         activity?.requestedOrientation = when (role) {
+            // Horizontal fija: la orientación del video no debe cambiar a mitad de la transmisión.
+            AppRole.Live -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
             AppRole.Studio -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             AppRole.Reader -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
             null -> ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
         }
         onDispose {}
     }
-    BackHandler(enabled = role != null) { appViewModel.backToSelector() }
+    // El modo Transmitir maneja Atrás por su cuenta (no se sale si está al aire).
+    BackHandler(enabled = role != null && role != AppRole.Live) { appViewModel.backToSelector() }
 
     when (role) {
         null -> RoleScreen(onSelect = appViewModel::select)
+        AppRole.Live -> LiveApp(onExit = appViewModel::backToSelector)
         AppRole.Studio -> StudioApp()
         AppRole.Reader -> ReaderApp()
     }
@@ -80,15 +87,16 @@ fun RoleScreen(onSelect: (AppRole) -> Unit) {
         Modifier.fillMaxSize().background(HrColors.Background).windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
         HrBrandBar(title = null, compact = true)
-        DemoBanner(text = "Versión de demostración de la interfaz.")
+        DemoBanner(text = "Transmitir funciona de verdad (en prueba). Estudio y Lector siguen siendo demostración.")
         Column(
             Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         ) {
             Text("¿Qué hará este dispositivo?", color = HrColors.TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-            RoleButton("ESTUDIO", "Pantalla horizontal · tablet o celular", { onSelect(AppRole.Studio) })
-            RoleButton("LECTOR DE PIZARRA", "Pantalla vertical · celular frente al marcador", { onSelect(AppRole.Reader) })
+            RoleButton("TRANSMITIR EN VIVO", "Cámara del teléfono a YouTube y Facebook con marcador", { onSelect(AppRole.Live) }, live = true)
+            RoleButton("ESTUDIO (DEMO)", "Pantalla horizontal · tablet o celular", { onSelect(AppRole.Studio) })
+            RoleButton("LECTOR DE PIZARRA (DEMO)", "Pantalla vertical · celular frente al marcador", { onSelect(AppRole.Reader) })
             Text(
                 "Con el botón Atrás de Android vuelves a esta pantalla.",
                 color = HrColors.TextMuted,
@@ -100,11 +108,12 @@ fun RoleScreen(onSelect: (AppRole) -> Unit) {
 }
 
 @Composable
-private fun RoleButton(title: String, subtitle: String, onClick: () -> Unit) {
+private fun RoleButton(title: String, subtitle: String, onClick: () -> Unit, live: Boolean = false) {
     Button(
         onClick = onClick,
         modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth().heightIn(min = 72.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = HrColors.Orange, contentColor = Color.Black),
+        colors = if (live) ButtonDefaults.buttonColors(containerColor = HrColors.OnAirRed, contentColor = Color.White)
+            else ButtonDefaults.buttonColors(containerColor = HrColors.Orange, contentColor = Color.Black),
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(title, fontSize = 20.sp, fontWeight = FontWeight.Black)

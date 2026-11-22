@@ -36,3 +36,10 @@ Verificar licencia **antes** de añadirlas:
 
 ## Licencia del proyecto
 Apache-2.0 (archivo `LICENSE` en la raíz). Compatible con todas las dependencias incorporadas. Las candidatas con copyleft (FFmpeg compilado con GPL) exigirían revisar esta elección antes de enlazarlas.
+
+
+## Transmisión en vivo
+
+| Dependencia | Licencia | Uso |
+|---|---|---|
+| RootEncoder 2.6.1 (pedroSG94, vía JitPack) | Apache-2.0 | Cámara, codificación por hardware, RTMP/RTMPS, grabación |
